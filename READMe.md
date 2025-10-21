@@ -1,7 +1,7 @@
 # Geliştirici kuralları
 
 Lazy load images
-SSR - hmtl injection for elements image alts and content for seo
+SSR - hmtl injection for elements, content, image alts and content for seo
 
 ### Reklam Yenileme Stratejisi
 Adsense policy içinde kalarak yenileme miktarı arrtırmak 
