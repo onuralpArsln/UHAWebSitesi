@@ -1,0 +1,291 @@
+# UHA News Website Development Rules
+# Enforcing guidelines from README.md for optimal performance and SEO
+
+## Mobile-First Responsive Design Rules
+
+### Mobile Priority
+- ALWAYS design for mobile first, then enhance for larger screens
+- Mobile layout is the default, desktop is an enhancement
+- Test on mobile devices and mobile browser dev tools first
+- Prioritize touch interactions over hover states
+- Ensure all interactive elements are at least 44px for touch targets
+
+### Responsive Breakpoints
+- Use CSS custom properties for consistent breakpoints:
+  - Mobile: 0-767px (default)
+  - Tablet: 768px-1023px
+  - Desktop: 1024px+
+- Implement fluid typography with clamp() for scalable text
+- Use relative units (rem, em, %) instead of fixed pixels where possible
+
+### Mobile Layout Guidelines
+- Single column layout for mobile by default
+- Stack elements vertically on mobile, arrange horizontally on desktop
+- Use CSS Grid and Flexbox for responsive layouts
+- Implement collapsible navigation for mobile
+- Ensure content is readable without horizontal scrolling
+
+### Touch-Friendly Design
+- Minimum 44px touch targets for buttons and links
+- Adequate spacing between interactive elements (8px minimum)
+- Use swipe gestures for carousels and image galleries
+- Implement pull-to-refresh for mobile users
+- Avoid hover-dependent interactions on mobile
+
+### Performance on Mobile
+- Optimize for slower mobile connections
+- Use smaller images for mobile (serve appropriate sizes)
+- Minimize JavaScript execution on mobile
+- Implement progressive enhancement
+- Test on actual mobile devices, not just browser dev tools
+
+## Performance & Loading Rules
+
+### Lazy Loading
+- ALWAYS use lazy loading for images: `loading="lazy"` attribute
+- Implement progressive image loading: low-res WebP for SSR, high-res async client-side
+- Use `data-high-res` attribute for high-resolution image sources
+- Lazy load videos and iframes with intersection observers
+- Implement lazy loading for content sections with `data-lazy-content`
+
+### Image Optimization
+- ALWAYS include explicit width and height attributes on images to prevent CLS
+- Use WebP format with fallbacks for better compression
+- Generate alt text from article title + context: `alt="İzmir depremi 5.2 büyüklüğünde"`
+- Optimize images for different screen sizes (mobile, tablet, desktop)
+- Use CSS custom properties for consistent image dimensions
+
+### JavaScript Optimization
+- Defer non-critical JavaScript with `defer` attribute
+- Use code splitting for large JavaScript files
+- Minimize main-thread work for better FID scores
+- Implement progressive enhancement for core functionality
+
+## SEO & Schema Rules
+
+### URL Structure
+- Generate SEO-friendly slugs: `/izmir-5-2-buyuklugunde-deprem-oldu` instead of `/news?id=24324`
+- Use Turkish character mapping for slugs (ç→c, ğ→g, ı→i, ö→o, ş→s, ü→u)
+- Keep slugs under 60 characters for optimal SEO
+- Ensure unique slugs with number suffix if needed
+
+### Meta Tags & Descriptions
+- Generate unique meta descriptions for each page (140-160 characters)
+- Include primary keyword in first 60 characters of title
+- Use meaningful titles: "İzmir'de 5.2 Büyüklüğünde Deprem" not "Deprem oldu"
+- Add Open Graph and Twitter Card meta tags
+- Include canonical URLs for duplicate content prevention
+
+### JSON-LD Schema
+- ALWAYS add NewsArticle JSON-LD schema to article pages
+- Include required fields: headline, description, datePublished, author, publisher
+- Add image objects with proper dimensions
+- Include articleSection (category) and keywords
+- Use proper date formats (ISO 8601)
+
+### Internal Linking
+- Add minimum 2 contextual internal links per article
+- Use related news widget for automatic internal linking
+- Link to category pages and related articles
+- Implement breadcrumb navigation for better UX and SEO
+
+## Content & Structure Rules
+
+### Article Structure
+- Include article update timestamps: "Güncelleme: 21 Ekim 2025"
+- Add proper heading hierarchy (h1, h2, h3)
+- Use semantic HTML elements (article, section, header, footer)
+- Include author information and publication dates
+- Add category and tag information
+
+### Sitemap Generation
+- Generate `/sitemap.xml` with all pages
+- Create `/news-sitemap.xml` for Google News (last 2 days)
+- Include proper lastmod, changefreq, and priority values
+- Update sitemaps automatically when content changes
+
+### Content Quality
+- Avoid keyword stuffing: "Deprem oldu, deprem İzmir, deprem haberleri..."
+- Write natural, informative content
+- Include relevant images with proper alt text
+- Add contextual information and background details
+
+## AdSense & Monetization Rules
+
+### Ad Placement Strategy
+- No ads in first viewport on mobile (above the fold)
+- Use lazy loading for ads after content is visible
+- Implement ad refresh triggers on user interactions:
+  - Carousel navigation
+  - Breaking news updates
+  - Gallery image transitions
+  - Poll interactions
+  - Scroll milestones (25%, 50%, 75%, 90%)
+- Use placeholder divs with explicit dimensions to prevent CLS
+
+### Ad Refresh Triggers
+- Carousel slide changes trigger hero ad refresh
+- Lazy loaded content triggers content ad refresh
+- User interactions (comments, polls) trigger ad refresh
+- Breaking news updates trigger all ad refresh
+- Implement cooldown periods to prevent excessive refreshing
+
+## Technical Implementation Rules
+
+### CSS & Styling
+- Use CSS custom properties for consistent sizing across widgets
+- Implement responsive design with mobile-first approach
+- Use `font-display: swap` for web fonts to prevent FOIT
+- Add proper focus states for accessibility
+- Use CSS Grid and Flexbox for layouts
+
+### Widget System
+- Implement reusable widgets with consistent sizing
+- Use placeholder divs with CSS variables for dimensions
+- Ensure widgets work with SSR and client-side hydration
+- Add proper ARIA attributes for accessibility
+- Implement progressive enhancement for widget functionality
+
+### Error Handling
+- Graceful fallbacks for failed image loads
+- Error boundaries for JavaScript failures
+- Proper HTTP status codes (404, 500, etc.)
+- User-friendly error messages
+- Logging for debugging and monitoring
+
+## Accessibility Rules
+
+### ARIA & Semantics
+- Add proper ARIA labels and roles
+- Implement keyboard navigation for all interactive elements
+- Use semantic HTML elements
+- Add skip links for screen readers
+- Ensure proper color contrast ratios
+
+### Focus Management
+- Visible focus indicators
+- Logical tab order
+- Focus management for dynamic content
+- Escape key handling for modals and overlays
+
+## Security Rules
+
+### Content Security
+- Sanitize user input in comments and forms
+- Validate all form submissions
+- Implement CSRF protection
+- Use HTTPS for all communications
+- Sanitize HTML content to prevent XSS
+
+### Data Protection
+- Implement proper session management
+- Use secure cookies with appropriate flags
+- Validate file uploads and content
+- Implement rate limiting for API endpoints
+
+## Performance Monitoring Rules
+
+### Core Web Vitals
+- Target LCP < 2 seconds
+- Target FID < 100ms
+- Target CLS < 0.1
+- Monitor and optimize for Lighthouse scores > 90
+
+### Caching Strategy
+- Implement server-side caching for rendered pages
+- Use appropriate cache headers
+- Cache API responses with TTL
+- Implement cache invalidation strategies
+
+## Development Workflow Rules
+
+### Code Quality
+- Use consistent naming conventions
+- Add proper error handling and logging
+- Write self-documenting code
+- Implement proper testing strategies
+- Use version control best practices
+
+### Deployment
+- Use nodemon for development (per user preference)
+- Implement proper environment configuration
+- Use PM2 or similar for production
+- Monitor application performance
+- Implement proper backup strategies
+
+## Content Management Rules
+
+### CMS Integration
+- Implement drag-and-drop layout designer
+- Allow content editors to manage articles
+- Provide preview functionality
+- Implement proper user roles and permissions
+- Add content scheduling capabilities
+
+### Backend Integration
+- Use RESTful API design
+- Implement proper error responses
+- Add API rate limiting
+- Use proper HTTP status codes
+- Implement API versioning
+
+## Monitoring & Analytics Rules
+
+### Performance Monitoring
+- Track Core Web Vitals
+- Monitor server response times
+- Track error rates and types
+- Monitor cache hit rates
+- Track user engagement metrics
+
+### SEO Monitoring
+- Monitor search engine indexing
+- Track keyword rankings
+- Monitor backlink profiles
+- Track organic traffic growth
+- Monitor technical SEO issues
+
+## Compliance Rules
+
+### GDPR & Privacy
+- Implement cookie consent management
+- Provide privacy policy
+- Allow data deletion requests
+- Implement proper data retention policies
+- Use secure data transmission
+
+### AdSense Compliance
+- Follow AdSense content policies
+- Implement proper ad labeling
+- Avoid clickbait content
+- Maintain content quality standards
+- Implement proper ad placement
+
+## Emergency & Maintenance Rules
+
+### Breaking News Handling
+- Implement fast content publishing
+- Use push notifications for urgent updates
+- Implement content scheduling
+- Have backup publishing systems
+- Monitor for system failures
+
+### Maintenance Windows
+- Schedule maintenance during low-traffic periods
+- Implement graceful degradation
+- Provide maintenance notifications
+- Have rollback procedures
+- Monitor system health during maintenance
+
+---
+
+## Enforcement Notes
+
+These rules are automatically enforced through:
+- Code review processes
+- Automated testing
+- Performance monitoring
+- SEO auditing tools
+- Content quality checks
+
+Any violations should be addressed immediately to maintain optimal performance and SEO rankings.

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMS Panel - UHA News</title>
+    <link rel="stylesheet" href="/static/css/variables.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/cms/css/cms.css">
+    <style>
+        :root {
+            --cms-primary: #1a365d;
+            --cms-secondary: #2d3748;
+            --cms-accent: #3182ce;
+            --cms-success: #38a169;
+            --cms-warning: #d69e2e;
+            --cms-error: #e53e3e;
+            --cms-bg: #f7fafc;
+            --cms-sidebar-bg: #2d3748;
+            --cms-sidebar-text: #e2e8f0;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--cms-bg);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .cms-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .cms-sidebar {
+            width: 250px;
+            background: var(--cms-sidebar-bg);
+            color: var(--cms-sidebar-text);
+            padding: 1rem;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .cms-main {
+            flex: 1;
+            margin-left: 250px;
+            padding: 2rem;
+        }
+        
+        .cms-header {
+            background: white;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            margin: -2rem -2rem 2rem -2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .cms-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--cms-primary);
+        }
+        
+        .cms-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .cms-nav li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .cms-nav a {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--cms-sidebar-text);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            transition: background var(--transition-fast);
+        }
+        
+        .cms-nav a:hover,
+        .cms-nav a.active {
+            background: var(--cms-accent);
+            color: white;
+        }
+        
+        .cms-content {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .cms-section {
+            display: none;
+        }
+        
+        .cms-section.active {
+            display: block;
+        }
+        
+        .cms-section h2 {
+            margin-bottom: 1.5rem;
+            color: var(--cms-primary);
+        }
+        
+        .cms-form {
+            max-width: 600px;
+        }
+        
+        .cms-form .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .cms-form label {
+            display: block;
+            font-weight: var(--font-medium);
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+        
+        .cms-form input,
+        .cms-form textarea,
+        .cms-form select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+        }
+        
+        .cms-form textarea {
+            min-height: 200px;
+            resize: vertical;
+        }
+        
+        .cms-form button {
+            background: var(--cms-accent);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: var(--font-medium);
+            transition: background var(--transition-fast);
+        }
+        
+        .cms-form button:hover {
+            background: var(--cms-primary);
+        }
+        
+        .cms-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .cms-table th,
+        .cms-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .cms-table th {
+            background: var(--cms-bg);
+            font-weight: var(--font-semibold);
+            color: var(--cms-primary);
+        }
+        
+        .cms-table tr:hover {
+            background: var(--cms-bg);
+        }
+        
+        .cms-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .cms-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: var(--text-sm);
+            font-weight: var(--font-medium);
+            transition: all var(--transition-fast);
+        }
+        
+        .cms-btn-primary {
+            background: var(--cms-accent);
+            color: white;
+        }
+        
+        .cms-btn-primary:hover {
+            background: var(--cms-primary);
+        }
+        
+        .cms-btn-secondary {
+            background: var(--cms-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        .cms-btn-secondary:hover {
+            background: var(--border-color);
+        }
+        
+        .cms-btn-danger {
+            background: var(--cms-error);
+            color: white;
+        }
+        
+        .cms-btn-danger:hover {
+            background: #c53030;
+        }
+        
+        .cms-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .cms-stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            text-align: center;
+        }
+        
+        .cms-stat-number {
+            font-size: 2rem;
+            font-weight: var(--font-bold);
+            color: var(--cms-accent);
+            margin-bottom: 0.5rem;
+        }
+        
+        .cms-stat-label {
+            color: var(--text-light);
+            font-size: var(--text-sm);
+        }
+        
+        .cms-loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-light);
+        }
+        
+        .cms-error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+        }
+        
+        .cms-success {
+            background: #c6f6d5;
+            color: #2f855a;
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .cms-sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            
+            .cms-main {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .cms-header {
+                margin: -1rem -1rem 1rem -1rem;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cms-container">
+        <!-- Sidebar -->
+        <nav class="cms-sidebar">
+            <div class="cms-logo">UHA CMS</div>
+            <ul class="cms-nav">
+                <li><a href="#dashboard" class="nav-link active">Dashboard</a></li>
+                <li><a href="#articles" class="nav-link">Articles</a></li>
+                <li><a href="#categories" class="nav-link">Categories</a></li>
+                <li><a href="#layouts" class="nav-link">Layouts</a></li>
+                <li><a href="#settings" class="nav-link">Settings</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="cms-main">
+            <header class="cms-header">
+                <h1 id="page-title">Dashboard</h1>
+                <div>
+                    <button class="cms-btn cms-btn-primary" onclick="window.open('/', '_blank')">
+                        View Site
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="cms-section active">
+                <div class="cms-content">
+                    <h2>Dashboard</h2>
+                    <div class="cms-stats" id="dashboard-stats">
+                        <div class="cms-loading">Loading statistics...</div>
+                    </div>
+                    <div id="recent-articles">
+                        <h3>Recent Articles</h3>
+                        <div class="cms-loading">Loading recent articles...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Articles Section -->
+            <section id="articles" class="cms-section">
+                <div class="cms-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h2>Articles</h2>
+                        <button class="cms-btn cms-btn-primary" onclick="showArticleForm()">
+                            New Article
+                        </button>
+                    </div>
+                    
+                    <div id="articles-list">
+                        <div class="cms-loading">Loading articles...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Categories Section -->
+            <section id="categories" class="cms-section">
+                <div class="cms-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h2>Categories</h2>
+                        <button class="cms-btn cms-btn-primary" onclick="showCategoryForm()">
+                            New Category
+                        </button>
+                    </div>
+                    
+                    <div id="categories-list">
+                        <div class="cms-loading">Loading categories...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Layouts Section -->
+            <section id="layouts" class="cms-section">
+                <div class="cms-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h2>Layouts</h2>
+                        <button class="cms-btn cms-btn-primary" onclick="showLayoutForm()">
+                            New Layout
+                        </button>
+                    </div>
+                    
+                    <div id="layouts-list">
+                        <div class="cms-loading">Loading layouts...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="cms-section">
+                <div class="cms-content">
+                    <h2>Settings</h2>
+                    <form id="settings-form" class="cms-form">
+                        <div class="form-group">
+                            <label for="site-name">Site Name</label>
+                            <input type="text" id="site-name" name="siteName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="site-description">Site Description</label>
+                            <textarea id="site-description" name="siteDescription" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="site-url">Site URL</label>
+                            <input type="url" id="site-url" name="siteUrl" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="backend-url">Backend URL</label>
+                            <input type="url" id="backend-url" name="backendUrl" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="adsense-client-id">AdSense Client ID</label>
+                            <input type="text" id="adsense-client-id" name="adsenseClientId">
+                        </div>
+                        <div class="form-group">
+                            <label for="adsense-slot-id">AdSense Slot ID</label>
+                            <input type="text" id="adsense-slot-id" name="adsenseSlotId">
+                        </div>
+                        <button type="submit">Save Settings</button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Article Form Modal -->
+    <div id="article-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: var(--radius-lg); width: 90%; max-width: 800px; max-height: 90%; overflow-y: auto;">
+            <h3 id="article-modal-title">New Article</h3>
+            <form id="article-form" class="cms-form">
+                <div class="form-group">
+                    <label for="article-title">Title</label>
+                    <input type="text" id="article-title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="article-summary">Summary</label>
+                    <textarea id="article-summary" name="summary" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="article-content">Content</label>
+                    <textarea id="article-content" name="content" rows="10"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="article-category">Category</label>
+                    <select id="article-category" name="category">
+                        <option value="">Select Category</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="article-author">Author</label>
+                    <input type="text" id="article-author" name="author" value="UHA News">
+                </div>
+                <div class="form-group">
+                    <label for="article-keywords">Keywords (comma-separated)</label>
+                    <input type="text" id="article-keywords" name="keywords">
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="cms-btn cms-btn-secondary" onclick="closeArticleModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" class="cms-btn cms-btn-primary">
+                        Save Article
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/cms/js/cms-app.js"></script>
+</body>
+</html>

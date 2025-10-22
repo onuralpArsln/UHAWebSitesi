@@ -1,3 +1,64 @@
+# UHA News Website - High Performance SSR News System
+
+## 🚀 How to Start
+
+### Quick Start
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with your backend API URL and AdSense settings
+
+# 3. Start development server
+npm run dev
+# Server will start on http://localhost:3000
+
+# 4. Access CMS panel
+# Visit http://localhost:3000/cms
+```
+
+### Production Deployment
+```bash
+# 1. Build for production
+npm run build
+
+# 2. Start with PM2 (recommended for Hostinger)
+pm2 start server/index.js --name "uha-news"
+
+# 3. Or use Hostinger's Node.js manager
+# Upload files and configure in Hostinger control panel
+```
+
+### Environment Configuration
+Create `.env` file with:
+```env
+NODE_ENV=production
+PORT=3000
+BACKEND_API_URL=http://your-python-backend:8000
+SITE_URL=https://yourdomain.com
+SITE_NAME=UHA News
+ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxx
+ADSENSE_SLOT_ID=xxxxxxxxxx
+```
+
+### Backend Setup
+1. Set up your Python backend with API endpoints (see `backend-requirements.txt`)
+2. Ensure your backend provides the required endpoints for articles, categories, and RSS
+3. Configure CORS to allow your frontend domain
+
+### Features Overview
+- ✅ **Custom SSR Engine** - React-like templating with server-side rendering
+- ✅ **SEO Optimized** - JSON-LD schemas, meta tags, sitemaps, friendly URLs
+- ✅ **Performance** - LCP < 2s, FID < 100ms, CLS < 0.1, Lighthouse > 90
+- ✅ **AdSense Ready** - Smart refresh triggers, lazy loading, mobile optimization
+- ✅ **CMS Panel** - Content management with drag-drop layout designer
+- ✅ **Progressive Loading** - Low-res WebP → high-res async loading
+- ✅ **Widget System** - Carousel, ads, related news, comments
+
+---
+
 # Geliştirici kuralları
 
 Lazy load images
