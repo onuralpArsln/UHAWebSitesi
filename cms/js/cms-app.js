@@ -517,3 +517,4 @@ function previewLayout(id) {
 document.addEventListener('DOMContentLoaded', () => {
   window.cmsApp = new CMSApp();
 });
+

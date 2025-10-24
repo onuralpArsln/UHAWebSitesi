@@ -404,3 +404,4 @@
 8. **Documentation**: Use OpenAPI/Swagger for API documentation
 
 This specification ensures the backend can support all frontend requirements while maintaining high performance and scalability.
+

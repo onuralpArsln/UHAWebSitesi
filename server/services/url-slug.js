@@ -214,3 +214,4 @@ class URLSlugService {
 }
 
 module.exports = URLSlugService;
+
