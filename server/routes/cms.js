@@ -1,10 +1,10 @@
 const express = require('express');
 const path = require('path');
-const PlaceholderDataService = require('../services/placeholder-data');
+const DataService = require('../services/data-service');
 const URLSlugService = require('../services/url-slug');
 
 const router = express.Router();
-const dataService = new PlaceholderDataService();
+const dataService = new DataService();
 const urlSlugService = new URLSlugService();
 
 /**
@@ -182,9 +182,12 @@ router.delete('/articles/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Delete article from backend
-    // Note: This would need to be implemented in BackendAPIService
-    // await backendAPI.deleteArticle(id);
+    // Delete article from database
+    const deleted = dataService.deleteArticle(id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
 
     // Remove slug mapping
     urlSlugService.deleteSlug(id);
@@ -412,7 +415,6 @@ router.get('/settings', async (req, res) => {
       siteName: process.env.SITE_NAME || 'UHA News',
       siteDescription: process.env.SITE_DESCRIPTION || 'Latest news and updates',
       siteUrl: process.env.SITE_URL || 'http://localhost:3000',
-      backendUrl: process.env.BACKEND_API_URL || 'http://localhost:8000',
       adsenseClientId: process.env.ADSENSE_CLIENT_ID || '',
       adsenseSlotId: process.env.ADSENSE_SLOT_ID || ''
     };

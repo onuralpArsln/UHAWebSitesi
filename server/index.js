@@ -67,7 +67,6 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 UHA News Server running on port ${PORT}`);
   console.log(`📰 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔗 Backend API: ${process.env.BACKEND_API_URL}`);
 });
 
 module.exports = app;

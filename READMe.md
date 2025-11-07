@@ -9,7 +9,7 @@ npm install
 
 # 2. Configure environment
 cp .env.example .env
-# Edit .env with your backend API URL and AdSense settings
+# Edit .env with your AdSense settings
 
 # 3. Start development server
 npm run dev
@@ -36,17 +36,14 @@ Create `.env` file with:
 ```env
 NODE_ENV=production
 PORT=3000
-BACKEND_API_URL=http://your-python-backend:8000
 SITE_URL=https://yourdomain.com
 SITE_NAME=UHA News
 ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxx
 ADSENSE_SLOT_ID=xxxxxxxxxx
 ```
 
-### Backend Setup
-1. Set up your Python backend with API endpoints (see `backend-requirements.txt`)
-2. Ensure your backend provides the required endpoints for articles, categories, and RSS
-3. Configure CORS to allow your frontend domain
+### Database
+The application uses SQLite3 for data storage. The database file (`data/news.db`) is automatically created on first run. All articles and categories are stored locally in the database - no external backend required.
 
 ### Features Overview
 - ✅ **Custom SSR Engine** - React-like templating with server-side rendering

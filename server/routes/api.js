@@ -1,9 +1,9 @@
 const express = require('express');
-const PlaceholderDataService = require('../services/placeholder-data');
+const DataService = require('../services/data-service');
 const URLSlugService = require('../services/url-slug');
 
 const router = express.Router();
-const dataService = new PlaceholderDataService();
+const dataService = new DataService();
 const urlSlugService = new URLSlugService();
 
 /**

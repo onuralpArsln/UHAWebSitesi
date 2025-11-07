@@ -1,12 +1,12 @@
 const express = require('express');
 const SSREngine = require('../ssr-engine');
-const PlaceholderDataService = require('../services/placeholder-data');
+const DataService = require('../services/data-service');
 const URLSlugService = require('../services/url-slug');
 const SitemapService = require('../services/sitemap');
 
 const router = express.Router();
 const ssrEngine = new SSREngine();
-const dataService = new PlaceholderDataService();
+const dataService = new DataService();
 const urlSlugService = new URLSlugService();
 const sitemapService = new SitemapService(dataService, urlSlugService);
 

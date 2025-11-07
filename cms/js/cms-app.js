@@ -69,7 +69,7 @@ class CMSApp {
         this.loadDashboard();
         break;
       case 'articles':
-        this.loadArticles();
+        this.loadCategories().then(() => this.loadArticles());
         break;
       case 'categories':
         this.loadCategories();
@@ -111,9 +111,9 @@ class CMSApp {
       // Update recent articles
       const recentHtml = data.recentArticles.map(article => `
         <div style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
-          <h4 style="margin: 0 0 0.5rem 0;">${article.title}</h4>
+          <h4 style="margin: 0 0 0.5rem 0;">${this.escapeHtml(article.header || article.title || 'Untitled')}</h4>
           <p style="margin: 0; color: var(--text-light); font-size: 0.9rem;">
-            ${article.category} • ${new Date(article.publishedAt).toLocaleDateString('tr-TR')}
+            ${this.escapeHtml(article.category || '-')} • ${article.creationDate || article.publishedAt ? new Date(article.creationDate || article.publishedAt).toLocaleDateString('tr-TR') : '-'}
           </p>
         </div>
       `).join('');
@@ -141,20 +141,20 @@ class CMSApp {
         <table class="cms-table">
           <thead>
             <tr>
-              <th>Title</th>
+              <th>Header</th>
               <th>Category</th>
-              <th>Author</th>
-              <th>Published</th>
+              <th>Writer</th>
+              <th>Created</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            ${data.articles.map(article => `
+            ${data.articles.length > 0 ? data.articles.map(article => `
               <tr>
-                <td>${article.title}</td>
-                <td>${article.category}</td>
-                <td>${article.author}</td>
-                <td>${new Date(article.publishedAt).toLocaleDateString('tr-TR')}</td>
+                <td><strong>${this.escapeHtml(article.header || article.title || 'Untitled')}</strong></td>
+                <td>${this.escapeHtml(article.category || '-')}</td>
+                <td>${this.escapeHtml(article.writer || article.author || '-')}</td>
+                <td>${article.creationDate || article.publishedAt ? new Date(article.creationDate || article.publishedAt).toLocaleDateString('tr-TR') : '-'}</td>
                 <td class="cms-actions">
                   <button class="cms-btn cms-btn-secondary" onclick="editArticle('${article.id}')">
                     Edit
@@ -164,7 +164,7 @@ class CMSApp {
                   </button>
                 </td>
               </tr>
-            `).join('')}
+            `).join('') : '<tr><td colspan="5" style="text-align: center; padding: 2rem;">No articles found. Click "New Article" to create one.</td></tr>'}
           </tbody>
         </table>
       `;
@@ -185,7 +185,7 @@ class CMSApp {
       const response = await fetch('/cms/categories');
       const data = await response.json();
 
-      this.categories = data.categories;
+      this.categories = data.categories || [];
 
       const categoriesHtml = `
         <table class="cms-table">
@@ -318,8 +318,13 @@ class CMSApp {
   /**
    * Show article form
    */
-  showArticleForm(article = null) {
+  async showArticleForm(article = null) {
     this.currentArticle = article;
+    
+    // Ensure categories are loaded
+    if (this.categories.length === 0) {
+      await this.loadCategories();
+    }
     
     const modal = document.getElementById('article-modal');
     const title = document.getElementById('article-modal-title');
@@ -327,15 +332,39 @@ class CMSApp {
 
     if (article) {
       title.textContent = 'Edit Article';
-      form.title.value = article.title;
-      form.summary.value = article.summary;
-      form.content.value = article.content;
-      form.category.value = article.category;
-      form.author.value = article.author;
-      form.keywords.value = article.keywords ? article.keywords.join(', ') : '';
+      form.header.value = article.header || article.title || '';
+      form.summaryHead.value = article.summaryHead || '';
+      form.summary.value = article.summary || '';
+      form.body.value = article.body || article.content || '';
+      form.category.value = article.category || '';
+      form.writer.value = article.writer || article.author || 'UHA News';
+      form.source.value = article.source || '';
+      form.tags.value = (article.tags || article.keywords || []).join(', ');
+      
+      // Handle images - convert array to text
+      if (article.images && article.images.length > 0) {
+        form.images.value = JSON.stringify(article.images, null, 2);
+      } else {
+        form.images.value = '';
+      }
+      
+      // Handle outlinks
+      if (article.outlinks && article.outlinks.length > 0) {
+        form.outlinks.value = article.outlinks.join('\n');
+      } else {
+        form.outlinks.value = '';
+      }
+      
+      // Handle targettedViews
+      if (article.targettedViews && article.targettedViews.length > 0) {
+        form.targettedViews.value = article.targettedViews.join(', ');
+      } else {
+        form.targettedViews.value = '';
+      }
     } else {
       title.textContent = 'New Article';
       form.reset();
+      form.writer.value = 'UHA News';
     }
 
     // Populate categories
@@ -345,6 +374,9 @@ class CMSApp {
       const option = document.createElement('option');
       option.value = category.name;
       option.textContent = category.name;
+      if (article && article.category === category.name) {
+        option.selected = true;
+      }
       categorySelect.appendChild(option);
     });
 
@@ -367,13 +399,52 @@ class CMSApp {
       const form = document.getElementById('article-form');
       const formData = new FormData(form);
       
+      // Parse images - try JSON first, then line-by-line URLs
+      let images = [];
+      const imagesInput = formData.get('images').trim();
+      if (imagesInput) {
+        try {
+          images = JSON.parse(imagesInput);
+        } catch (e) {
+          // If not JSON, treat as one URL per line
+          const urls = imagesInput.split('\n').filter(url => url.trim());
+          images = urls.map(url => ({
+            url: url.trim(),
+            alt: '',
+            title: ''
+          }));
+        }
+      }
+      
+      // Parse outlinks - one per line
+      const outlinksInput = formData.get('outlinks').trim();
+      const outlinks = outlinksInput ? outlinksInput.split('\n').map(link => link.trim()).filter(link => link) : [];
+      
+      // Parse tags - comma separated
+      const tagsInput = formData.get('tags').trim();
+      const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
+      
+      // Parse targettedViews - comma separated
+      const targettedViewsInput = formData.get('targettedViews').trim();
+      const targettedViews = targettedViewsInput ? targettedViewsInput.split(',').map(v => v.trim()).filter(v => v) : [];
+      
       const articleData = {
-        title: formData.get('title'),
+        header: formData.get('header'),
+        summaryHead: formData.get('summaryHead'),
         summary: formData.get('summary'),
-        content: formData.get('content'),
         category: formData.get('category'),
-        author: formData.get('author'),
-        keywords: formData.get('keywords').split(',').map(k => k.trim()).filter(k => k)
+        tags: tags,
+        body: formData.get('body'),
+        images: images,
+        writer: formData.get('writer'),
+        source: formData.get('source'),
+        outlinks: outlinks,
+        targettedViews: targettedViews,
+        // Legacy fields for backward compatibility
+        title: formData.get('header'),
+        content: formData.get('body'),
+        author: formData.get('writer'),
+        keywords: tags
       };
 
       const url = this.currentArticle ? `/cms/articles/${this.currentArticle.id}` : '/cms/articles';
@@ -391,14 +462,28 @@ class CMSApp {
         this.showSuccess('Article saved successfully');
         this.closeArticleModal();
         this.loadArticles();
+        if (this.currentSection === 'dashboard') {
+          this.loadDashboard();
+        }
       } else {
-        throw new Error('Failed to save article');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to save article');
       }
 
     } catch (error) {
       console.error('Failed to save article:', error);
-      this.showError('Failed to save article');
+      this.showError(error.message || 'Failed to save article');
     }
+  }
+  
+  /**
+   * Escape HTML to prevent XSS
+   */
+  escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   /**
@@ -466,23 +551,46 @@ class CMSApp {
 }
 
 // Global functions for inline event handlers
-function showArticleForm() {
-  window.cmsApp.showArticleForm();
+async function showArticleForm() {
+  await window.cmsApp.showArticleForm();
 }
 
 function closeArticleModal() {
   window.cmsApp.closeArticleModal();
 }
 
-function editArticle(id) {
-  // In a real implementation, this would fetch the article and show the form
-  console.log('Edit article:', id);
+async function editArticle(id) {
+  try {
+    const response = await fetch(`/cms/articles/${id}`);
+    if (response.ok) {
+      const article = await response.json();
+      window.cmsApp.showArticleForm(article);
+    } else {
+      throw new Error('Failed to fetch article');
+    }
+  } catch (error) {
+    console.error('Failed to load article:', error);
+    window.cmsApp.showError('Failed to load article for editing');
+  }
 }
 
-function deleteArticle(id) {
+async function deleteArticle(id) {
   if (confirm('Are you sure you want to delete this article?')) {
-    // In a real implementation, this would delete the article
-    console.log('Delete article:', id);
+    try {
+      const response = await fetch(`/cms/articles/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        window.cmsApp.showSuccess('Article deleted successfully');
+        window.cmsApp.loadArticles();
+      } else {
+        throw new Error('Failed to delete article');
+      }
+    } catch (error) {
+      console.error('Failed to delete article:', error);
+      window.cmsApp.showError('Failed to delete article');
+    }
   }
 }
 

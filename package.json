@@ -19,7 +19,7 @@
   "author": "UHA Team",
   "license": "MIT",
   "dependencies": {
-    "axios": "^1.6.2",
+    "better-sqlite3": "^9.2.2",
     "cheerio": "^1.1.2",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
