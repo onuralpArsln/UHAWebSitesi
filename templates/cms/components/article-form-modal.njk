@@ -1,0 +1,111 @@
+{% macro ArticleFormModal(categories = [], targetOptions = ['carousel', 'manset', 'anasayfa', 'akış']) %}
+<section class="cms-modal" data-cms="article-modal" hidden>
+  <div class="cms-modal__dialog">
+    <header class="cms-modal__header">
+      <h3 data-cms="article-modal-title">Yeni Haber</h3>
+      <button type="button" class="cms-modal__close" data-action="close-article-modal" aria-label="Kapat">
+        &times;
+      </button>
+    </header>
+    <form class="cms-form" data-cms="article-form">
+      <div class="cms-form__grid">
+        <div class="form-group">
+          <label for="field-header">Başlık *</label>
+          <input id="field-header" name="header" type="text" required placeholder="Haber başlığı">
+        </div>
+        <div class="form-group">
+          <label for="field-summaryHead">Özet Başlık</label>
+          <input id="field-summaryHead" name="summaryHead" type="text" placeholder="Özeti açıklayan başlık">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="field-summary">Özet</label>
+        <textarea id="field-summary" name="summary" rows="3" placeholder="140-160 karakterlik özet"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="field-body">Metin *</label>
+        <textarea id="field-body" name="body" rows="12" required placeholder="Haberin tam metni (HTML desteklenir)"></textarea>
+      </div>
+
+      <div class="cms-form__grid">
+        <div class="form-group">
+          <label for="field-category">Kategori *</label>
+          <select id="field-category" name="category" required>
+            <option value="">Kategori seçin</option>
+            {% for category in categories %}
+              <option value="{{ category.name }}">{{ category.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="field-writer">Muhabir *</label>
+          <input id="field-writer" name="writer" type="text" required placeholder="Haberi hazırlayan kişi">
+        </div>
+      </div>
+
+      <div class="cms-form__grid">
+        <div class="form-group">
+          <label for="field-source">Kaynak</label>
+          <input id="field-source" name="source" type="text" placeholder="Haber kaynağı">
+        </div>
+        <div class="form-group">
+          <label for="field-videoUrl">Video URL</label>
+          <input id="field-videoUrl" name="videoUrl" type="url" placeholder="YouTube veya embed URL">
+        </div>
+      </div>
+
+      <div class="cms-form__grid">
+        <div class="form-group">
+          <label for="field-pressAnnouncementId">Basın İlan ID</label>
+          <input id="field-pressAnnouncementId" name="pressAnnouncementId" type="text" placeholder="Özel kimlik numarası">
+        </div>
+        <div class="form-group">
+          <label for="field-status">Durum *</label>
+          <select id="field-status" name="status" required>
+            <option value="visible">Yayında</option>
+            <option value="hidden">Gizli</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="field-tags">Etiketler</label>
+        <input id="field-tags" name="tags" type="text" placeholder="Virgülle ayırın (ör. ekonomi, büyüme)">
+        <small>Birden fazla etiketi virgülle ayırarak ekleyebilirsiniz.</small>
+      </div>
+
+      <div class="form-group">
+        <label for="field-images">Görseller</label>
+        <textarea id="field-images" name="images" rows="4" placeholder='["https://...","https://..."] veya her satıra bir URL'></textarea>
+        <small>JSON formatında veya satır satır URL girebilirsiniz.</small>
+      </div>
+
+      <div class="form-group">
+        <label for="field-outlinks">Dış Bağlantılar</label>
+        <textarea id="field-outlinks" name="outlinks" rows="3" placeholder="Her satıra bir URL"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Hedef Alanlar</label>
+        <div class="cms-checkbox-grid">
+          {% for target in targetOptions %}
+          <label class="cms-checkbox">
+            <input type="checkbox" name="targettedViews" value="{{ target }}">
+            <span>{{ target | capitalize }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <small>Haberin hangi alanlarda gösterileceğini seçin.</small>
+      </div>
+
+      <footer class="cms-modal__footer">
+        <button type="button" class="cms-btn cms-btn-secondary" data-action="close-article-modal">İptal</button>
+        <button type="submit" class="cms-btn cms-btn-primary" data-action="save-article">Kaydet</button>
+      </footer>
+    </form>
+  </div>
+</section>
+{% endmacro %}
+

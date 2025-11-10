@@ -43,6 +43,7 @@ class DataService {
         category TEXT,
         tags TEXT,
         body TEXT NOT NULL,
+        videoUrl TEXT,
         images TEXT,
         writer TEXT,
         creationDate TEXT,
@@ -51,6 +52,8 @@ class DataService {
         targettedViews TEXT,
         updatedAt TEXT,
         relatedArticles TEXT,
+        status TEXT DEFAULT 'visible',
+        pressAnnouncementId TEXT,
         -- Legacy fields for backward compatibility
         title TEXT,
         content TEXT,
@@ -107,7 +110,10 @@ class DataService {
           { name: 'creationDate', type: 'TEXT', default: "COALESCE(publishedAt, '')" },
           { name: 'source', type: 'TEXT', default: "''" },
           { name: 'outlinks', type: 'TEXT', default: "'[]'" },
-          { name: 'targettedViews', type: 'TEXT', default: "'[]'" }
+          { name: 'targettedViews', type: 'TEXT', default: "'[]'" },
+          { name: 'videoUrl', type: 'TEXT', default: "''" },
+          { name: 'status', type: 'TEXT', default: "'visible'" },
+          { name: 'pressAnnouncementId', type: 'TEXT', default: "''" }
         ];
 
         for (const col of newColumns) {
@@ -441,6 +447,8 @@ class DataService {
     const tags = row.tags ? (typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags) : 
                (row.keywords ? (typeof row.keywords === 'string' ? JSON.parse(row.keywords) : row.keywords) : []);
     
+    const status = row.status ? row.status.toLowerCase() : 'visible';
+
     return {
       id: row.id,
       // New structure
@@ -451,6 +459,7 @@ class DataService {
       tags: tags,
       body: body,
       images: row.images ? (typeof row.images === 'string' ? JSON.parse(row.images) : row.images) : [],
+      videoUrl: row.videoUrl || row.video || '',
       writer: writer,
       creationDate: creationDate,
       source: row.source || '',
@@ -458,11 +467,14 @@ class DataService {
       targettedViews: row.targettedViews ? (typeof row.targettedViews === 'string' ? JSON.parse(row.targettedViews) : row.targettedViews) : [],
       updatedAt: row.updatedAt || '',
       relatedArticles: row.relatedArticles ? (typeof row.relatedArticles === 'string' ? JSON.parse(row.relatedArticles) : row.relatedArticles) : [],
+      status: status === 'hidden' ? 'hidden' : 'visible',
+      pressAnnouncementId: row.pressAnnouncementId || '',
       // Legacy fields for backward compatibility
       title: header,
       content: body,
       author: writer,
       publishedAt: creationDate,
+      video: row.videoUrl || row.video || '',
       keywords: tags
     };
   }
@@ -586,6 +598,35 @@ class DataService {
   }
 
   /**
+   * Aggregate article status counts
+   */
+  getArticleStatusSummary() {
+    const totalRow = this.db.prepare('SELECT COUNT(*) as total FROM articles').get();
+    const statusRows = this.db.prepare(`
+      SELECT COALESCE(status, 'visible') as status, COUNT(*) as count
+      FROM articles
+      GROUP BY COALESCE(status, 'visible')
+    `).all();
+
+    const summary = {
+      total: totalRow.total || 0,
+      visible: 0,
+      hidden: 0
+    };
+
+    for (const row of statusRows) {
+      const statusKey = (row.status || 'visible').toLowerCase();
+      if (statusKey === 'hidden') {
+        summary.hidden += row.count;
+      } else {
+        summary.visible += row.count;
+      }
+    }
+
+    return summary;
+  }
+
+  /**
    * Create article (for CMS)
    */
   createArticle(articleData) {
@@ -607,6 +648,7 @@ class DataService {
       category: articleData.category || 'Genel',
       tags: JSON.stringify(tags),
       body,
+      videoUrl: articleData.videoUrl || articleData.video || '',
       images: JSON.stringify(articleData.images || []),
       writer,
       creationDate,
@@ -615,6 +657,8 @@ class DataService {
       targettedViews: JSON.stringify(articleData.targettedViews || []),
       updatedAt: articleData.updatedAt || now,
       relatedArticles: JSON.stringify(articleData.relatedArticles || []),
+      status: articleData.status || 'visible',
+      pressAnnouncementId: articleData.pressAnnouncementId || '',
       // Legacy fields for backward compatibility
       title: header,
       content: body,
@@ -624,8 +668,8 @@ class DataService {
     };
 
     this.db.prepare(`
-      INSERT INTO articles (id, header, summaryHead, summary, category, tags, body, images, writer, creationDate, source, outlinks, targettedViews, updatedAt, relatedArticles, title, content, author, publishedAt, keywords)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO articles (id, header, summaryHead, summary, category, tags, body, videoUrl, images, writer, creationDate, source, outlinks, targettedViews, updatedAt, relatedArticles, status, pressAnnouncementId, title, content, author, publishedAt, keywords)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       newArticle.id,
       newArticle.header,
@@ -634,6 +678,7 @@ class DataService {
       newArticle.category,
       newArticle.tags,
       newArticle.body,
+      newArticle.videoUrl,
       newArticle.images,
       newArticle.writer,
       newArticle.creationDate,
@@ -642,6 +687,8 @@ class DataService {
       newArticle.targettedViews,
       newArticle.updatedAt,
       newArticle.relatedArticles,
+      newArticle.status,
+      newArticle.pressAnnouncementId,
       newArticle.title,
       newArticle.content,
       newArticle.author,
@@ -682,6 +729,8 @@ class DataService {
       category: articleData.category !== undefined ? articleData.category : existing.category,
       tags: JSON.stringify(tags),
       body,
+      videoUrl: articleData.videoUrl !== undefined ? articleData.videoUrl : 
+                (articleData.video !== undefined ? articleData.video : existing.videoUrl),
       images: articleData.images !== undefined ? JSON.stringify(articleData.images) : 
               (existing.images ? JSON.stringify(existing.images) : '[]'),
       writer,
@@ -695,6 +744,8 @@ class DataService {
       updatedAt,
       relatedArticles: articleData.relatedArticles !== undefined ? JSON.stringify(articleData.relatedArticles) : 
                       (existing.relatedArticles ? JSON.stringify(existing.relatedArticles) : '[]'),
+      status: articleData.status !== undefined ? articleData.status : existing.status || 'visible',
+      pressAnnouncementId: articleData.pressAnnouncementId !== undefined ? articleData.pressAnnouncementId : (existing.pressAnnouncementId || ''),
       // Legacy fields
       title: header,
       content: body,
@@ -706,7 +757,7 @@ class DataService {
 
     this.db.prepare(`
       UPDATE articles 
-      SET header = ?, summaryHead = ?, summary = ?, category = ?, tags = ?, body = ?, images = ?, writer = ?, creationDate = ?, source = ?, outlinks = ?, targettedViews = ?, updatedAt = ?, relatedArticles = ?, title = ?, content = ?, author = ?, publishedAt = ?, keywords = ?
+      SET header = ?, summaryHead = ?, summary = ?, category = ?, tags = ?, body = ?, videoUrl = ?, images = ?, writer = ?, creationDate = ?, source = ?, outlinks = ?, targettedViews = ?, updatedAt = ?, relatedArticles = ?, status = ?, pressAnnouncementId = ?, title = ?, content = ?, author = ?, publishedAt = ?, keywords = ?
       WHERE id = ?
     `).run(
       updatedArticle.header,
@@ -715,6 +766,7 @@ class DataService {
       updatedArticle.category,
       updatedArticle.tags,
       updatedArticle.body,
+      updatedArticle.videoUrl,
       updatedArticle.images,
       updatedArticle.writer,
       updatedArticle.creationDate,
@@ -723,6 +775,8 @@ class DataService {
       updatedArticle.targettedViews,
       updatedArticle.updatedAt,
       updatedArticle.relatedArticles,
+      updatedArticle.status,
+      updatedArticle.pressAnnouncementId,
       updatedArticle.title,
       updatedArticle.content,
       updatedArticle.author,

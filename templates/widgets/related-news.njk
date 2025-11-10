@@ -1,0 +1,32 @@
+{% macro relatedNews(articles) %}
+{% if articles and articles | length %}
+<div class="related-news-widget" data-widget="related-news">
+  <h3>İlgili Haberler</h3>
+  <div class="related-articles">
+    {% for article in articles %}
+    {% set image = article.images and article.images[0] %}
+    <article class="related-article">
+      <div class="related-image">
+        {% if image %}
+        <img
+          src="{{ image.lowRes }}"
+          data-high-res="{{ image.highRes }}"
+          alt="{{ image.alt }}"
+          width="{{ image.width if image.width else 150 }}"
+          height="{{ image.height if image.height else 100 }}"
+          loading="lazy"
+        >
+        {% endif %}
+      </div>
+      <div class="related-content">
+        <h4><a href="/haber/{{ article.slug }}">{{ article.title }}</a></h4>
+        <p>{{ article.summary }}</p>
+        <span class="related-date">{{ article.publishedAt | formatDate }}</span>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endmacro %}
+

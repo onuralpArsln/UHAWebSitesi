@@ -1,0 +1,217 @@
+{% macro commentSection(articleId, comments=[], hasMore=false) %}
+<div class="comment-section-widget" data-widget="comments">
+  <div class="comments-header" style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+    <h2 style="font-size: 1.5rem; font-weight: 600; color: var(--primary-color); margin-bottom: 0.5rem;">
+      Yorumlar
+    </h2>
+    <p style="color: var(--text-light); font-size: 0.9rem;">
+      Bu haber hakkında ne düşünüyorsunuz?
+    </p>
+  </div>
+
+  <div class="comment-form-container" style="background: #f7fafc; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+    <form class="comment-form" data-article-id="{{ articleId }}">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+        <div>
+          <label for="comment-name" style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: var(--text-color);">
+            Adınız *
+          </label>
+          <input
+            type="text"
+            id="comment-name"
+            name="name"
+            required
+            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem;"
+            placeholder="Adınızı girin"
+          >
+        </div>
+        <div>
+          <label for="comment-email" style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: var(--text-color);">
+            E-posta *
+          </label>
+          <input
+            type="email"
+            id="comment-email"
+            name="email"
+            required
+            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem;"
+            placeholder="E-posta adresinizi girin"
+          >
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <label for="comment-text" style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: var(--text-color);">
+          Yorumunuz *
+        </label>
+        <textarea
+          id="comment-text"
+          name="comment"
+          required
+          rows="4"
+          style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem; resize: vertical;"
+          placeholder="Yorumunuzu yazın..."
+        ></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 0.8rem; color: var(--text-light);">
+          * Zorunlu alanlar
+        </div>
+        <button
+          type="submit"
+          style="background: var(--accent-color); color: white; border: none; padding: 0.75rem 2rem; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background 0.2s ease;"
+          onmouseover="this.style.background='#2c5aa0'"
+          onmouseout="this.style.background='var(--accent-color)'"
+        >
+          Yorum Gönder
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="comments-list">
+    {% if comments and comments | length %}
+      {% for comment in comments %}
+      <div class="comment-item" style="background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem;">
+        <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div class="comment-author" style="display: flex; align-items: center; gap: 0.75rem;">
+            <div class="author-avatar" style="width: 40px; height: 40px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">
+              {{ comment.name | initials }}
+            </div>
+            <div>
+              <div class="author-name" style="font-weight: 600; color: var(--text-color);">
+                {{ comment.name }}
+              </div>
+              <div class="comment-date" style="font-size: 0.8rem; color: var(--text-light);">
+                {{ comment.createdAt | formatDate }}
+              </div>
+            </div>
+          </div>
+
+          <div class="comment-actions" style="display: flex; gap: 0.5rem;">
+            <button
+              class="like-comment"
+              data-comment-id="{{ comment.id }}"
+              style="background: none; border: 1px solid var(--border-color); padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; color: var(--text-light); transition: all 0.2s ease;"
+              onmouseover="this.style.borderColor='var(--accent-color)'; this.style.color='var(--accent-color)'"
+              onmouseout="this.style.borderColor='var(--border-color)'; this.style.color='var(--text-light)'"
+            >
+              👍 {{ comment.likes or 0 }}
+            </button>
+          </div>
+        </div>
+
+        <div class="comment-content" style="color: var(--text-color); line-height: 1.6;">
+          {{ comment.content }}
+        </div>
+
+        {% if comment.replies and comment.replies | length %}
+        <div class="comment-replies" style="margin-top: 1rem; padding-left: 2rem; border-left: 2px solid #e2e8f0;">
+          {% for reply in comment.replies %}
+          <div class="reply-item" style="background: #f7fafc; padding: 1rem; border-radius: 6px; margin-bottom: 0.5rem;">
+            <div class="reply-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <div style="font-weight: 600; color: var(--text-color); font-size: 0.9rem;">
+                {{ reply.name }}
+              </div>
+              <div style="font-size: 0.75rem; color: var(--text-light);">
+                {{ reply.createdAt | formatDate }}
+              </div>
+            </div>
+            <div style="color: var(--text-color); font-size: 0.9rem; line-height: 1.5;">
+              {{ reply.content }}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="no-comments" style="text-align: center; padding: 3rem; color: var(--text-light);">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+      <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem; color: var(--text-color);">
+        Henüz yorum yok
+      </h3>
+      <p style="font-size: 0.9rem;">
+        İlk yorumu siz yapın!
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if hasMore %}
+  <div class="load-more-comments" style="text-align: center; margin-top: 2rem;">
+    <button
+      class="load-more-comments-btn"
+      style="background: none; border: 1px solid var(--border-color); color: var(--text-color); padding: 0.75rem 2rem; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s ease;"
+      data-article-id="{{ articleId }}"
+      data-current-count="{{ comments | length }}"
+      onmouseover="this.style.borderColor='var(--accent-color)'; this.style.color='var(--accent-color)'"
+      onmouseout="this.style.borderColor='var(--border-color)'; this.style.color='var(--text-color)'"
+    >
+      Daha Fazla Yorum Yükle
+    </button>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.comment-form input:focus,
+.comment-form textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.comment-form button:disabled {
+  background: #cbd5e0 !important;
+  cursor: not-allowed;
+}
+
+.comment-item {
+  transition: box-shadow 0.2s ease;
+}
+
+.comment-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.like-comment.liked {
+  background: var(--accent-color) !important;
+  color: white !important;
+  border-color: var(--accent-color) !important;
+}
+
+@media (max-width: 768px) {
+  .comment-form-container {
+    padding: 1rem !important;
+  }
+
+  .comment-form > div:first-child {
+    grid-template-columns: 1fr !important;
+  }
+
+  .comment-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem;
+  }
+
+  .comment-replies {
+    padding-left: 1rem !important;
+  }
+}
+
+.comment-section-widget.loading .comments-list {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.comment-form.submitting button {
+  background: #cbd5e0 !important;
+  cursor: not-allowed;
+}
+</style>
+{% endmacro %}
+

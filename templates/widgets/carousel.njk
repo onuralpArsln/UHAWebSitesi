@@ -1,0 +1,56 @@
+{% macro carousel(id, slides) %}
+<div class="carousel-widget" data-widget="carousel" data-carousel-id="{{ id }}">
+  <div class="carousel-container">
+    <div class="carousel-track">
+      {% for slide in slides %}
+      {% set image = slide.images and slide.images[0] %}
+      <div class="carousel-slide{% if loop.first %} active{% endif %}" data-article-id="{{ slide.id }}">
+        <div class="slide-image">
+          {% if image %}
+          <img
+            src="{% if loop.first %}{{ image.lowRes }}{% else %}{{ placeholder_image }}{% endif %}"
+            data-low-res="{{ image.lowRes }}"
+            data-high-res="{{ image.highRes }}"
+            alt="{{ image.alt }}"
+            width="{{ image.width }}"
+            height="{{ image.height }}"
+            {% if loop.first %}loading="eager"{% else %}loading="lazy"{% endif %}
+          >
+          {% endif %}
+        </div>
+        <div class="slide-content">
+          <h3><a href="/haber/{{ slide.slug }}">{{ slide.title }}</a></h3>
+          <p>{{ slide.summary }}</p>
+          <div class="slide-meta">
+            <span class="category">{{ slide.category }}</span>
+            <span class="date">{{ slide.publishedAt | formatDate }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="carousel-controls">
+      <button class="carousel-prev" aria-label="Önceki haber">‹</button>
+      <button class="carousel-next" aria-label="Sonraki haber">›</button>
+    </div>
+
+    <div class="carousel-indicators">
+      {% for slide in slides %}
+      <button
+        class="indicator{% if loop.first %} active{% endif %}"
+        data-slide="{{ loop.index0 }}"
+        aria-label="Haber {{ loop.index }}"
+      ></button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="carousel-ad" data-ad-slot="carousel">
+    <div class="ad-placeholder">
+      <p>Reklam Alanı</p>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+

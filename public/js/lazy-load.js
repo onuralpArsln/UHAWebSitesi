@@ -37,15 +37,16 @@ class LazyLoader {
    */
   observeImages() {
     const images = document.querySelectorAll('img[data-high-res]');
-    images.forEach(img => this.observer.observe(img));
+    images.forEach((img) => this.observer.observe(img));
   }
 
   /**
    * Handle intersection observer entries
    */
   handleIntersection(entries) {
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
       if (entry.isIntersecting) {
+        this.ensureLowResImage(entry.target);
         this.loadHighResImage(entry.target);
         this.observer.unobserve(entry.target);
       }
@@ -58,10 +59,13 @@ class LazyLoader {
   async loadHighResImage(img) {
     const highResUrl = img.dataset.highRes;
     if (!highResUrl || this.loadedImages.has(highResUrl)) {
+      this.ensureLowResImage(img);
       return;
     }
 
     try {
+      this.ensureLowResImage(img);
+
       // Add loading class
       img.classList.add('loading');
 
@@ -103,7 +107,10 @@ class LazyLoader {
    */
   loadAllImages() {
     const images = document.querySelectorAll('img[data-high-res]');
-    images.forEach(img => this.loadHighResImage(img));
+    images.forEach((img) => {
+      this.ensureLowResImage(img);
+      this.loadHighResImage(img);
+    });
   }
 
   /**
@@ -120,11 +127,12 @@ class LazyLoader {
    */
   loadVisibleImages() {
     const images = document.querySelectorAll('img[data-high-res]');
-    images.forEach(img => {
+    images.forEach((img) => {
       const rect = img.getBoundingClientRect();
       const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
       
       if (isVisible) {
+        this.ensureLowResImage(img);
         this.loadHighResImage(img);
       }
     });
@@ -137,12 +145,29 @@ class LazyLoader {
     // Preload first carousel image
     const firstCarouselImg = document.querySelector('.carousel-slide.active img[data-high-res]');
     if (firstCarouselImg) {
+      this.ensureLowResImage(firstCarouselImg);
       this.loadHighResImage(firstCarouselImg);
     }
 
     // Preload first article images
     const firstArticleImgs = document.querySelectorAll('.article-card:first-child img[data-high-res]');
-    firstArticleImgs.forEach(img => this.loadHighResImage(img));
+    firstArticleImgs.forEach((img) => {
+      this.ensureLowResImage(img);
+      this.loadHighResImage(img);
+    });
+  }
+
+  /**
+   * Ensure low-resolution image is visible before high-res loads
+   */
+  ensureLowResImage(img) {
+    if (!img) return;
+    const lowResUrl = img.dataset.lowRes;
+    if (!lowResUrl) return;
+    if (img.dataset.lowResLoaded === 'true') return;
+
+    img.src = lowResUrl;
+    img.dataset.lowResLoaded = 'true';
   }
 }
 

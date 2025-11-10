@@ -1,0 +1,95 @@
+{% extends "layouts/base.njk" %}
+{% from "widgets/carousel.njk" import carousel %}
+{% from "widgets/ad-placeholder.njk" import adPlaceholder %}
+
+{% block body %}
+<header>
+  <h1>UHA News</h1>
+  <nav>
+    <a href="/">Ana Sayfa</a>
+    <a href="/kategori/gundem">Gündem</a>
+    <a href="/kategori/ekonomi">Ekonomi</a>
+    <a href="/kategori/spor">Spor</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <h2>Son Dakika Haberleri</h2>
+    {{ carousel('home-hero', featuredArticles) }}
+  </section>
+
+  <section class="featured-articles">
+    <h3>Öne Çıkan Haberler</h3>
+    <div class="articles-grid">
+      {% for article in featuredArticles %}
+      {% set image = article.images and article.images[0] %}
+      <article class="article-card">
+        {% if image %}
+        <div class="article-image">
+          <img
+            src="{{ image.lowRes }}"
+            alt="{{ image.alt }}"
+            width="{{ image.width }}"
+            height="{{ image.height }}"
+            loading="lazy"
+            data-high-res="{{ image.highRes }}"
+          >
+        </div>
+        {% endif %}
+        <div class="article-content">
+          <h4><a href="/haber/{{ article.slug }}">{{ article.title }}</a></h4>
+          <p>{{ article.summary }}</p>
+          <div class="article-meta">
+            <span class="category">{{ article.category }}</span>
+            <span class="date">{{ article.publishedAt | formatDate }}</span>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% for section in categorySections %}
+  <section class="category-section">
+    <h3><a href="/kategori/{{ section.slug }}">{{ section.name }}</a></h3>
+    <div class="articles-list">
+      {% for article in section.articles %}
+      {% set image = article.images and article.images[0] %}
+      <article class="article-item">
+        {% if image %}
+        <div class="article-image">
+          <img
+            src="{{ image.lowRes }}"
+            alt="{{ image.alt }}"
+            width="200"
+            height="150"
+            loading="lazy"
+            data-high-res="{{ image.highRes }}"
+          >
+        </div>
+        {% endif %}
+        <div class="article-content">
+          <h4><a href="/haber/{{ article.slug }}">{{ article.title }}</a></h4>
+          <p>{{ article.summary }}</p>
+          <span class="date">{{ article.publishedAt | formatDate }}</span>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+
+  {{ adPlaceholder('home-mid', 'Reklam Alanı', '728x90') }}
+</main>
+
+<footer>
+  <p>&copy; {{ current_year }} UHA News. Tüm hakları saklıdır.</p>
+</footer>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="/js/carousel.js" defer></script>
+{% endblock %}
+

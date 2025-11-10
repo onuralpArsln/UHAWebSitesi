@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ pageTitle or 'UHA CMS' }}</title>
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/cms/css/cms.css">
+  {% block head %}{% endblock %}
+</head>
+<body class="cms-body">
+  <div class="cms-app">
+    {% block body %}{% endblock %}
+  </div>
+  <script>
+    window.__CMS_INITIAL_STATE__ = {{ initialStateJson | default('{}') | safe }};
+  </script>
+  <script src="/cms/js/cms-app.js" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
+

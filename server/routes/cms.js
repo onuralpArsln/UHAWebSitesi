@@ -1,5 +1,4 @@
 const express = require('express');
-const path = require('path');
 const DataService = require('../services/data-service');
 const URLSlugService = require('../services/url-slug');
 
@@ -7,11 +6,111 @@ const router = express.Router();
 const dataService = new DataService();
 const urlSlugService = new URLSlugService();
 
+function toArray(value, delimiter = ',') {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parts = value
+      .split(delimiter)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    return parts;
+  }
+  return [];
+}
+
+function toLineArray(value) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function toImageArray(value) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch (error) {
+      // Not JSON, fallback to line-based URLs
+    }
+
+    return toLineArray(trimmed).map((url) => ({
+      url,
+      alt: '',
+      title: ''
+    }));
+  }
+
+  return [];
+}
+
+function normalizeStatus(value) {
+  if (!value) return 'visible';
+  const normalized = value.toLowerCase();
+  return normalized === 'hidden' ? 'hidden' : 'visible';
+}
+
 /**
  * Serve CMS panel
  */
 router.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../cms/index.html'));
+  const articlesResult = dataService.getArticles({
+    page: 1,
+    limit: 50,
+    sortBy: 'creationDate',
+    sortOrder: 'desc'
+  });
+
+  const categories = dataService.getCategories();
+  const statusSummary = dataService.getArticleStatusSummary();
+
+  const stats = {
+    totalArticles: statusSummary.total,
+    totalCategories: categories.length,
+    visibleArticles: statusSummary.visible,
+    hiddenArticles: statusSummary.hidden
+  };
+
+  const settings = {
+    siteName: process.env.SITE_NAME || 'UHA News',
+    siteDescription: process.env.SITE_DESCRIPTION || 'Son haberler ve güncellemeler',
+    siteUrl: process.env.SITE_URL || `http://localhost:${process.env.PORT || 3000}`,
+    adsenseClientId: process.env.ADSENSE_CLIENT_ID || '',
+    adsenseSlotId: process.env.ADSENSE_SLOT_ID || ''
+  };
+
+  const initialState = {
+    stats,
+    articles: articlesResult.articles,
+    categories,
+    recentArticles: articlesResult.articles.slice(0, 5),
+    settings
+  };
+
+  const initialStateJson = JSON.stringify(initialState).replace(/</g, '\\u003c');
+
+  res.render('cms/pages/dashboard.njk', {
+    pageTitle: 'UHA CMS',
+    initialState,
+    initialStateJson
+  });
 });
 
 /**
@@ -116,23 +215,39 @@ router.post('/articles', async (req, res) => {
     const articleData = req.body;
 
     // Validate required fields
-    if (!articleData.title || !articleData.content) {
-      return res.status(400).json({ error: 'Title and content are required' });
+    if (!articleData.header || !articleData.body) {
+      return res.status(400).json({ error: 'Başlık ve metin alanları zorunludur' });
     }
 
-    // Generate slug
-    const slug = urlSlugService.generateSlug(articleData.title);
+    const normalizedArticle = {
+      header: articleData.header,
+      summaryHead: articleData.summaryHead,
+      summary: articleData.summary,
+      category: articleData.category,
+      tags: toArray(articleData.tags),
+      images: toImageArray(articleData.images),
+      body: articleData.body,
+      videoUrl: (articleData.videoUrl || articleData.video || '').toString().trim(),
+      writer: articleData.writer ? articleData.writer.toString().trim() : '',
+      creationDate: articleData.creationDate,
+      source: articleData.source,
+      outlinks: toLineArray(articleData.outlinks),
+      targettedViews: toArray(articleData.targettedViews),
+      relatedArticles: toArray(articleData.relatedArticles),
+      status: normalizeStatus(articleData.status),
+      pressAnnouncementId: (articleData.pressAnnouncementId || '').toString().trim()
+    };
 
     // Create article
     const newArticle = dataService.createArticle({
-      ...articleData,
+      ...normalizedArticle,
       publishedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
 
     // Store slug mapping
     if (newArticle.id) {
-      urlSlugService.getSlugForArticle(newArticle.id, newArticle.title);
+      urlSlugService.getSlugForArticle(newArticle.id, newArticle.header);
     }
 
     res.status(201).json(newArticle);
@@ -150,21 +265,53 @@ router.put('/articles/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const articleData = req.body;
+    const existingArticle = dataService.getArticleById(id);
+
+    if (!existingArticle) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
 
     // Validate required fields
-    if (!articleData.title || !articleData.content) {
-      return res.status(400).json({ error: 'Title and content are required' });
+    if (!articleData.header || !articleData.body) {
+      return res.status(400).json({ error: 'Başlık ve metin alanları zorunludur' });
     }
+
+    const normalizedArticle = {
+      header: articleData.header,
+      summaryHead: articleData.summaryHead,
+      summary: articleData.summary,
+      category: articleData.category,
+      tags: toArray(articleData.tags),
+      images: toImageArray(articleData.images),
+      body: articleData.body,
+      videoUrl: (articleData.videoUrl || articleData.video || '').toString().trim(),
+      writer: articleData.writer ? articleData.writer.toString().trim() : '',
+      creationDate: articleData.creationDate,
+      source: articleData.source,
+      outlinks: toLineArray(articleData.outlinks),
+      targettedViews: toArray(articleData.targettedViews),
+      relatedArticles: toArray(articleData.relatedArticles),
+      status: normalizeStatus(articleData.status),
+      pressAnnouncementId: (articleData.pressAnnouncementId || '').toString().trim()
+    };
+
+    const headerChanged =
+      normalizedArticle.header &&
+      normalizedArticle.header !== (existingArticle.header || existingArticle.title || '');
 
     // Update article
     const updatedArticle = dataService.updateArticle(id, {
-      ...articleData,
+      ...normalizedArticle,
       updatedAt: new Date().toISOString()
     });
 
+    if (!updatedArticle) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
     // Update slug if title changed
-    if (updatedArticle.title !== articleData.title) {
-      urlSlugService.updateSlug(id, updatedArticle.title);
+    if (headerChanged) {
+      urlSlugService.updateSlug(id, normalizedArticle.header);
     }
 
     res.json(updatedArticle);

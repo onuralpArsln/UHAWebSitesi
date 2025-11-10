@@ -1,0 +1,63 @@
+{% macro ArticleTable(articles = []) %}
+<section id="articles" class="cms-section" data-cms="articles-section">
+  <div class="cms-content">
+    <div class="cms-section-heading">
+      <h2>Haberler</h2>
+      <div class="cms-section-actions">
+        <button class="cms-btn cms-btn-secondary" data-action="refresh-articles">Yenile</button>
+        <button class="cms-btn cms-btn-primary" data-action="new-article">Yeni Haber</button>
+      </div>
+    </div>
+
+    <div class="cms-table-wrapper" data-cms="articles-table">
+      <table class="cms-table">
+        <thead>
+          <tr>
+            <th>Başlık</th>
+            <th>Kategori</th>
+            <th>Muhabir</th>
+            <th>Durum</th>
+            <th>Oluşturma</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if articles | length %}
+            {% for article in articles %}
+            <tr data-article-id="{{ article.id }}">
+              <td>
+                <strong>{{ article.header }}</strong>
+                {% if article.summaryHead %}
+                  <div class="cms-table-subline">{{ article.summaryHead }}</div>
+                {% endif %}
+              </td>
+              <td>{{ article.category or '-' }}</td>
+              <td>{{ article.writer or '-' }}</td>
+              <td>
+                {% if article.status == 'hidden' %}
+                  <span class="cms-status cms-status--hidden">Gizli</span>
+                {% else %}
+                  <span class="cms-status cms-status--visible">Yayında</span>
+                {% endif %}
+              </td>
+              <td>{{ article.creationDate | formatDate | default('-') }}</td>
+              <td class="cms-actions">
+                <button class="cms-btn cms-btn-secondary" data-action="edit-article" data-article-id="{{ article.id }}">Düzenle</button>
+                <button class="cms-btn cms-btn-danger" data-action="delete-article" data-article-id="{{ article.id }}">Sil</button>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="6" class="cms-empty-state">
+                Henüz haber bulunmuyor. “Yeni Haber” butonuyla içerik oluşturabilirsiniz.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endmacro %}
+

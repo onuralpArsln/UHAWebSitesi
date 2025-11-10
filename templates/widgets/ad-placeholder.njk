@@ -1,0 +1,11 @@
+{% macro adPlaceholder(slot='main', label='Reklam Alanı', size='300x250') %}
+<div class="ad-widget" data-widget="ad">
+  <div class="ad-container" data-ad-slot="{{ slot }}">
+    <div class="ad-placeholder">
+      <p>{{ label }}</p>
+      <small>{{ size }}</small>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+

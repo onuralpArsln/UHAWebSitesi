@@ -49,6 +49,7 @@ class Carousel {
 
     this.carousels.set(index, carousel);
     this.setupCarouselEvents(carousel);
+    this.loadCurrentSlideImage(carousel);
     this.startAutoPlay(carousel);
   }
 
@@ -225,7 +226,16 @@ class Carousel {
     if (currentSlide) {
       const img = currentSlide.querySelector('img[data-high-res]');
       if (img && window.LazyLoader) {
+        window.LazyLoader.ensureLowResImage(img);
         window.LazyLoader.loadHighResImage(img);
+      }
+    }
+
+    const nextSlide = carousel.slides[carousel.currentSlide + 1];
+    if (nextSlide) {
+      const nextImg = nextSlide.querySelector('img[data-high-res]');
+      if (nextImg && window.LazyLoader) {
+        window.LazyLoader.ensureLowResImage(nextImg);
       }
     }
   }

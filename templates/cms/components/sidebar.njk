@@ -1,0 +1,12 @@
+{% macro Sidebar(active = 'dashboard') %}
+<nav class="cms-sidebar" data-cms="sidebar">
+  <div class="cms-logo">UHA CMS</div>
+  <ul class="cms-nav">
+    <li><a href="#dashboard" class="nav-link{% if active == 'dashboard' %} active{% endif %}">Dashboard</a></li>
+    <li><a href="#articles" class="nav-link{% if active == 'articles' %} active{% endif %}">Haberler</a></li>
+    <li><a href="#categories" class="nav-link{% if active == 'categories' %} active{% endif %}">Kategoriler</a></li>
+    <li><a href="#settings" class="nav-link{% if active == 'settings' %} active{% endif %}">Ayarlar</a></li>
+  </ul>
+</nav>
+{% endmacro %}
+

@@ -1,0 +1,36 @@
+{% extends "cms/layouts/base.njk" %}
+{% from "cms/components/sidebar.njk" import Sidebar %}
+{% from "cms/components/topbar.njk" import TopBar %}
+{% from "cms/components/stats.njk" import DashboardStats %}
+{% from "cms/components/recent-articles.njk" import RecentArticles %}
+{% from "cms/components/article-table.njk" import ArticleTable %}
+{% from "cms/components/category-table.njk" import CategoryTable %}
+{% from "cms/components/settings-form.njk" import SettingsForm %}
+{% from "cms/components/article-form-modal.njk" import ArticleFormModal %}
+
+{% set articles = initialState.articles or [] %}
+{% set categories = initialState.categories or [] %}
+{% set stats = initialState.stats or {} %}
+
+{% block body %}
+{{ Sidebar('dashboard') }}
+<main class="cms-main">
+  {{ TopBar('Dashboard') }}
+
+  <section id="dashboard" class="cms-section cms-section--dashboard active" data-cms="dashboard-section">
+    <div class="cms-grid">
+      {{ DashboardStats(stats) }}
+      {{ RecentArticles(initialState.recentArticles or []) }}
+    </div>
+  </section>
+
+  {{ ArticleTable(articles) }}
+
+  {{ CategoryTable(categories) }}
+
+  {{ SettingsForm(initialState.settings or {}) }}
+</main>
+
+{{ ArticleFormModal(categories) }}
+{% endblock %}
+

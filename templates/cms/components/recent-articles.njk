@@ -1,0 +1,21 @@
+{% macro RecentArticles(articles = []) %}
+<section class="cms-card" data-cms="recent-articles">
+  <h3>Son Haberler</h3>
+  {% if articles | length %}
+  <ul class="cms-list">
+    {% for article in articles %}
+    <li>
+      <div class="cms-list__title">{{ article.header }}</div>
+      <div class="cms-list__meta">
+        {{ article.category or 'Kategori yok' }} •
+        {{ article.creationDate | formatDate | default('tarih yok') }}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="cms-empty-state">Henüz haber bulunmuyor.</p>
+  {% endif %}
+</section>
+{% endmacro %}
+

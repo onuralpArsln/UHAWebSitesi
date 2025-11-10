@@ -1,0 +1,24 @@
+{% macro DashboardStats(stats = {}) %}
+<section class="cms-content cms-content--stats" data-cms="stats">
+  <h2>Özet</h2>
+  <div class="cms-stats">
+    <div class="cms-stat-card">
+      <div class="cms-stat-number">{{ stats.totalArticles or 0 }}</div>
+      <div class="cms-stat-label">Toplam Haber</div>
+    </div>
+    <div class="cms-stat-card">
+      <div class="cms-stat-number">{{ stats.totalCategories or 0 }}</div>
+      <div class="cms-stat-label">Kategori</div>
+    </div>
+    <div class="cms-stat-card">
+      <div class="cms-stat-number">{{ stats.visibleArticles or 0 }}</div>
+      <div class="cms-stat-label">Yayında</div>
+    </div>
+    <div class="cms-stat-card">
+      <div class="cms-stat-number">{{ stats.hiddenArticles or 0 }}</div>
+      <div class="cms-stat-label">Gizli</div>
+    </div>
+  </div>
+</section>
+{% endmacro %}
+

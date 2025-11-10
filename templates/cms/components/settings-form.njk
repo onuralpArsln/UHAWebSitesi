@@ -1,0 +1,35 @@
+{% macro SettingsForm(settings = {}) %}
+<section id="settings" class="cms-section" data-cms="settings-section">
+  <div class="cms-content">
+    <h2>Site Ayarları</h2>
+    <form class="cms-form" data-cms="settings-form">
+      <div class="form-group">
+        <label for="field-site-name">Site Adı</label>
+        <input id="field-site-name" name="siteName" type="text" value="{{ settings.siteName or '' }}">
+      </div>
+      <div class="form-group">
+        <label for="field-site-description">Site Açıklaması</label>
+        <textarea id="field-site-description" name="siteDescription" rows="3">{{ settings.siteDescription or '' }}</textarea>
+      </div>
+      <div class="cms-form__grid">
+        <div class="form-group">
+          <label for="field-site-url">Site URL</label>
+          <input id="field-site-url" name="siteUrl" type="url" value="{{ settings.siteUrl or '' }}">
+        </div>
+        <div class="form-group">
+          <label for="field-adsense-client">AdSense Client ID</label>
+          <input id="field-adsense-client" name="adsenseClientId" type="text" value="{{ settings.adsenseClientId or '' }}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="field-adsense-slot">AdSense Slot ID</label>
+        <input id="field-adsense-slot" name="adsenseSlotId" type="text" value="{{ settings.adsenseSlotId or '' }}">
+      </div>
+      <footer class="cms-form__footer">
+        <button type="submit" class="cms-btn cms-btn-primary" data-action="save-settings">Kaydet</button>
+      </footer>
+    </form>
+  </div>
+</section>
+{% endmacro %}
+

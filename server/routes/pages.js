@@ -1,11 +1,14 @@
 const express = require('express');
-const SSREngine = require('../ssr-engine');
 const DataService = require('../services/data-service');
 const URLSlugService = require('../services/url-slug');
 const SitemapService = require('../services/sitemap');
+const {
+  buildMeta,
+  buildNewsArticleSchema,
+  optimizeImageData
+} = require('../services/view-helpers');
 
 const router = express.Router();
-const ssrEngine = new SSREngine();
 const dataService = new DataService();
 const urlSlugService = new URLSlugService();
 const sitemapService = new SitemapService(dataService, urlSlugService);
@@ -48,26 +51,24 @@ router.get('/', async (req, res) => {
     }
 
     // Prepare page data
+    const meta = buildMeta({
+      image: process.env.SITE_URL
+        ? `${process.env.SITE_URL}/static/images/og-home.jpg`
+        : '/static/images/og-home.jpg'
+    });
+
     const pageData = {
-      meta: {
-        title: process.env.SITE_NAME || 'UHA News',
-        description: process.env.SITE_DESCRIPTION || 'Son dakika haberleri ve güncel gelişmeler',
-        url: process.env.SITE_URL || 'http://localhost:3000',
-        image: `${process.env.SITE_URL}/static/images/og-home.jpg`,
-        type: 'website'
-      },
+      meta,
       featuredArticles: featuredArticles.articles.map(article => ({
         ...article,
         slug: urlSlugService.getSlugById(article.id) || 
               urlSlugService.generateSlug(article.title)
       })),
-      categorySections
+      categorySections,
+      jsonLd: null
     };
 
-    // Render page
-    const html = await ssrEngine.render('pages/home.html', pageData);
-    res.send(html);
-
+    res.render('pages/home.njk', pageData);
   } catch (error) {
     console.error('Homepage error:', error);
     res.status(500).send('Internal Server Error');
@@ -99,30 +100,36 @@ router.get('/haber/:slug', async (req, res) => {
     const relatedArticles = dataService.getRelatedArticles(articleId, 4);
 
     // Prepare page data
+    const meta = buildMeta({
+      title: `${article.title} - ${process.env.SITE_NAME || 'UHA News'}`,
+      description: article.summary,
+      url: `${process.env.SITE_URL || 'http://localhost:3000'}/haber/${slug}`,
+      image: article.images?.[0]?.highRes,
+      type: 'article'
+    });
+
+    const articleSchema = buildNewsArticleSchema({
+      ...article,
+      slug,
+      images: optimizeImageData(article.images)
+    });
+
     const pageData = {
-      meta: {
-        title: `${article.title} - ${process.env.SITE_NAME}`,
-        description: article.summary,
-        url: `${process.env.SITE_URL}/haber/${slug}`,
-        image: article.images?.[0]?.highRes,
-        type: 'article'
-      },
+      meta,
       article: {
         ...article,
         slug,
-        images: ssrEngine.optimizeImageData(article.images)
+        images: optimizeImageData(article.images)
       },
       relatedArticles: relatedArticles.map(related => ({
         ...related,
         slug: urlSlugService.getSlugById(related.id) || 
               urlSlugService.generateSlug(related.title)
-      }))
+      })),
+      jsonLd: articleSchema
     };
 
-    // Render page
-    const html = await ssrEngine.render('pages/article.html', pageData);
-    res.send(html);
-
+    res.render('pages/article.njk', pageData);
   } catch (error) {
     console.error('Article page error:', error);
     res.status(500).send('Internal Server Error');
@@ -170,14 +177,17 @@ router.get('/kategori/:categorySlug', async (req, res) => {
     };
 
     // Prepare page data
+    const meta = buildMeta({
+      title: `${category.name} Haberleri - ${process.env.SITE_NAME || 'UHA News'}`,
+      description: `${category.name} kategorisindeki son haberler ve güncel gelişmeler`,
+      url: `${process.env.SITE_URL || 'http://localhost:3000'}/kategori/${categorySlug}`,
+      image: process.env.SITE_URL
+        ? `${process.env.SITE_URL}/static/images/category-${categorySlug}.jpg`
+        : `/static/images/category-${categorySlug}.jpg`
+    });
+
     const pageData = {
-      meta: {
-        title: `${category.name} Haberleri - ${process.env.SITE_NAME}`,
-        description: `${category.name} kategorisindeki son haberler ve güncel gelişmeler`,
-        url: `${process.env.SITE_URL}/kategori/${categorySlug}`,
-        image: `${process.env.SITE_URL}/static/images/category-${categorySlug}.jpg`,
-        type: 'website'
-      },
+      meta,
       category: {
         ...category,
         slug: categorySlug
@@ -187,13 +197,11 @@ router.get('/kategori/:categorySlug', async (req, res) => {
         slug: urlSlugService.getSlugById(article.id) || 
               urlSlugService.generateSlug(article.title)
       })),
-      pagination
+      pagination,
+      jsonLd: null
     };
 
-    // Render page
-    const html = await ssrEngine.render('pages/category.html', pageData);
-    res.send(html);
-
+    res.render('pages/category.njk', pageData);
   } catch (error) {
     console.error('Category page error:', error);
     res.status(500).send('Internal Server Error');
@@ -234,26 +242,25 @@ router.get('/arama', async (req, res) => {
     };
 
     // Prepare page data
+    const meta = buildMeta({
+      title: `"${query}" Arama Sonuçları - ${process.env.SITE_NAME || 'UHA News'}`,
+      description: `"${query}" için arama sonuçları`,
+      url: `${process.env.SITE_URL || 'http://localhost:3000'}/arama?q=${encodeURIComponent(query)}`
+    });
+
     const pageData = {
-      meta: {
-        title: `"${query}" Arama Sonuçları - ${process.env.SITE_NAME}`,
-        description: `"${query}" için arama sonuçları`,
-        url: `${process.env.SITE_URL}/arama?q=${encodeURIComponent(query)}`,
-        type: 'website'
-      },
+      meta,
       searchQuery: query,
       articles: searchResults.articles.map(article => ({
         ...article,
         slug: urlSlugService.getSlugById(article.id) || 
               urlSlugService.generateSlug(article.title)
       })),
-      pagination
+      pagination,
+      jsonLd: null
     };
 
-    // Render page (using category template for now)
-    const html = await ssrEngine.render('pages/category.html', pageData);
-    res.send(html);
-
+    res.render('pages/search.njk', pageData);
   } catch (error) {
     console.error('Search page error:', error);
     res.status(500).send('Internal Server Error');

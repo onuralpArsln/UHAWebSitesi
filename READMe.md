@@ -1,19 +1,30 @@
 # UHA Haber Sitesi - Yüksek Performanslı SSR Haber Sistemi
 
+## How to Launch
+- `npm install`
+- Copy `.env.example` to `.env` (opsiyonel); en azından `PORT` ve `SITE_URL` ayarlarını yap
+- Geliştirme için `npm run dev`, production için `node server/index.js` veya `pm2 start server/index.js --name uha-news`
+- Site `http://localhost:3000` adresinde, CMS `http://localhost:3000/cms` altında açılır
+
+## How to Use
+- Haberleri, kategorileri ve site ayarlarını yönetmek için CMS panelini (`/cms`) kullan
+- Frontend otomatik olarak SSR ile haberleri yayınlar; URL slug’ları ve sitemap’ler arka planda üretilir
+- Yeni veriler SQLite veritabanına (`data/news.db`) kaydedilir ve ilk çalıştırmada otomatik oluşturulur
+
 ## 📋 Mevcut Durum
 
 **Bağımsız Haber Sitesi** - Bu, tam özellikli, kendi kendine yeten bir haber sitesidir:
 - ✅ **SQLite3 Veritabanı** - Tüm veriler yerel olarak saklanır, harici backend gerekmez
 - ✅ **Editör CMS Paneli** - Tam özellikli içerik yönetim sistemi
 - ✅ **Halka Açık Frontend** - Ziyaretçiler için SEO optimize edilmiş haber sitesi
-- ✅ **Sunucu Tarafı Render** - Optimal performans için özel SSR motoru
+- ✅ **Sunucu Tarafı Render** - Nunjucks tabanlı şablon sistemi ile hızlı SSR
 
 ## 🏗️ Mimari
 
 ### Teknoloji Yığını
 - **Backend**: Node.js + Express
 - **Veritabanı**: SQLite3 (better-sqlite3)
-- **Şablonlama**: Özel SSR motoru
+- **Şablonlama**: Nunjucks + makrolar (React benzeri fragment yapısı)
 - **Depolama**: Dosya tabanlı SQLite veritabanı (`data/news.db`)
 
 ### Proje Yapısı
@@ -28,18 +39,17 @@ UHAWebSitesi/
 │   ├── services/       # İş mantığı
 │   │   ├── data-service.js    # SQLite3 veritabanı servisi
 │   │   ├── url-slug.js        # URL slug yönetimi
-│   │   └── sitemap.js         # Sitemap oluşturma
-│   └── ssr-engine.js   # Sunucu tarafı render motoru
-├── cms/                # Editör/Admin Paneli
-│   ├── index.html      # CMS dashboard arayüzü
-│   ├── css/            # CMS'e özel stiller
-│   └── js/             # CMS JavaScript (cms-app.js)
+│   │   ├── sitemap.js         # Sitemap oluşturma
+│   │   └── view-helpers.js    # Meta & JSON-LD yardımcıları
 ├── public/             # Halka açık website varlıkları
 │   ├── css/            # Frontend stilleri
-│   └── js/             # Frontend JavaScript
+│   ├── js/             # Frontend JavaScript
+│   └── cms/            # CMS panel statik varlıkları (css, js)
 ├── templates/          # HTML şablonları
-│   ├── pages/          # Sayfa şablonları (home, article, category)
-│   └── widgets/        # Yeniden kullanılabilir widget şablonları
+│   ├── layouts/        # Ortak layout'lar
+│   ├── pages/          # Sayfa şablonları (home, article, category, search)
+│   ├── widgets/        # Makro tabanlı, yeniden kullanılabilir fragment'lar
+│   └── cms/            # CMS paneli layout ve bileşenleri
 └── data/               # Veritabanı depolama (gitignore)
     └── news.db         # SQLite3 veritabanı dosyası
 ```
@@ -137,21 +147,24 @@ Editör paneline erişmek için `http://localhost:3000/cms` adresini ziyaret edi
 ### Özellikler
 
 #### Makale Yönetimi
-- **Tüm Makaleleri Görüntüle**: Başlık, kategori, yazar ve oluşturma tarihiyle tüm makaleleri tablo halinde görüntüle
-- **Yeni Makale Ekle**: "New Article" butonuna tıklayarak şunlarla makale oluştur:
-  - Header (Başlık) - zorunlu
-  - Summary Head - opsiyonel kısa başlık
-  - Summary - makale özeti
-  - Body (İçerik) - zorunlu, HTML formatı
-  - Category - zorunlu dropdown
-  - Writer (Yazar) - zorunlu
-  - Source - haber kaynağı
-  - Tags - virgülle ayrılmış anahtar kelimeler
-  - Images - JSON dizisi veya satır başına bir URL
-  - Outlinks - harici linkler, satır başına bir
-  - Targeted Views - gösterileceği yerler (homepage, breaking-news, category, sidebar)
-- **Makale Düzenle**: Herhangi bir makalede "Edit"e tıklayarak tüm alanları düzenle
-- **Makale Sil**: Onay diyaloğuyla "Delete"e tıkla
+- **Tüm Makaleleri Görüntüle**: Tablo, başlık/kategori/muhabir/durum bilgilerini listeler
+- **Yeni Haber Ekle**: `Yeni Haber` butonu aşağıdaki alanlarla modern formu açar:
+  - **Başlık (`header`)** – zorunlu, haber başlığı
+  - **Özet Başlık (`summaryHead`)** – opsiyonel, listelerde kullanılan yardımcı başlık
+  - **Özet (`summary`)** – kart görünümleri için kısa açıklama
+  - **Metin (`body`)** – zorunlu, haberin tamamı (HTML desteklenir)
+  - **Kategori (`category`)** – zorunlu, mevcut kategorilerden seçim
+  - **Etiketler (`tags`)** – virgülle ayrılmış anahtar kelimeler
+  - **Görseller (`images`)** – JSON dizi veya satır başına URL
+  - **Video (`videoUrl`)** – gömülü oynatıcı için video bağlantısı
+  - **Kaynak (`source`)** – haber kaynağı
+  - **Muhabir (`writer`)** – içeriği hazırlayan kişi
+  - **Durum (`status`)** – `Yayında` veya `Gizli`
+  - **Basın İlan ID (`pressAnnouncementId`)** – özel duyuru numarası (opsiyonel)
+  - **Hedef (`targettedViews`)** – carousel, manşet, akış vb. alanlar için çoklu seçim
+  - **Dış Bağlantılar (`outlinks`)** – referans URL listesi
+- **Makale Düzenle**: Satırdaki `Düzenle` butonuyla tüm alanları güncelleyerek formu açar
+- **Makale Sil**: Onay diyaloğu ile kalıcı olarak kaldırır
 
 #### Dashboard
 - İstatistik özeti (toplam makaleler, kategoriler)
@@ -168,11 +181,18 @@ Editör paneline erişmek için `http://localhost:3000/cms` adresini ziyaret edi
 - AdSense ayarları
 - Site metadata
 
+### Şablon & Bileşen Yapısı
+- `templates/cms/layouts/base.njk` – CMS sayfaları için temel şablon
+- `templates/cms/components/` – sidebar, topbar, tablo ve formları içeren makrolar
+- `templates/cms/pages/dashboard.njk` – panelde render edilen ana sayfa
+- `public/cms/` – panelin stil ve javascript dosyaları
+
 ### CMS Form İpuçları
-- **Görseller**: JSON dizisi olarak girin `[{"url":"...","alt":"..."}]` veya satır başına bir URL
-- **Harici Linkler**: Satır başına bir URL
-- **Etiketler**: Virgülle ayrılmış (örn: "etiket1, etiket2, etiket3")
-- **Hedeflenen Görünümler**: Virgülle ayrılmış (örn: "homepage, breaking-news")
+- **Görseller**: JSON dizisi `[{"url":"...","alt":"..."}]` veya her satıra bir URL girin
+- **Harici Linkler**: Her satıra bir URL yazarak ekleyebilirsiniz
+- **Etiketler**: Virgülle ayırın (örn. `ekonomi, büyüme`)
+- **Hedef Alanlar**: Formdaki çoklu seçim kutularından alan seçin; API tarafında dizi olarak saklanır
+- **Durum**: `Yayında` → `visible`, `Gizli` → `hidden` olarak kaydedilir
 
 ## 🌐 Halka Açık Frontend
 
@@ -198,7 +218,7 @@ Editör paneline erişmek için `http://localhost:3000/cms` adresini ziyaret edi
 ## ✨ Özellikler Genel Bakış
 
 ### Temel Özellikler
-- ✅ **Özel SSR Motoru** - Sunucu tarafı render ile React benzeri şablonlama
+- ✅ **Nunjucks SSR** - Sunucu tarafında, makro tabanlı React benzeri şablonlama
 - ✅ **SQLite3 Veritabanı** - Yerel, dosya tabanlı depolama (harici backend yok)
 - ✅ **CMS Paneli** - Tam özellikli editör arayüzü
 - ✅ **SEO Optimize** - JSON-LD şemaları, meta etiketler, sitemap'ler, dost URL'ler
@@ -206,6 +226,7 @@ Editör paneline erişmek için `http://localhost:3000/cms` adresini ziyaret edi
 - ✅ **AdSense Hazır** - Akıllı yenileme tetikleri, lazy loading, mobil optimizasyon
 - ✅ **Progressive Loading** - Düşük çözünürlüklü WebP → yüksek çözünürlüklü asenkron yükleme
 - ✅ **Widget Sistemi** - Carousel, reklamlar, ilgili haberler, yorumlar
+- ✅ **Akıllı Carousel** - İlk görseli anında gönderir, kalan 24 görseli ihtiyaç halinde lazy load eder
 
 ### Makale Özellikleri
 - Başlık, özet, içerik, görsellerle zengin makale yapısı
@@ -341,7 +362,7 @@ Mobil site başarısı SEO için daha önemli. Yapay zeka sayesinde hızlı habe
 - `dotenv` - Ortam değişkenleri
 - `slugify` - URL slug oluşturma
 - `sharp` - Görsel işleme
-- `cheerio` - HTML parsing
+- `nunjucks` - Sunucu tarafında şablonlama
 - `xml2js` - XML parsing
 - `node-cache` - Önbellekleme
 

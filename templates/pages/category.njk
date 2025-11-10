@@ -1,0 +1,251 @@
+{% extends "layouts/base.njk" %}
+{% from "widgets/ad-placeholder.njk" import adPlaceholder %}
+
+{% block head_extra %}
+<meta name="keywords" content="{{ category.name }}, haber, güncel">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary-color: #1a365d;
+    --secondary-color: #2d3748;
+    --accent-color: #3182ce;
+    --text-color: #2d3748;
+    --text-light: #718096;
+    --bg-color: #ffffff;
+    --border-color: #e2e8f0;
+    --article-card-height: 300px;
+    --ad-placeholder-height: 250px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background: var(--bg-color);
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+  .header {
+    background: var(--primary-color);
+    color: white;
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header h1 { font-size: 1.5rem; font-weight: 700; }
+
+  .breadcrumb {
+    background: #f7fafc;
+    padding: 0.5rem 0;
+    font-size: 0.875rem;
+    color: var(--text-light);
+  }
+
+  .breadcrumb a { color: var(--accent-color); text-decoration: none; }
+
+  .category-header {
+    margin: 2rem 0;
+    text-align: center;
+  }
+
+  .category-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+  }
+
+  .category-description {
+    font-size: 1.1rem;
+    color: var(--text-light);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .articles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .article-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+    height: var(--article-card-height);
+  }
+
+  .article-card:hover { transform: translateY(-2px); }
+
+  .article-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    background: #f7fafc;
+  }
+
+  .article-content {
+    padding: 1rem;
+  }
+
+  .article-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+  }
+
+  .article-meta {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    margin-bottom: 0.5rem;
+  }
+
+  .article-summary {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    line-height: 1.5;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin: 3rem 0;
+  }
+
+  .pagination a, .pagination span {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    text-decoration: none;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+  }
+
+  .pagination a:hover {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+  }
+
+  .pagination .current {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+  }
+
+  .footer {
+    background: var(--secondary-color);
+    color: white;
+    padding: 2rem 0;
+    text-align: center;
+    margin-top: 3rem;
+  }
+
+  @media (max-width: 768px) {
+    .articles-grid { grid-template-columns: 1fr; }
+    .container { padding: 0 15px; }
+    .category-title { font-size: 2rem; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<header class="header">
+  <div class="container">
+    <h1><a href="/" style="color: inherit; text-decoration: none;">{{ meta.title }}</a></h1>
+  </div>
+</header>
+
+<nav class="breadcrumb">
+  <div class="container">
+    <a href="/">Ana Sayfa</a>
+    <span> &gt; </span>
+    <span>{{ category.name }}</span>
+  </div>
+</nav>
+
+<main class="main-content">
+  <div class="container">
+    <header class="category-header">
+      <h1 class="category-title">{{ category.name }} Haberleri</h1>
+      <p class="category-description">{{ category.description }}</p>
+    </header>
+
+    {{ adPlaceholder('category-top', 'Reklam Alanı', '728x90') }}
+
+    <section class="articles-section">
+      <div class="articles-grid">
+        {% for article in articles %}
+        {% set image = article.images and article.images[0] %}
+        <article class="article-card">
+          {% if image %}
+          <img
+            src="{{ image.lowRes }}"
+            alt="{{ image.alt }}"
+            class="article-image"
+            width="{{ image.width }}"
+            height="{{ image.height }}"
+            data-high-res="{{ image.highRes }}"
+            loading="lazy"
+          >
+          {% endif %}
+          <div class="article-content">
+            <div class="article-meta">
+              <time datetime="{{ article.publishedAt }}">{{ article.publishedAt | formatDate }}</time>
+            </div>
+            <h2 class="article-title">
+              <a href="/haber/{{ article.slug }}" style="color: inherit; text-decoration: none;">
+                {{ article.title }}
+              </a>
+            </h2>
+            <p class="article-summary">{{ article.summary }}</p>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    {% if pagination and pagination.totalPages and pagination.totalPages > 1 %}
+    <nav class="pagination">
+      {% if pagination.hasPrev %}
+      <a href="?page={{ pagination.prevPage }}">« Önceki</a>
+      {% endif %}
+
+      {% for page in pagination.pages %}
+      {% if page.isCurrent %}
+      <span class="current">{{ page.number }}</span>
+      {% else %}
+      <a href="?page={{ page.number }}">{{ page.number }}</a>
+      {% endif %}
+      {% endfor %}
+
+      {% if pagination.hasNext %}
+      <a href="?page={{ pagination.nextPage }}">Sonraki »</a>
+      {% endif %}
+    </nav>
+    {% endif %}
+
+    {{ adPlaceholder('category-bottom', 'Reklam Alanı', '728x90') }}
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <p>&copy; {{ current_year }} {{ meta.title }}. Tüm hakları saklıdır.</p>
+  </div>
+</footer>
+{% endblock %}
+

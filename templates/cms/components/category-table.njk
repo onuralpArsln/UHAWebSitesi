@@ -1,0 +1,45 @@
+{% macro CategoryTable(categories = []) %}
+<section id="categories" class="cms-section" data-cms="categories-section">
+  <div class="cms-content">
+    <div class="cms-section-heading">
+      <h2>Kategoriler</h2>
+      <div class="cms-section-actions">
+        <button class="cms-btn cms-btn-primary" data-action="new-category">Yeni Kategori</button>
+      </div>
+    </div>
+
+    <div class="cms-table-wrapper" data-cms="categories-table">
+      <table class="cms-table">
+        <thead>
+          <tr>
+            <th>Ad</th>
+            <th>Açıklama</th>
+            <th>Haber Sayısı</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if categories | length %}
+            {% for category in categories %}
+            <tr data-category-id="{{ category.id }}">
+              <td>{{ category.name }}</td>
+              <td>{{ category.description or '-' }}</td>
+              <td>{{ category.articleCount or 0 }}</td>
+              <td class="cms-actions">
+                <button class="cms-btn cms-btn-secondary" data-action="edit-category" data-category-id="{{ category.id }}">Düzenle</button>
+                <button class="cms-btn cms-btn-danger" data-action="delete-category" data-category-id="{{ category.id }}">Sil</button>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" class="cms-empty-state">Henüz kategori bulunmuyor.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endmacro %}
+
