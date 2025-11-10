@@ -1,0 +1,144 @@
+{% macro ArticleEditor(categories = [], targetOptions = []) %}
+<section id="article-editor" class="cms-section" data-cms="editor-section" hidden>
+  <div class="cms-content cms-content--editor">
+    <header class="cms-editor-header">
+      <div>
+        <h2 data-cms="editor-title">Yeni Haber</h2>
+        <p class="cms-editor-subtitle">
+          Alanların üzerine gelip ipuçlarını takip ederek hızlıca içerik ekleyebilirsiniz. Kaydet'e
+          basmadan çıkarsanız değişiklikler korunmaz.
+        </p>
+      </div>
+      <div class="cms-editor-actions">
+        <button type="button" class="cms-btn cms-btn-secondary" data-action="cancel-editor">Listeye Dön</button>
+        <button type="submit" form="cms-article-form" class="cms-btn cms-btn-primary" data-action="save-article">
+          Kaydet
+        </button>
+      </div>
+    </header>
+
+    <form id="cms-article-form" class="cms-form cms-form--editor" data-cms="article-form">
+      <section class="cms-editor-section">
+        <h3>Temel Bilgiler</h3>
+        <div class="cms-form__grid cms-form__grid--two">
+          <div class="form-group">
+            <label for="field-header">Başlık *</label>
+            <input id="field-header" name="header" type="text" required placeholder="Haberi tanımlayan başlık">
+            <small>Kısa, açıklayıcı ve anahtar kelime içeren bir başlık kullanın.</small>
+          </div>
+          <div class="form-group">
+            <label for="field-summaryHead">Özet Başlık</label>
+            <input id="field-summaryHead" name="summaryHead" type="text" placeholder="Liste ve kart görünümleri için ikincil başlık">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="field-summary">Özet</label>
+          <textarea id="field-summary" name="summary" rows="3" placeholder="140-160 karakterlik kısa özet"></textarea>
+          <small>Özet arama sonuçlarında ve listelerde kullanılır.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="field-body">Metin *</label>
+          <textarea id="field-body" name="body" rows="14" required placeholder="Haberin tam metnini yazın veya yapıştırın. HTML etiketleri desteklenir."></textarea>
+          <small>Paragrafları ayırmak için boş satır bırakın. Gerekirse başlıklar için <code>&lt;h2&gt;</code> kullanabilirsiniz.</small>
+        </div>
+      </section>
+
+      <section class="cms-editor-section">
+        <h3>Kategori & Etiketler</h3>
+        <div class="cms-form__grid cms-form__grid--two">
+          <div class="form-group">
+            <label for="field-category">Kategori *</label>
+            <select id="field-category" name="category" required>
+              <option value="">Kategori seçin</option>
+              {% for category in categories %}
+                <option value="{{ category.name }}">{{ category.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="field-tags">Etiketler</label>
+            <input id="field-tags" name="tags" type="text" placeholder="Virgülle ayırın (örn. ekonomi, büyüme)">
+            <small>Etiketler benzer içerikleri otomatik olarak ilişkilendirmek için kullanılır.</small>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Hedef Alanlar</label>
+          <div class="cms-checkbox-grid" data-cms="targetted-views">
+            {% for target in targetOptions %}
+            <label class="cms-checkbox">
+              <input type="checkbox" name="targettedViews" value="{{ target }}">
+              <span>{{ target | capitalize }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          <small>Haberi hangi alanlarda göstermek istediğinizi seçin (ör. carousel, manşet, akış).</small>
+        </div>
+      </section>
+
+      <section class="cms-editor-section">
+        <h3>Medya & Bağlantılar</h3>
+        <div class="cms-form__grid cms-form__grid--two">
+          <div class="form-group">
+            <label for="field-images">Görseller</label>
+            <textarea id="field-images" name="images" rows="4" placeholder='["https://...","https://..."] veya her satıra bir URL'></textarea>
+            <small>JSON formatında detay verebilir veya satır satır görsel URL'leri ekleyebilirsiniz.</small>
+          </div>
+          <div class="form-group">
+            <label for="field-videoUrl">Video URL</label>
+            <input id="field-videoUrl" name="videoUrl" type="url" placeholder="YouTube veya gömülebilir video bağlantısı">
+            <small>Video varsa YouTube, Vimeo vb. embed URL'sini girin.</small>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="field-outlinks">Dış Bağlantılar</label>
+          <textarea id="field-outlinks" name="outlinks" rows="3" placeholder="Her satıra bir referans bağlantısı"></textarea>
+          <small>Kaynaklara veya ilgili sayfalara bağlantılar ekleyebilirsiniz.</small>
+        </div>
+      </section>
+
+      <section class="cms-editor-section">
+        <h3>Ek Bilgiler</h3>
+        <div class="cms-form__grid cms-form__grid--two">
+          <div class="form-group">
+            <label for="field-writer">Muhabir *</label>
+            <input id="field-writer" name="writer" type="text" required placeholder="Haberi hazırlayan kişi">
+          </div>
+          <div class="form-group">
+            <label for="field-source">Kaynak</label>
+            <input id="field-source" name="source" type="text" placeholder="Haber kaynağı (örn. AA, Reuters)">
+          </div>
+        </div>
+
+        <div class="cms-form__grid cms-form__grid--two">
+          <div class="form-group">
+            <label for="field-pressAnnouncementId">Basın İlan ID</label>
+            <input id="field-pressAnnouncementId" name="pressAnnouncementId" type="text" placeholder="Opsiyonel duyuru numarası">
+          </div>
+          <div class="form-group">
+            <label for="field-status">Durum *</label>
+            <select id="field-status" name="status" required>
+              <option value="visible">Yayında (hemen görünür)</option>
+              <option value="hidden">Gizli (taslak olarak kalır)</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <footer class="cms-editor-footer">
+        <div class="cms-editor-hint">
+          <strong>İpucu:</strong> Kaydet'e bastığınızda haber otomatik olarak listede güncellenir. Yayında bırakmak istemiyorsanız durumu “Gizli” yapabilirsiniz.
+        </div>
+        <div class="cms-editor-actions">
+          <button type="button" class="cms-btn cms-btn-secondary" data-action="cancel-editor">İptal</button>
+          <button type="submit" class="cms-btn cms-btn-primary" data-action="save-article">Kaydet</button>
+        </div>
+      </footer>
+    </form>
+  </div>
+</section>
+{% endmacro %}
+

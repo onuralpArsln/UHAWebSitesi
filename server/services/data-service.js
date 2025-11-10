@@ -15,6 +15,12 @@ class DataService {
       fs.mkdirSync(dataDir, { recursive: true });
     }
 
+    // Ensure branding upload directory exists
+    const brandingUploadDir = path.join(__dirname, '../../public/uploads/branding');
+    if (!fs.existsSync(brandingUploadDir)) {
+      fs.mkdirSync(brandingUploadDir, { recursive: true });
+    }
+
     // Initialize database
     const dbPath = path.join(dataDir, 'news.db');
     this.db = new Database(dbPath);
@@ -24,6 +30,9 @@ class DataService {
     
     // Initialize schema
     this.initializeDatabase();
+
+    // Ensure branding defaults exist
+    this.ensureBrandingDefaults();
     
     // Migrate mock data if database is empty
     this.migrateMockDataIfNeeded();
@@ -84,6 +93,20 @@ class DataService {
       CREATE INDEX IF NOT EXISTS idx_articles_targettedViews ON articles(targettedViews);
       CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name);
     `);
+
+    // Create branding table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS branding (
+        id TEXT PRIMARY KEY,
+        siteName TEXT,
+        primaryColor TEXT,
+        secondaryColor TEXT,
+        accentColor TEXT,
+        headerLogo TEXT,
+        footerLogo TEXT,
+        updatedAt TEXT
+      )
+    `);
   }
 
   /**
@@ -136,6 +159,76 @@ class DataService {
     } catch (error) {
       console.error('⚠️ Schema migration error (might be expected on first run):', error.message);
     }
+  }
+
+  /**
+   * Ensure branding defaults exist
+   */
+  ensureBrandingDefaults() {
+    const existing = this.db.prepare('SELECT COUNT(*) as count FROM branding').get();
+    if (!existing || existing.count === 0) {
+      const now = new Date().toISOString();
+      this.db.prepare(`
+        INSERT INTO branding (id, siteName, primaryColor, secondaryColor, accentColor, headerLogo, footerLogo, updatedAt)
+        VALUES (@id, @siteName, @primaryColor, @secondaryColor, @accentColor, @headerLogo, @footerLogo, @updatedAt)
+      `).run({
+        id: 'branding',
+        siteName: 'UHA News',
+        primaryColor: '#1a365d',
+        secondaryColor: '#2d3748',
+        accentColor: '#3182ce',
+        headerLogo: '',
+        footerLogo: '',
+        updatedAt: now
+      });
+    }
+  }
+
+  /**
+   * Retrieve branding information
+   */
+  getBranding() {
+    const row = this.db.prepare('SELECT * FROM branding WHERE id = ?').get('branding');
+    if (!row) {
+      this.ensureBrandingDefaults();
+      return this.getBranding();
+    }
+
+    return {
+      siteName: row.siteName || 'UHA News',
+      primaryColor: row.primaryColor || '#1a365d',
+      secondaryColor: row.secondaryColor || '#2d3748',
+      accentColor: row.accentColor || '#3182ce',
+      headerLogo: row.headerLogo || '',
+      footerLogo: row.footerLogo || '',
+      updatedAt: row.updatedAt || new Date().toISOString()
+    };
+  }
+
+  /**
+   * Update branding information
+   */
+  updateBranding(brandingData = {}) {
+    const current = this.getBranding();
+    const updated = {
+      ...current,
+      ...brandingData,
+      updatedAt: new Date().toISOString()
+    };
+
+    this.db.prepare(`
+      UPDATE branding
+      SET siteName = @siteName,
+          primaryColor = @primaryColor,
+          secondaryColor = @secondaryColor,
+          accentColor = @accentColor,
+          headerLogo = @headerLogo,
+          footerLogo = @footerLogo,
+          updatedAt = @updatedAt
+      WHERE id = 'branding'
+    `).run(updated);
+
+    return this.getBranding();
   }
 
   /**

@@ -12,7 +12,8 @@
         categories: initialState.categories || [],
         stats: initialState.stats || {},
         recentArticles: initialState.recentArticles || [],
-        settings: initialState.settings || {}
+        settings: initialState.settings || {},
+        branding: initialState.branding || {}
       };
 
       this.currentArticleId = null;
@@ -26,6 +27,8 @@
       this.navLinks = this.sidebar ? this.sidebar.querySelectorAll('.nav-link') : [];
       this.sections = document.querySelectorAll('.cms-section');
       this.topBar = document.querySelector('[data-cms="topbar"]');
+      this.pageTitleElement = this.topBar ? this.topBar.querySelector('#page-title') : null;
+      this.pageSubtitleElement = this.topBar ? this.topBar.querySelector('.cms-header__subtitle') : null;
       this.viewSiteBtn = this.topBar ? this.topBar.querySelector('[data-action="view-site"]') : null;
 
       this.dashboardSection = document.querySelector('[data-cms="dashboard-section"]');
@@ -38,10 +41,10 @@
       this.refreshArticlesBtn = document.querySelector('[data-action="refresh-articles"]');
       this.newArticleBtn = document.querySelector('[data-action="new-article"]');
 
-      this.articleModal = document.querySelector('[data-cms="article-modal"]');
+      this.editorSection = document.querySelector('[data-cms="editor-section"]');
       this.articleForm = document.querySelector('[data-cms="article-form"]');
-      this.articleModalTitle = this.articleModal ? this.articleModal.querySelector('[data-cms="article-modal-title"]') : null;
-      this.closeModalButtons = document.querySelectorAll('[data-action="close-article-modal"]');
+      this.editorTitle = this.editorSection ? this.editorSection.querySelector('[data-cms="editor-title"]') : null;
+      this.cancelEditorButtons = document.querySelectorAll('[data-action="cancel-editor"]');
 
       this.categoriesSection = document.querySelector('[data-cms="categories-section"]');
       this.categoriesTable = document.querySelector('[data-cms="categories-table"]');
@@ -50,7 +53,19 @@
       this.settingsSection = document.querySelector('[data-cms="settings-section"]');
       this.settingsForm = document.querySelector('[data-cms="settings-form"]');
 
-      this.root = document.documentElement;
+      this.brandingSection = document.querySelector('[data-cms="branding-section"]');
+      this.brandingForm = document.querySelector('[data-cms="branding-form"]');
+      this.brandingPreview = document.querySelector('[data-cms="branding-preview"]');
+      this.brandingPreviewHeader = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-header"]') : null;
+      this.brandingPreviewHeaderLogo = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-header-logo"]') : null;
+      this.brandingPreviewBody = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-body"]') : null;
+      this.brandingPreviewFooter = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-footer"]') : null;
+      this.brandingPreviewFooterLogo = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-footer-logo"]') : null;
+      this.brandingPreviewSiteName = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-site-name"]') : null;
+      this.brandingColorValueNodes = this.brandingForm ? this.brandingForm.querySelectorAll('[data-branding-color-value]') : [];
+      this.brandingColorInputs = this.brandingForm ? this.brandingForm.querySelectorAll('[data-branding-color]') : [];
+      this.brandingChipNodes = this.brandingPreview ? this.brandingPreview.querySelectorAll('[data-cms="branding-preview-chip"]') : [];
+      this.brandingFileInputs = this.brandingForm ? this.brandingForm.querySelectorAll('[data-branding-upload]') : [];
     }
 
     bindEvents() {
@@ -73,7 +88,7 @@
       }
 
       if (this.newArticleBtn) {
-        this.newArticleBtn.addEventListener('click', () => this.openArticleModal());
+        this.newArticleBtn.addEventListener('click', () => this.openArticleEditor());
       }
 
       if (this.articleTableBody) {
@@ -81,7 +96,7 @@
           const button = event.target.closest('button[data-action]');
           if (!button) return;
           const { action, articleId } = button.dataset;
-          if (!articleId && action !== 'new-article') return;
+          if (!articleId) return;
 
           if (action === 'edit-article') {
             this.loadArticle(articleId);
@@ -91,17 +106,9 @@
         });
       }
 
-      this.closeModalButtons.forEach((button) => {
-        button.addEventListener('click', () => this.closeArticleModal());
+      this.cancelEditorButtons.forEach((button) => {
+        button.addEventListener('click', () => this.returnToArticleList());
       });
-
-      if (this.articleModal) {
-        this.articleModal.addEventListener('click', (event) => {
-          if (event.target === this.articleModal) {
-            this.closeArticleModal();
-          }
-        });
-      }
 
       if (this.articleForm) {
         this.articleForm.addEventListener('submit', (event) => {
@@ -116,6 +123,28 @@
           this.saveSettings();
         });
       }
+
+      if (this.brandingForm) {
+        this.brandingForm.addEventListener('submit', (event) => {
+          event.preventDefault();
+          this.saveBranding();
+        });
+      }
+
+      this.brandingColorInputs.forEach((input) => {
+        input.addEventListener('input', (event) => {
+          this.handleBrandingColorInput(event);
+        });
+        input.addEventListener('change', (event) => {
+          this.handleBrandingColorInput(event);
+        });
+      });
+
+      this.brandingFileInputs.forEach((input) => {
+        input.addEventListener('change', (event) => {
+          this.handleBrandingFileInput(event);
+        });
+      });
     }
 
     renderInitialState() {
@@ -125,9 +154,18 @@
       this.renderRecentArticles(this.state.recentArticles);
       this.renderCategories(this.state.categories);
       this.populateSettingsForm(this.state.settings);
+      this.populateBrandingForm(this.state.branding);
     }
 
     showSection(sectionId) {
+      const sectionTitles = {
+        dashboard: 'Dashboard',
+        articles: 'Haberler',
+        categories: 'Kategoriler',
+        branding: 'Marka',
+        settings: 'Site Ayarları'
+      };
+
       this.navLinks.forEach((link) => {
         link.classList.toggle('active', link.getAttribute('href') === `#${sectionId}`);
       });
@@ -142,8 +180,13 @@
         }
       });
 
-      if (this.articleModal) {
-        this.articleModal.setAttribute('hidden', '');
+      if (this.editorSection) {
+        this.editorSection.setAttribute('hidden', '');
+        this.editorSection.classList.remove('active');
+      }
+
+      if (this.pageTitleElement) {
+        this.pageTitleElement.textContent = sectionTitles[sectionId] || 'Dashboard';
       }
     }
 
@@ -265,10 +308,219 @@
       });
     }
 
-    openArticleModal(article = null) {
-      if (!this.articleModal || !this.articleForm) return;
-      this.articleModal.removeAttribute('hidden');
-      this.articleModal.setAttribute('aria-hidden', 'false');
+    populateBrandingForm(branding) {
+      if (!this.brandingForm) return;
+
+      const defaults = {
+        siteName: 'UHA News',
+        primaryColor: '#1a365d',
+        secondaryColor: '#2d3748',
+        accentColor: '#3182ce',
+        headerLogo: '',
+        footerLogo: ''
+      };
+
+      const current = { ...defaults, ...(branding || {}) };
+      this.state.branding = current;
+
+      const siteNameField = this.brandingForm.querySelector('[name="siteName"]');
+      if (siteNameField) {
+        siteNameField.value = current.siteName;
+      }
+
+      this.brandingColorInputs.forEach((input) => {
+        const key = input.dataset.brandingColor;
+        if (!key) return;
+        const prop = `${key}Color`;
+        const value = current[prop] || defaults[prop] || '#1a365d';
+        input.value = value;
+        this.updateBrandingColorValue(key, value);
+      });
+
+      this.updateBrandingPreview(current);
+
+      if (this.pageSubtitleElement) {
+        this.pageSubtitleElement.textContent = current.siteName || 'UHA News';
+      }
+    }
+
+    updateBrandingColorValue(key, value) {
+      this.brandingColorValueNodes.forEach((node) => {
+        if (node.dataset.brandingColorValue === key) {
+          node.textContent = value;
+        }
+      });
+
+      this.brandingChipNodes.forEach((chip) => {
+        if (chip.dataset.chip === key) {
+          chip.textContent = value;
+          chip.style.backgroundColor = value;
+        }
+      });
+    }
+
+    updateBrandingPreview(branding) {
+      if (!branding) return;
+
+      if (this.brandingPreviewHeader) {
+        this.brandingPreviewHeader.style.backgroundColor = branding.primaryColor;
+      }
+      if (this.brandingPreviewFooter) {
+        this.brandingPreviewFooter.style.backgroundColor = branding.secondaryColor;
+      }
+      if (this.brandingPreviewBody) {
+        this.brandingPreviewBody.style.borderTop = `4px solid ${branding.accentColor}`;
+      }
+      if (this.brandingPreviewSiteName) {
+        this.brandingPreviewSiteName.textContent = branding.siteName || 'UHA News';
+      }
+
+      if (this.brandingPreviewHeaderLogo) {
+        if (branding.headerLogo) {
+          if (this.brandingPreviewHeaderLogo.tagName !== 'IMG') {
+            const img = document.createElement('img');
+            img.src = branding.headerLogo;
+            img.alt = 'Logo önizleme';
+            img.dataset.cms = 'branding-preview-header-logo';
+            this.brandingPreviewHeaderLogo.replaceWith(img);
+            this.brandingPreviewHeaderLogo = img;
+          } else {
+            this.brandingPreviewHeaderLogo.src = branding.headerLogo;
+          }
+        } else {
+          if (this.brandingPreviewHeaderLogo.tagName === 'IMG') {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'branding-preview__logo-placeholder';
+            placeholder.dataset.cms = 'branding-preview-header-logo';
+            placeholder.textContent = branding.siteName || 'UHA News';
+            this.brandingPreviewHeaderLogo.replaceWith(placeholder);
+            this.brandingPreviewHeaderLogo = placeholder;
+          } else {
+            this.brandingPreviewHeaderLogo.textContent = branding.siteName || 'UHA News';
+          }
+        }
+      }
+
+      if (this.brandingPreviewFooterLogo) {
+        if (branding.footerLogo) {
+          if (this.brandingPreviewFooterLogo.tagName !== 'IMG') {
+            const img = document.createElement('img');
+            img.src = branding.footerLogo;
+            img.alt = 'Footer logo önizleme';
+            img.dataset.cms = 'branding-preview-footer-logo';
+            this.brandingPreviewFooterLogo.replaceWith(img);
+            this.brandingPreviewFooterLogo = img;
+          } else {
+            this.brandingPreviewFooterLogo.src = branding.footerLogo;
+          }
+        } else if (branding.headerLogo) {
+          if (this.brandingPreviewFooterLogo.tagName !== 'IMG') {
+            const img = document.createElement('img');
+            img.src = branding.headerLogo;
+            img.alt = 'Footer logo önizleme';
+            img.dataset.cms = 'branding-preview-footer-logo';
+            this.brandingPreviewFooterLogo.replaceWith(img);
+            this.brandingPreviewFooterLogo = img;
+          } else {
+            this.brandingPreviewFooterLogo.src = branding.headerLogo;
+          }
+        } else {
+          if (this.brandingPreviewFooterLogo.tagName === 'IMG') {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'branding-preview__logo-placeholder';
+            placeholder.dataset.cms = 'branding-preview-footer-logo';
+            placeholder.textContent = branding.siteName || 'UHA News';
+            this.brandingPreviewFooterLogo.replaceWith(placeholder);
+            this.brandingPreviewFooterLogo = placeholder;
+          } else {
+            this.brandingPreviewFooterLogo.textContent = branding.siteName || 'UHA News';
+          }
+        }
+      }
+    }
+
+    handleBrandingColorInput(event) {
+      const input = event.currentTarget;
+      if (!input || !input.dataset.brandingColor) return;
+      const key = input.dataset.brandingColor;
+      const value = input.value;
+      this.updateBrandingColorValue(key, value);
+
+      const prop = `${key}Color`;
+      this.state.branding[prop] = value;
+      this.updateBrandingPreview(this.state.branding);
+    }
+
+    handleBrandingFileInput(event) {
+      const input = event.currentTarget;
+      if (!input || !input.files || input.files.length === 0) return;
+      const file = input.files[0];
+      const target = input.dataset.brandingUpload;
+      if (!target) return;
+
+      const url = URL.createObjectURL(file);
+      if (target === 'header' && this.brandingPreviewHeaderLogo) {
+        if (this.brandingPreviewHeaderLogo.tagName === 'IMG') {
+          this.brandingPreviewHeaderLogo.src = url;
+        } else {
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = 'Logo önizleme';
+          img.dataset.cms = 'branding-preview-header-logo';
+          this.brandingPreviewHeaderLogo.replaceWith(img);
+          this.brandingPreviewHeaderLogo = img;
+        }
+      }
+      if (target === 'footer' && this.brandingPreviewFooterLogo) {
+        if (this.brandingPreviewFooterLogo.tagName === 'IMG') {
+          this.brandingPreviewFooterLogo.src = url;
+        } else {
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = 'Footer logo önizleme';
+           img.dataset.cms = 'branding-preview-footer-logo';
+          this.brandingPreviewFooterLogo.replaceWith(img);
+          this.brandingPreviewFooterLogo = img;
+        }
+      }
+    }
+
+    async saveBranding() {
+      if (!this.brandingForm) return;
+
+      const submitButton = this.brandingForm.querySelector('[data-action="save-branding"]');
+      if (submitButton) {
+        submitButton.disabled = true;
+      }
+
+      try {
+        const formData = new FormData(this.brandingForm);
+        const response = await fetch('/cms/branding', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || 'Marka ayarları kaydedilemedi');
+        }
+
+        const result = await response.json();
+        const branding = result.branding || {};
+        this.state.branding = branding;
+        this.populateBrandingForm(branding);
+        this.showSuccess('Marka ayarları güncellendi.');
+      } catch (error) {
+        this.showError(error.message || 'Marka ayarları kaydedilemedi.');
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+        }
+      }
+    }
+
+    openArticleEditor(article = null) {
+      if (!this.editorSection || !this.articleForm) return;
 
       this.articleForm.reset();
       this.clearTargetCheckboxes();
@@ -276,43 +528,35 @@
 
       if (article) {
         this.currentArticleId = article.id;
-        if (this.articleModalTitle) {
-          this.articleModalTitle.textContent = 'Haberi Düzenle';
+        if (this.editorTitle) {
+          this.editorTitle.textContent = 'Haberi Düzenle';
         }
         this.fillArticleForm(article);
-      } else {
-        if (this.articleModalTitle) {
-          this.articleModalTitle.textContent = 'Yeni Haber';
-        }
-        const statusField = this.articleForm.querySelector('[name="status"]');
-        if (statusField) {
-          statusField.value = 'visible';
-        }
+      } else if (this.editorTitle) {
+        this.editorTitle.textContent = 'Yeni Haber';
       }
+
+      const statusField = this.articleForm.querySelector('[name="status"]');
+      if (statusField && !article) {
+        statusField.value = 'visible';
+      }
+
+      this.switchToEditorView();
     }
 
-    closeArticleModal() {
-      if (!this.articleModal || !this.articleForm) return;
-      this.articleModal.setAttribute('hidden', '');
-      this.articleModal.setAttribute('aria-hidden', 'true');
-      this.articleForm.reset();
-      this.clearTargetCheckboxes();
+    returnToArticleList() {
       this.currentArticleId = null;
-    }
-
-    clearTargetCheckboxes() {
-      const checkboxes = this.articleForm.querySelectorAll('input[name="targettedViews"]');
-      checkboxes.forEach((checkbox) => {
-        checkbox.checked = false;
-      });
+      if (this.articleForm) {
+        this.articleForm.reset();
+      }
+      this.clearTargetCheckboxes();
+      this.switchToArticlesView();
     }
 
     fillArticleForm(article) {
       const setValue = (selector, value) => {
         const field = this.articleForm.querySelector(selector);
-        if (field) {
-          field.value = value || '';
-        }
+        if (field) field.value = value || '';
       };
 
       setValue('[name="header"]', article.header);
@@ -328,8 +572,7 @@
 
       const tagsField = this.articleForm.querySelector('[name="tags"]');
       if (tagsField) {
-        const tags = Array.isArray(article.tags) ? article.tags.join(', ') : '';
-        tagsField.value = tags;
+        tagsField.value = Array.isArray(article.tags) ? article.tags.join(', ') : '';
       }
 
       const imagesField = this.articleForm.querySelector('[name="images"]');
@@ -339,8 +582,7 @@
 
       const outlinksField = this.articleForm.querySelector('[name="outlinks"]');
       if (outlinksField) {
-        const outlinks = Array.isArray(article.outlinks) ? article.outlinks.join('\n') : '';
-        outlinksField.value = outlinks;
+        outlinksField.value = Array.isArray(article.outlinks) ? article.outlinks.join('\n') : '';
       }
 
       const checkboxes = this.articleForm.querySelectorAll('input[name="targettedViews"]');
@@ -407,7 +649,7 @@
       try {
         const article = await this.fetchJson(`/cms/articles/${articleId}`);
         if (article) {
-          this.openArticleModal(article);
+          this.openArticleEditor(article);
         }
       } catch (error) {
         this.showError('Haber bilgileri alınamadı.');
@@ -420,9 +662,12 @@
 
       try {
         const response = await fetch(`/cms/articles/${articleId}`, { method: 'DELETE' });
-        if (!response.ok) {
-          throw new Error();
+        if (!response.ok) throw new Error();
+
+        if (this.currentArticleId === articleId) {
+          this.returnToArticleList();
         }
+
         this.showSuccess('Haber silindi.');
         await this.loadArticles();
       } catch (error) {
@@ -448,7 +693,7 @@
         }
 
         this.showSuccess('Haber kaydedildi.');
-        this.closeArticleModal();
+        this.returnToArticleList();
         await this.loadArticles();
       } catch (error) {
         this.showError(error.message);
@@ -498,6 +743,62 @@
       const div = document.createElement('div');
       div.textContent = value;
       return div.innerHTML;
+    }
+
+    clearTargetCheckboxes() {
+      if (!this.articleForm) return;
+      const checkboxes = this.articleForm.querySelectorAll('input[name="targettedViews"]');
+      checkboxes.forEach((checkbox) => {
+        checkbox.checked = false;
+      });
+    }
+
+    switchToEditorView() {
+      if (!this.editorSection) return;
+
+      this.sections.forEach((section) => {
+        if (section === this.editorSection) {
+          section.classList.add('active');
+          section.removeAttribute('hidden');
+        } else if (section.dataset.cms === 'articles-section') {
+          section.classList.remove('active');
+          section.setAttribute('hidden', '');
+        }
+      });
+
+      this.navLinks.forEach((link) => {
+        link.classList.toggle('active', link.getAttribute('href') === '#articles');
+      });
+
+      this.editorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      if (this.pageTitleElement) {
+        this.pageTitleElement.textContent = 'Haber Düzenleyici';
+      }
+    }
+
+    switchToArticlesView() {
+      if (!this.articleSection) return;
+
+      this.sections.forEach((section) => {
+        if (section === this.articleSection) {
+          section.classList.add('active');
+          section.removeAttribute('hidden');
+        } else if (section.dataset.cms === 'editor-section') {
+          section.classList.remove('active');
+          section.setAttribute('hidden', '');
+        }
+      });
+
+      this.navLinks.forEach((link) => {
+        link.classList.toggle('active', link.getAttribute('href') === '#articles');
+      });
+
+      this.articleSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      if (this.pageTitleElement) {
+        this.pageTitleElement.textContent = 'Haberler';
+      }
     }
 
     showSuccess(message) {

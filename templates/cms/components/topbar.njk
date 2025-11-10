@@ -1,6 +1,9 @@
-{% macro TopBar(title = 'Dashboard') %}
+{% macro TopBar(title = 'Dashboard', siteName = 'UHA News') %}
 <header class="cms-header" data-cms="topbar">
-  <h1 id="page-title">{{ title }}</h1>
+  <div class="cms-header__titles">
+    <h1 id="page-title">{{ title }}</h1>
+    <p class="cms-header__subtitle">{{ siteName }}</p>
+  </div>
   <div class="cms-header-actions">
     <button class="cms-btn cms-btn-primary" data-action="view-site">Siteyi Aç</button>
   </div>

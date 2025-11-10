@@ -1,22 +1,35 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+  {% set brand = branding or {} %}
+  {% set site_name = brand.siteName or 'UHA News' %}
+  {% set primary_color = brand.primaryColor or '#1a365d' %}
+  {% set secondary_color = brand.secondaryColor or '#2d3748' %}
+  {% set accent_color = brand.accentColor or '#3182ce' %}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ meta.title }}</title>
+  <title>{{ meta.title or site_name }}</title>
   <meta name="description" content="{{ meta.description }}">
-  <meta property="og:title" content="{{ meta.title }}">
+  <meta property="og:title" content="{{ meta.title or site_name }}">
   <meta property="og:description" content="{{ meta.description }}">
   <meta property="og:url" content="{{ meta.url }}">
   <meta property="og:image" content="{{ meta.image }}">
   <meta property="og:type" content="{{ meta.type }}">
   <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:title" content="{{ meta.title }}">
+  <meta property="twitter:title" content="{{ meta.title or site_name }}">
   <meta property="twitter:description" content="{{ meta.description }}">
   <meta property="twitter:image" content="{{ meta.image }}">
+  <meta name="theme-color" content="{{ primary_color }}">
   <link rel="stylesheet" href="/css/variables.css">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/widgets.css">
+  <style id="branding-variables">
+    :root {
+      --primary-color: {{ primary_color }};
+      --secondary-color: {{ secondary_color }};
+      --accent-color: {{ accent_color }};
+    }
+  </style>
   {% block head_extra %}{% endblock %}
   {% if jsonLd %}
   <script type="application/ld+json">{{ jsonLd | safe }}</script>

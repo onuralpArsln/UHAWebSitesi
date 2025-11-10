@@ -82,6 +82,11 @@ app.use('/js', express.static(path.join(__dirname, '../public/js'), {
   etag: true
 }));
 
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads'), {
+  maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
+  etag: true
+}));
+
 app.use('/cms', express.static(path.join(__dirname, '../public/cms'), {
   maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
   etag: true

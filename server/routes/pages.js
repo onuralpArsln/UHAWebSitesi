@@ -12,6 +12,29 @@ const router = express.Router();
 const dataService = new DataService();
 const urlSlugService = new URLSlugService();
 const sitemapService = new SitemapService(dataService, urlSlugService);
+const BRANDING_WEB_PATH = '/uploads/branding';
+
+function formatBranding(raw) {
+  const defaults = {
+    siteName: 'UHA News',
+    primaryColor: '#1a365d',
+    secondaryColor: '#2d3748',
+    accentColor: '#3182ce',
+    headerLogo: '',
+    footerLogo: ''
+  };
+
+  const branding = { ...defaults, ...(raw || {}) };
+  const ensurePath = (value) => {
+    if (!value) return '';
+    return value.startsWith('/uploads/') ? value : `${BRANDING_WEB_PATH}/${value.replace(/^\/+/, '')}`;
+  };
+
+  branding.headerLogo = ensurePath(branding.headerLogo);
+  branding.footerLogo = ensurePath(branding.footerLogo);
+
+  return branding;
+}
 
 /**
  * Homepage route
@@ -50,6 +73,9 @@ router.get('/', async (req, res) => {
       }
     }
 
+    // Branding data
+    const branding = formatBranding(dataService.getBranding());
+
     // Prepare page data
     const meta = buildMeta({
       image: process.env.SITE_URL
@@ -59,6 +85,7 @@ router.get('/', async (req, res) => {
 
     const pageData = {
       meta,
+      branding,
       featuredArticles: featuredArticles.articles.map(article => ({
         ...article,
         slug: urlSlugService.getSlugById(article.id) || 
@@ -99,6 +126,9 @@ router.get('/haber/:slug', async (req, res) => {
     // Fetch related articles
     const relatedArticles = dataService.getRelatedArticles(articleId, 4);
 
+    // Branding data
+    const branding = formatBranding(dataService.getBranding());
+
     // Prepare page data
     const meta = buildMeta({
       title: `${article.title} - ${process.env.SITE_NAME || 'UHA News'}`,
@@ -116,6 +146,7 @@ router.get('/haber/:slug', async (req, res) => {
 
     const pageData = {
       meta,
+      branding,
       article: {
         ...article,
         slug,
@@ -176,6 +207,9 @@ router.get('/kategori/:categorySlug', async (req, res) => {
       }))
     };
 
+    // Branding data
+    const branding = formatBranding(dataService.getBranding());
+
     // Prepare page data
     const meta = buildMeta({
       title: `${category.name} Haberleri - ${process.env.SITE_NAME || 'UHA News'}`,
@@ -188,6 +222,7 @@ router.get('/kategori/:categorySlug', async (req, res) => {
 
     const pageData = {
       meta,
+      branding,
       category: {
         ...category,
         slug: categorySlug
@@ -241,6 +276,9 @@ router.get('/arama', async (req, res) => {
       }))
     };
 
+    // Branding data
+    const branding = formatBranding(dataService.getBranding());
+
     // Prepare page data
     const meta = buildMeta({
       title: `"${query}" Arama Sonuçları - ${process.env.SITE_NAME || 'UHA News'}`,
@@ -250,6 +288,7 @@ router.get('/arama', async (req, res) => {
 
     const pageData = {
       meta,
+      branding,
       searchQuery: query,
       articles: searchResults.articles.map(article => ({
         ...article,

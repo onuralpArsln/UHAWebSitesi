@@ -7,3 +7,6 @@ data/*.db
 data/*.db-journal
 data/*.db-wal
 data/*.db-shm
+
+# Branding uploads
+public/uploads/branding/

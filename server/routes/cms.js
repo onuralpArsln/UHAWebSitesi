@@ -1,10 +1,46 @@
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const DataService = require('../services/data-service');
 const URLSlugService = require('../services/url-slug');
 
 const router = express.Router();
 const dataService = new DataService();
 const urlSlugService = new URLSlugService();
+
+const BRANDING_UPLOAD_DIR = path.join(__dirname, '../../public/uploads/branding');
+const BRANDING_WEB_PATH = '/uploads/branding';
+
+const allowedImageMimeTypes = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/svg+xml'
+]);
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, BRANDING_UPLOAD_DIR);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.png';
+    const baseName = file.fieldname === 'footerLogo' ? 'footer-logo' : 'header-logo';
+    cb(null, `${baseName}-${Date.now()}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 3 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (allowedImageMimeTypes.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Desteklenmeyen dosya türü. Lütfen PNG, JPG, WEBP veya SVG yükleyin.'));
+    }
+  }
+});
 
 function toArray(value, delimiter = ',') {
   if (Array.isArray(value)) {
@@ -67,6 +103,66 @@ function normalizeStatus(value) {
   return normalized === 'hidden' ? 'hidden' : 'visible';
 }
 
+function normalizeColor(value, fallback) {
+  if (!value || typeof value !== 'string') return fallback;
+  const trimmed = value.trim();
+  const hexMatch = trimmed.match(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/);
+  if (hexMatch) {
+    return trimmed.length === 4
+      ? `#${trimmed[1]}${trimmed[1]}${trimmed[2]}${trimmed[2]}${trimmed[3]}${trimmed[3]}`
+      : trimmed.toLowerCase();
+  }
+  return fallback;
+}
+
+function buildBrandingResponse(raw) {
+  const defaults = {
+    siteName: 'UHA News',
+    primaryColor: '#1a365d',
+    secondaryColor: '#2d3748',
+    accentColor: '#3182ce',
+    headerLogo: '',
+    footerLogo: ''
+  };
+  return {
+    ...defaults,
+    ...(raw || {})
+  };
+}
+
+function formatBrandingForClient(raw) {
+  const branding = buildBrandingResponse(raw);
+  const normalizePath = (value) => {
+    if (!value) return '';
+    return value.startsWith('/uploads/') ? value : toWebPath(value);
+  };
+
+  return {
+    ...branding,
+    headerLogo: normalizePath(branding.headerLogo),
+    footerLogo: normalizePath(branding.footerLogo)
+  };
+}
+
+function toWebPath(filename) {
+  if (!filename) return '';
+  if (filename.startsWith('/')) return filename;
+  return `${BRANDING_WEB_PATH}/${filename}`;
+}
+
+function removeOldBrandingAsset(relativePath) {
+  if (!relativePath) return;
+  if (!relativePath.startsWith(BRANDING_WEB_PATH)) return;
+  const absolutePath = path.join(__dirname, '../../public', relativePath);
+  if (absolutePath.startsWith(BRANDING_UPLOAD_DIR) && fs.existsSync(absolutePath)) {
+    try {
+      fs.unlinkSync(absolutePath);
+    } catch (error) {
+      console.warn('Branding asset cleanup failed:', error.message);
+    }
+  }
+}
+
 /**
  * Serve CMS panel
  */
@@ -80,6 +176,7 @@ router.get('/', (req, res) => {
 
   const categories = dataService.getCategories();
   const statusSummary = dataService.getArticleStatusSummary();
+  const branding = formatBrandingForClient(dataService.getBranding());
 
   const stats = {
     totalArticles: statusSummary.total,
@@ -96,12 +193,16 @@ router.get('/', (req, res) => {
     adsenseSlotId: process.env.ADSENSE_SLOT_ID || ''
   };
 
+  const targetOptions = ['carousel', 'manset', 'anasayfa', 'akış'];
+
   const initialState = {
     stats,
     articles: articlesResult.articles,
     categories,
     recentArticles: articlesResult.articles.slice(0, 5),
-    settings
+    settings,
+    targetOptions,
+    branding
   };
 
   const initialStateJson = JSON.stringify(initialState).replace(/</g, '\\u003c');
@@ -111,6 +212,75 @@ router.get('/', (req, res) => {
     initialState,
     initialStateJson
   });
+});
+
+/**
+ * Get current branding configuration
+ */
+router.get('/branding', (req, res) => {
+  try {
+    const branding = formatBrandingForClient(dataService.getBranding());
+    res.json({ branding });
+  } catch (error) {
+    console.error('CMS Branding fetch error:', error);
+    res.status(500).json({ error: 'Marka ayarları alınamadı' });
+  }
+});
+
+/**
+ * Update branding configuration (colors + logos)
+ */
+router.post('/branding', (req, res, next) => {
+  const handleUpload = upload.fields([
+    { name: 'headerLogo', maxCount: 1 },
+    { name: 'footerLogo', maxCount: 1 }
+  ]);
+
+  handleUpload(req, res, (err) => {
+    if (err) {
+      console.error('CMS Branding upload error:', err);
+      return res.status(400).json({ error: err.message || 'Dosya yükleme başarısız' });
+    }
+    next();
+  });
+}, (req, res) => {
+  try {
+    const current = dataService.getBranding();
+    const body = req.body || {};
+
+    const brandingUpdate = {
+      siteName: body.siteName ? body.siteName.toString().trim() : current.siteName,
+      primaryColor: normalizeColor(body.primaryColor, current.primaryColor),
+      secondaryColor: normalizeColor(body.secondaryColor, current.secondaryColor),
+      accentColor: normalizeColor(body.accentColor, current.accentColor),
+      headerLogo: current.headerLogo,
+      footerLogo: current.footerLogo
+    };
+
+    const uploadedHeader = req.files?.headerLogo?.[0];
+    const uploadedFooter = req.files?.footerLogo?.[0];
+
+    if (uploadedHeader) {
+      removeOldBrandingAsset(current.headerLogo);
+      brandingUpdate.headerLogo = `${BRANDING_WEB_PATH}/${uploadedHeader.filename}`;
+    }
+
+    if (uploadedFooter) {
+      removeOldBrandingAsset(current.footerLogo);
+      brandingUpdate.footerLogo = `${BRANDING_WEB_PATH}/${uploadedFooter.filename}`;
+    }
+
+    const updatedBranding = dataService.updateBranding(brandingUpdate);
+    const response = formatBrandingForClient(updatedBranding);
+
+    res.json({
+      success: true,
+      branding: response
+    });
+  } catch (error) {
+    console.error('CMS Branding update error:', error);
+    res.status(500).json({ error: 'Marka ayarları güncellenemedi' });
+  }
 });
 
 /**

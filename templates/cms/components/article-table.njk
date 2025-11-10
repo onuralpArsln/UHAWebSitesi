@@ -1,13 +1,14 @@
 {% macro ArticleTable(articles = []) %}
-<section id="articles" class="cms-section" data-cms="articles-section">
+<section id="articles" class="cms-section" data-cms="articles-section" hidden>
   <div class="cms-content">
     <div class="cms-section-heading">
       <h2>Haberler</h2>
       <div class="cms-section-actions">
-        <button class="cms-btn cms-btn-secondary" data-action="refresh-articles">Yenile</button>
-        <button class="cms-btn cms-btn-primary" data-action="new-article">Yeni Haber</button>
+        <button class="cms-btn cms-btn-secondary" data-action="refresh-articles">Listeyi yenile</button>
+        <button class="cms-btn cms-btn-primary" data-action="new-article">Yeni Haber Oluştur</button>
       </div>
     </div>
+    <p class="cms-section-subtitle">Her haberin yanındaki “Düzenle” butonuyla içeriği güncelleyebilirsiniz.</p>
 
     <div class="cms-table-wrapper" data-cms="articles-table">
       <table class="cms-table">

@@ -6,16 +6,19 @@
 {% from "cms/components/article-table.njk" import ArticleTable %}
 {% from "cms/components/category-table.njk" import CategoryTable %}
 {% from "cms/components/settings-form.njk" import SettingsForm %}
-{% from "cms/components/article-form-modal.njk" import ArticleFormModal %}
+{% from "cms/components/article-editor.njk" import ArticleEditor %}
+{% from "cms/components/branding-form.njk" import BrandingForm %}
 
 {% set articles = initialState.articles or [] %}
 {% set categories = initialState.categories or [] %}
 {% set stats = initialState.stats or {} %}
+{% set targetOptions = initialState.targetOptions or ['carousel', 'manset', 'anasayfa', 'akış'] %}
+{% set branding = initialState.branding or {} %}
 
 {% block body %}
 {{ Sidebar('dashboard') }}
 <main class="cms-main">
-  {{ TopBar('Dashboard') }}
+  {{ TopBar('Dashboard', branding.siteName or 'UHA News') }}
 
   <section id="dashboard" class="cms-section cms-section--dashboard active" data-cms="dashboard-section">
     <div class="cms-grid">
@@ -26,11 +29,13 @@
 
   {{ ArticleTable(articles) }}
 
+  {{ ArticleEditor(categories, targetOptions) }}
+
   {{ CategoryTable(categories) }}
+
+  {{ BrandingForm(branding) }}
 
   {{ SettingsForm(initialState.settings or {}) }}
 </main>
-
-{{ ArticleFormModal(categories) }}
 {% endblock %}
 

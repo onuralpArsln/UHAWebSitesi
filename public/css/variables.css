@@ -17,10 +17,11 @@
   --article-image-height: 200px;
   
   /* Mobile-First Carousel dimensions */
-  --carousel-height: 300px;
   --carousel-width: 100%;
+  --carousel-aspect: 16 / 9;
+  --carousel-min-height: 300px;
   --carousel-image-width: 100%;
-  --carousel-image-height: 300px;
+  --carousel-image-height: 100%;
   
   /* Mobile-First Ad dimensions */
   --ad-width-300: 100%;
@@ -83,9 +84,10 @@
     --article-card-width: 300px;
     --article-card-height: 400px;
     --article-image-width: 300px;
-    --carousel-height: 400px;
+    --carousel-aspect: 16 / 9;
+    --carousel-min-height: 420px;
     --carousel-image-width: 800px;
-    --carousel-image-height: 400px;
+    --carousel-image-height: 100%;
     --ad-width-300: 300px;
     --ad-width-728: 728px;
   }

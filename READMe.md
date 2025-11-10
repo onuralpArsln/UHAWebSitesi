@@ -8,6 +8,7 @@
 
 ## How to Use
 - Haberleri, kategorileri ve site ayarlarını yönetmek için CMS panelini (`/cms`) kullan
+- Logo ve renkleri CMS panelindeki **Marka** sekmesinden yükleyip önizleyerek kaydet
 - Frontend otomatik olarak SSR ile haberleri yayınlar; URL slug’ları ve sitemap’ler arka planda üretilir
 - Yeni veriler SQLite veritabanına (`data/news.db`) kaydedilir ve ilk çalıştırmada otomatik oluşturulur
 
@@ -18,6 +19,7 @@
 - ✅ **Editör CMS Paneli** - Tam özellikli içerik yönetim sistemi
 - ✅ **Halka Açık Frontend** - Ziyaretçiler için SEO optimize edilmiş haber sitesi
 - ✅ **Sunucu Tarafı Render** - Nunjucks tabanlı şablon sistemi ile hızlı SSR
+- ✅ **Mobil Öncelikli Arayüzler** - Frontend ve CMS ekranları küçük cihazlardan başlayarak tasarlandı
 
 ## 🏗️ Mimari
 
@@ -42,17 +44,24 @@ UHAWebSitesi/
 │   │   ├── sitemap.js         # Sitemap oluşturma
 │   │   └── view-helpers.js    # Meta & JSON-LD yardımcıları
 ├── public/             # Halka açık website varlıkları
-│   ├── css/            # Frontend stilleri
-│   ├── js/             # Frontend JavaScript
-│   └── cms/            # CMS panel statik varlıkları (css, js)
+│   ├── css/            # Frontend (mobil-öncelikli) temel stiller
+│   ├── js/             # Frontend etkileşimleri (lazy load, carousel vb.)
+│   ├── cms/            # CMS paneline özel stiller ve JavaScript
+│   └── uploads/        # CMS üzerinden yüklenen dosyalar
+│       └── branding/   # Logo ve marka varlıkları (otomatik oluşturulur)
 ├── templates/          # HTML şablonları
-│   ├── layouts/        # Ortak layout'lar
-│   ├── pages/          # Sayfa şablonları (home, article, category, search)
-│   ├── widgets/        # Makro tabanlı, yeniden kullanılabilir fragment'lar
-│   └── cms/            # CMS paneli layout ve bileşenleri
+│   ├── layouts/        # Ortak layout'lar (frontend + CMS)
+│   ├── pages/          # Frontend sayfaları (home, article, category, search)
+│   ├── widgets/        # Frontend için makro tabanlı fragment'lar
+│   └── cms/            # CMS paneli layout ve bileşen makroları
 └── data/               # Veritabanı depolama (gitignore)
     └── news.db         # SQLite3 veritabanı dosyası
 ```
+
+### Frontend / CMS Ayrımı
+- **Frontend** (Ziyaretçi arayüzü): `public/css/main.css`, `public/js/*.js`, `templates/pages/*`, `templates/widgets/*`
+- **CMS** (İçerik editörü arayüzü): `public/cms/css/cms.css`, `public/cms/js/cms-app.js`, `templates/cms/**/*`
+- Her iki yüzey de mobil-öncelikli olup, geniş ekran iyileştirmeleri için yalnızca `min-width` breakpoint'leri kullanır.
 
 ## 🚀 Nasıl Başlatılır
 
@@ -165,6 +174,7 @@ Editör paneline erişmek için `http://localhost:3000/cms` adresini ziyaret edi
   - **Dış Bağlantılar (`outlinks`)** – referans URL listesi
 - **Makale Düzenle**: Satırdaki `Düzenle` butonuyla tüm alanları güncelleyerek formu açar
 - **Makale Sil**: Onay diyaloğu ile kalıcı olarak kaldırır
+- **Kaydetmeden Ayrılma Koruması**: Tam sayfa editör, yanlış tıklamalarla kapanmaz; `İptal` ile güvenle listeye dönebilirsiniz
 
 #### Dashboard
 - İstatistik özeti (toplam makaleler, kategoriler)
@@ -181,6 +191,14 @@ Editör paneline erişmek için `http://localhost:3000/cms` adresini ziyaret edi
 - AdSense ayarları
 - Site metadata
 
+#### Marka Yönetimi
+- **Site Adı**: Logo ile birlikte tüm frontend'de kullanılan başlık metni
+- **Renk Paleti**: Birincil, ikincil ve vurgu renkleri için canlı renk seçimleri (CSS değişkenleri anında güncellenir)
+- **Logo Yükleme**: Üst menü ve footer için ayrı logo alanları; PNG, JPG, WEBP veya SVG dosyaları desteklenir
+- **Canlı Önizleme**: Yüklediğiniz görseller ve renkler kaydetmeden önce panel içerisinde gösterilir
+- **Dosya Konumu**: Yüklenen logolar `public/uploads/branding/` dizinine kaydedilir; mevcut logolar yenileriyle otomatik olarak değiştirilir
+- **Manuel Güncelleme**: Aynı klasöre elle logo dosyası atılabilir; yeni dosyanın kullanılabilmesi için CMS üzerinden kaydetmeyi unutmayın
+
 ### Şablon & Bileşen Yapısı
 - `templates/cms/layouts/base.njk` – CMS sayfaları için temel şablon
 - `templates/cms/components/` – sidebar, topbar, tablo ve formları içeren makrolar
@@ -193,6 +211,7 @@ Editör paneline erişmek için `http://localhost:3000/cms` adresini ziyaret edi
 - **Etiketler**: Virgülle ayırın (örn. `ekonomi, büyüme`)
 - **Hedef Alanlar**: Formdaki çoklu seçim kutularından alan seçin; API tarafında dizi olarak saklanır
 - **Durum**: `Yayında` → `visible`, `Gizli` → `hidden` olarak kaydedilir
+- **Logo Dosyaları**: PNG/JPG/WEBP/SVG formatı desteklenir; dosya boyutu < 3 MB olmalıdır
 
 ## 🌐 Halka Açık Frontend
 
@@ -227,6 +246,7 @@ Editör paneline erişmek için `http://localhost:3000/cms` adresini ziyaret edi
 - ✅ **Progressive Loading** - Düşük çözünürlüklü WebP → yüksek çözünürlüklü asenkron yükleme
 - ✅ **Widget Sistemi** - Carousel, reklamlar, ilgili haberler, yorumlar
 - ✅ **Akıllı Carousel** - İlk görseli anında gönderir, kalan 24 görseli ihtiyaç halinde lazy load eder
+- ✅ **Marka Yönetimi** - Logo ve ana renkler CMS panelinden saniyeler içinde değiştirilebilir
 
 ### Makale Özellikleri
 - Başlık, özet, içerik, görsellerle zengin makale yapısı
@@ -356,6 +376,7 @@ Mobil site başarısı SEO için daha önemli. Yapay zeka sayesinde hızlı habe
 ### Production
 - `better-sqlite3` - SQLite3 veritabanı
 - `express` - Web sunucu framework'ü
+- `multer` - Çok parçalı form verisi ve logo yüklemeleri
 - `helmet` - Güvenlik başlıkları
 - `compression` - Yanıt sıkıştırma
 - `cors` - CORS desteği
