@@ -6,6 +6,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const { randomUUID } = require('crypto');
 
 const MEDIA_UPLOAD_WEB_PATH = '/uploads/media';
 
@@ -672,6 +673,89 @@ class DataService {
       slug: row.slug,
       articleCount: row.articleCount
     }));
+  }
+
+  /**
+   * Get single category by ID
+   */
+  getCategoryById(id) {
+    if (!id) return null;
+    const row = this.db.prepare('SELECT * FROM categories WHERE id = ?').get(id);
+    if (!row) return null;
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      slug: row.slug,
+      articleCount: row.articleCount
+    };
+  }
+
+  /**
+   * Create category
+   */
+  createCategory({ name, description = '', slug = '' }) {
+    if (!name) {
+      throw new Error('Category name is required');
+    }
+
+    const id = randomUUID();
+    const trimmedName = name.trim();
+    const trimmedDescription = description.trim();
+
+    this.db.prepare(`
+      INSERT INTO categories (id, name, description, slug, articleCount)
+      VALUES (?, ?, ?, ?, 0)
+    `).run(id, trimmedName, trimmedDescription, slug);
+
+    return this.getCategoryById(id);
+  }
+
+  /**
+   * Update category
+   */
+  updateCategory(id, { name, description, slug }) {
+    const existing = this.getCategoryById(id);
+    if (!existing) {
+      return null;
+    }
+
+    const nextName = name ? name.trim() : existing.name;
+    const nextDescription = description !== undefined ? description.trim() : (existing.description || '');
+    const nextSlug = slug !== undefined ? slug : existing.slug;
+
+    this.db.prepare(`
+      UPDATE categories
+      SET name = ?, description = ?, slug = ?
+      WHERE id = ?
+    `).run(nextName, nextDescription, nextSlug, id);
+
+    if (existing.name !== nextName) {
+      this.db.prepare(`
+        UPDATE articles SET category = ? WHERE category = ?
+      `).run(nextName, existing.name);
+    }
+
+    this.updateCategoryArticleCount(nextName);
+
+    return this.getCategoryById(id);
+  }
+
+  /**
+   * Delete category
+   */
+  deleteCategory(id) {
+    const existing = this.getCategoryById(id);
+    if (!existing) {
+      return false;
+    }
+
+    this.db.prepare(`
+      UPDATE articles SET category = NULL WHERE category = ?
+    `).run(existing.name);
+
+    const result = this.db.prepare('DELETE FROM categories WHERE id = ?').run(id);
+    return result.changes > 0;
   }
 
   /**

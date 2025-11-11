@@ -61,6 +61,7 @@
       this.categoriesSection = document.querySelector('[data-cms="categories-section"]');
       this.categoriesTable = document.querySelector('[data-cms="categories-table"]');
       this.categoriesTableBody = this.categoriesTable ? this.categoriesTable.querySelector('tbody') : null;
+      this.categorySelect = this.articleForm ? this.articleForm.querySelector('[name="category"]') : null;
 
       this.settingsSection = document.querySelector('[data-cms="settings-section"]');
       this.settingsForm = document.querySelector('[data-cms="settings-form"]');
@@ -140,6 +141,22 @@
             this.loadArticle(articleId);
           } else if (action === 'delete-article') {
             this.deleteArticle(articleId);
+          }
+        });
+      }
+
+      if (this.categoriesSection) {
+        this.categoriesSection.addEventListener('click', (event) => {
+          const button = event.target.closest('button[data-action]');
+          if (!button) return;
+          const { action, categoryId } = button.dataset;
+
+          if (action === 'new-category') {
+            this.promptCreateCategory();
+          } else if (action === 'edit-category' && categoryId) {
+            this.promptEditCategory(categoryId);
+          } else if (action === 'delete-category' && categoryId) {
+            this.deleteCategory(categoryId);
           }
         });
       }
@@ -290,6 +307,8 @@
       this.renderArticlesTable(this.state.articles);
       this.renderRecentArticles(this.state.recentArticles);
       this.renderCategories(this.state.categories);
+      this.renderCategoryOptions(this.state.categories);
+      this.updateCategoryStats();
       this.populateSettingsForm(this.state.settings);
       this.populateBrandingForm(this.state.branding);
       this.renderMediaList(this.state.media);
@@ -330,6 +349,10 @@
 
       if (this.pageTitleElement) {
         this.pageTitleElement.textContent = sectionTitles[sectionId] || 'Dashboard';
+      }
+
+      if (sectionId === 'categories') {
+        this.loadCategories();
       }
     }
 
@@ -439,6 +462,49 @@
           `
         )
         .join('');
+    }
+
+    renderCategoryOptions(categories) {
+      if (!this.categorySelect) return;
+
+      const options = Array.isArray(categories) ? categories : [];
+      const currentValue = this.categorySelect.value;
+
+      this.categorySelect.innerHTML = [
+        '<option value="">Kategori seçin</option>',
+        ...options.map(
+          (category) =>
+            `<option value="${this.escapeHtml(category.name)}">${this.escapeHtml(category.name)}</option>`
+        )
+      ].join('');
+
+      if (currentValue && options.some((category) => category.name === currentValue)) {
+        this.categorySelect.value = currentValue;
+      }
+    }
+
+    updateCategoryStats(count) {
+      const totalCategories =
+        count !== undefined
+          ? count
+          : Array.isArray(this.state.categories)
+          ? this.state.categories.length
+          : 0;
+
+      this.state.stats = {
+        ...this.state.stats,
+        totalCategories
+      };
+
+      this.renderStats(this.state.stats);
+    }
+
+    applyCategories(categories) {
+      const list = Array.isArray(categories) ? categories : [];
+      this.state.categories = list;
+      this.renderCategories(list);
+      this.renderCategoryOptions(list);
+      this.updateCategoryStats(list.length);
     }
 
     populateSettingsForm(settings) {
@@ -763,6 +829,124 @@
       } catch (error) {
         this.showError('Haberler yüklenirken bir hata oluştu.');
       }
+    }
+
+    async loadCategories() {
+      try {
+        const data = await this.fetchJson('/cms/categories');
+        if (!data) return;
+        this.applyCategories(data.categories || []);
+      } catch (error) {
+        this.showError('Kategoriler yüklenirken bir hata oluştu.');
+      }
+    }
+
+    async createCategory(name, description) {
+      try {
+        const response = await fetch('/cms/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description })
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || 'Kategori oluşturulamadı');
+        }
+
+        await response.json();
+        await this.loadCategories();
+        this.showSuccess('Kategori oluşturuldu.');
+      } catch (error) {
+        this.showError(error.message || 'Kategori oluşturulamadı.');
+      }
+    }
+
+    async updateCategory(categoryId, payload) {
+      try {
+        const response = await fetch(`/cms/categories/${categoryId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || 'Kategori güncellenemedi');
+        }
+
+        await response.json();
+        await this.loadCategories();
+        this.showSuccess('Kategori güncellendi.');
+      } catch (error) {
+        this.showError(error.message || 'Kategori güncellenemedi.');
+      }
+    }
+
+    async deleteCategory(categoryId) {
+      const category = (this.state.categories || []).find((item) => item.id === categoryId);
+      const categoryName = category ? category.name : '';
+      const confirmed = window.confirm(
+        categoryName
+          ? `'${categoryName}' kategorisini silmek istediğinize emin misiniz? Bu kategoriye bağlı haberlerin kategorisi kaldırılacaktır.`
+          : 'Bu kategoriyi silmek istediğinize emin misiniz?'
+      );
+
+      if (!confirmed) return;
+
+      try {
+        const response = await fetch(`/cms/categories/${categoryId}`, { method: 'DELETE' });
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || 'Kategori silinemedi');
+        }
+
+        await response.json();
+        await this.loadCategories();
+        this.showSuccess('Kategori silindi.');
+      } catch (error) {
+        this.showError(error.message || 'Kategori silinemedi.');
+      }
+    }
+
+    async promptCreateCategory() {
+      const nameInput = window.prompt('Yeni kategori adını girin');
+      if (nameInput === null) return;
+
+      const trimmedName = nameInput.trim();
+      if (!trimmedName) {
+        this.showError('Kategori adı boş bırakılamaz.');
+        return;
+      }
+
+      const descriptionInput = window.prompt('Kategori açıklaması (opsiyonel)', '');
+      const trimmedDescription = descriptionInput !== null ? descriptionInput.trim() : '';
+      await this.createCategory(trimmedName, trimmedDescription);
+    }
+
+    async promptEditCategory(categoryId) {
+      const category = (this.state.categories || []).find((item) => item.id === categoryId);
+      if (!category) return;
+
+      const nameInput = window.prompt('Kategori adını düzenleyin', category.name);
+      if (nameInput === null) return;
+      const trimmedName = nameInput.trim();
+      if (!trimmedName) {
+        this.showError('Kategori adı boş bırakılamaz.');
+        return;
+      }
+
+      const descriptionInput = window.prompt(
+        'Kategori açıklamasını düzenleyin (opsiyonel)',
+        category.description || ''
+      );
+      if (descriptionInput === null) return;
+      const trimmedDescription = descriptionInput.trim();
+
+      await this.updateCategory(categoryId, {
+        name: trimmedName,
+        description: trimmedDescription
+      });
     }
 
     updateStatsFromPayload(payload) {

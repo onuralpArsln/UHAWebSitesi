@@ -538,24 +538,83 @@ router.post('/categories', async (req, res) => {
   try {
     const { name, description } = req.body;
 
-    if (!name) {
-      return res.status(400).json({ error: 'Category name is required' });
+    if (!name || !name.toString().trim()) {
+      return res.status(400).json({ error: 'Kategori adı zorunludur' });
     }
 
-    // Create category
-    const newCategory = {
-      id: Date.now().toString(),
-      name: name.trim(),
-      description: description?.trim() || '',
-      createdAt: new Date().toISOString()
-    };
+    const trimmedName = name.toString().trim();
+    const trimmedDescription = description ? description.toString().trim() : '';
+    const slug = urlSlugService.generateSlug(trimmedName);
 
-    // In a real implementation, this would save to backend
+    const newCategory = dataService.createCategory({
+      name: trimmedName,
+      description: trimmedDescription,
+      slug
+    });
+
     res.status(201).json(newCategory);
 
   } catch (error) {
     console.error('CMS Create category error:', error);
-    res.status(500).json({ error: 'Failed to create category' });
+    if (error && error.code === 'SQLITE_CONSTRAINT') {
+      return res.status(409).json({ error: 'Bu kategori adı zaten kullanılıyor' });
+    }
+    res.status(500).json({ error: 'Kategori oluşturulamadı' });
+  }
+});
+
+/**
+ * Update category
+ */
+router.put('/categories/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description } = req.body;
+
+    if (!name || !name.toString().trim()) {
+      return res.status(400).json({ error: 'Kategori adı zorunludur' });
+    }
+
+    const trimmedName = name.toString().trim();
+    const trimmedDescription = description !== undefined ? description.toString().trim() : undefined;
+    const slug = urlSlugService.generateSlug(trimmedName);
+
+    const updatedCategory = dataService.updateCategory(id, {
+      name: trimmedName,
+      description: trimmedDescription,
+      slug
+    });
+
+    if (!updatedCategory) {
+      return res.status(404).json({ error: 'Kategori bulunamadı' });
+    }
+
+    res.json(updatedCategory);
+  } catch (error) {
+    console.error('CMS Update category error:', error);
+    if (error && error.code === 'SQLITE_CONSTRAINT') {
+      return res.status(409).json({ error: 'Bu kategori adı zaten kullanılıyor' });
+    }
+    res.status(500).json({ error: 'Kategori güncellenemedi' });
+  }
+});
+
+/**
+ * Delete category
+ */
+router.delete('/categories/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = dataService.deleteCategory(id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Kategori bulunamadı' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('CMS Delete category error:', error);
+    res.status(500).json({ error: 'Kategori silinemedi' });
   }
 });
 
