@@ -29,22 +29,21 @@
               <span>{{ media.extension | upper | default('DOSYA') }}</span>
             </div>
             <div class="media-card__body">
-              <h3 class="media-card__title">{{ media.filename }}</h3>
-              <dl class="media-card__meta">
-                <div>
-                  <dt>Boyut</dt>
-                  <dd>{{ media.size }}</dd>
+              <header class="media-card__header">
+                <span class="media-card__title" title="{{ media.filename }}">{{ media.filename }}</span>
+                <div class="media-card__menu">
+                  <button class="media-card__menu-btn" data-action="toggle-media-menu" data-media-filename="{{ media.filename }}">⋮</button>
+                  <div class="media-card__menu-panel" data-media-menu hidden>
+                    <button data-action="view-media" data-media-url="{{ media.url }}">Görüntüle</button>
+                    <button data-action="rename-media" data-media-filename="{{ media.filename }}">Yeniden Adlandır</button>
+                    <button data-action="copy-media-url" data-media-url="{{ media.url }}">Bağlantıyı Kopyala</button>
+                    <button data-action="delete-media" data-media-filename="{{ media.filename }}">Sil</button>
+                  </div>
                 </div>
-                <div>
-                  <dt>Yüklendi</dt>
-                  <dd>{{ media.uploadedAt | formatDate | default('-') }}</dd>
-                </div>
-              </dl>
-              <div class="media-card__actions">
-            <button class="cms-btn cms-btn--ghost" data-action="view-media" data-media-url="{{ media.url }}">Görüntüle</button>
-            <button class="cms-btn cms-btn-secondary" data-action="rename-media" data-media-filename="{{ media.filename }}">Yeniden Adlandır</button>
-                <button class="cms-btn cms-btn-secondary" data-action="copy-media-url" data-media-url="{{ media.url }}">Bağlantıyı Kopyala</button>
-                <button class="cms-btn cms-btn-danger" data-action="delete-media" data-media-filename="{{ media.filename }}">Sil</button>
+              </header>
+              <div class="media-card__meta">
+                <span>{{ media.size }}</span>
+                <span>{{ media.uploadedAt | formatDate | default('-') }}</span>
               </div>
             </div>
           </article>

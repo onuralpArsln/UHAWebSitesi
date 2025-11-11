@@ -10,3 +10,6 @@ data/*.db-shm
 
 # Branding uploads
 public/uploads/branding/
+public/uploads/
+public/uploads
+public/uploads/media/

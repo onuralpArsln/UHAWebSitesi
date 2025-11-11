@@ -172,7 +172,9 @@
           const button = event.target.closest('button[data-action]');
           if (!button) return;
           const { action } = button.dataset;
-          if (action === 'copy-media-url') {
+          if (action === 'toggle-media-menu') {
+            this.toggleMediaMenu(button);
+          } else if (action === 'copy-media-url') {
             this.copyMediaUrl(button.dataset.mediaUrl);
           } else if (action === 'delete-media') {
             this.deleteMedia(button.dataset.mediaFilename);
@@ -183,6 +185,11 @@
           }
         });
       }
+
+      document.addEventListener('click', (event) => {
+        if (event.target.closest('.media-card__menu')) return;
+        this.closeAllMediaMenus();
+      });
     }
 
     renderInitialState() {
@@ -781,6 +788,7 @@
 
     renderMediaList(mediaItems) {
       if (!this.mediaListContainer) return;
+      this.closeAllMediaMenus();
 
       let grid = this.mediaListContainer.querySelector('[data-cms="media-grid"]');
       let empty = this.mediaListContainer.querySelector('[data-cms="media-empty"]');
@@ -847,67 +855,71 @@
       const body = document.createElement('div');
       body.className = 'media-card__body';
 
-      const title = document.createElement('h3');
+      const header = document.createElement('header');
+      header.className = 'media-card__header';
+
+      const title = document.createElement('span');
       title.className = 'media-card__title';
       title.textContent = media.filename;
+      title.title = media.filename;
 
-      const meta = document.createElement('dl');
+      const menuWrapper = document.createElement('div');
+      menuWrapper.className = 'media-card__menu';
+
+      const menuToggle = document.createElement('button');
+      menuToggle.className = 'media-card__menu-btn';
+      menuToggle.dataset.action = 'toggle-media-menu';
+      menuToggle.dataset.mediaFilename = media.filename;
+      menuToggle.textContent = '⋮';
+
+      const menuPanel = document.createElement('div');
+      menuPanel.className = 'media-card__menu-panel';
+      menuPanel.dataset.mediaMenu = '';
+      menuPanel.hidden = true;
+
+      const createMenuButton = (action, text, extra = {}) => {
+        const btn = document.createElement('button');
+        btn.dataset.action = action;
+        btn.textContent = text;
+        Object.entries(extra).forEach(([key, value]) => {
+          btn.dataset[key] = value;
+        });
+        return btn;
+      };
+
+      menuPanel.appendChild(
+        createMenuButton('view-media', 'Görüntüle', { mediaUrl: media.url })
+      );
+      menuPanel.appendChild(
+        createMenuButton('rename-media', 'Yeniden Adlandır', { mediaFilename: media.filename })
+      );
+      menuPanel.appendChild(
+        createMenuButton('copy-media-url', 'Bağlantıyı Kopyala', { mediaUrl: media.url })
+      );
+      menuPanel.appendChild(
+        createMenuButton('delete-media', 'Sil', { mediaFilename: media.filename })
+      );
+
+      menuWrapper.appendChild(menuToggle);
+      menuWrapper.appendChild(menuPanel);
+
+      header.appendChild(title);
+      header.appendChild(menuWrapper);
+
+      const meta = document.createElement('div');
       meta.className = 'media-card__meta';
 
-      const sizeGroup = document.createElement('div');
-      const sizeLabel = document.createElement('dt');
-      sizeLabel.textContent = 'Boyut';
-      const sizeValue = document.createElement('dd');
-      sizeValue.textContent = this.formatFileSize(media.size);
-      sizeGroup.appendChild(sizeLabel);
-      sizeGroup.appendChild(sizeValue);
+      const sizeLabel = document.createElement('span');
+      sizeLabel.textContent = this.formatFileSize(media.size);
 
-      const dateGroup = document.createElement('div');
-      const dateLabel = document.createElement('dt');
-      dateLabel.textContent = 'Yüklendi';
-      const dateValue = document.createElement('dd');
-      dateValue.textContent = this.formatDate(media.uploadedAt);
-      dateGroup.appendChild(dateLabel);
-      dateGroup.appendChild(dateValue);
+      const dateLabel = document.createElement('span');
+      dateLabel.textContent = this.formatDate(media.uploadedAt);
 
-      meta.appendChild(sizeGroup);
-      meta.appendChild(dateGroup);
+      meta.appendChild(sizeLabel);
+      meta.appendChild(dateLabel);
 
-      const actions = document.createElement('div');
-      actions.className = 'media-card__actions';
-
-      const viewButton = document.createElement('button');
-      viewButton.className = 'cms-btn cms-btn--ghost';
-      viewButton.dataset.action = 'view-media';
-      viewButton.dataset.mediaUrl = media.url;
-      viewButton.textContent = 'Görüntüle';
-
-      const renameButton = document.createElement('button');
-      renameButton.className = 'cms-btn cms-btn-secondary';
-      renameButton.dataset.action = 'rename-media';
-      renameButton.dataset.mediaFilename = media.filename;
-      renameButton.textContent = 'Yeniden Adlandır';
-
-      const copyButton = document.createElement('button');
-      copyButton.className = 'cms-btn cms-btn-secondary';
-      copyButton.dataset.action = 'copy-media-url';
-      copyButton.dataset.mediaUrl = media.url;
-      copyButton.textContent = 'Bağlantıyı Kopyala';
-
-      const deleteButton = document.createElement('button');
-      deleteButton.className = 'cms-btn cms-btn-danger';
-      deleteButton.dataset.action = 'delete-media';
-      deleteButton.dataset.mediaFilename = media.filename;
-      deleteButton.textContent = 'Sil';
-
-      actions.appendChild(viewButton);
-      actions.appendChild(renameButton);
-      actions.appendChild(copyButton);
-      actions.appendChild(deleteButton);
-
-      body.appendChild(title);
+      body.appendChild(header);
       body.appendChild(meta);
-      body.appendChild(actions);
 
       article.appendChild(preview);
       article.appendChild(body);
@@ -996,6 +1008,7 @@
         this.state.media = this.state.media.filter((item) => item.filename !== filename);
         this.renderMediaList(this.state.media);
         this.showSuccess('Dosya silindi.');
+        this.closeAllMediaMenus();
       } catch (error) {
         this.showError(error.message || 'Dosya silinemedi.');
       }
@@ -1006,6 +1019,7 @@
       try {
         await navigator.clipboard.writeText(url);
         this.showSuccess('Bağlantı kopyalandı.');
+        this.closeAllMediaMenus();
       } catch (error) {
         console.error('Clipboard error:', error);
         this.showError('Bağlantı kopyalanamadı.');
@@ -1060,6 +1074,7 @@
           );
           this.renderMediaList(this.state.media);
           this.showSuccess('Dosya adı güncellendi.');
+          this.closeAllMediaMenus();
         }
       } catch (error) {
         this.showError(error.message || 'Dosya yeniden adlandırılamadı.');
@@ -1084,6 +1099,32 @@
     viewMedia(url) {
       if (!url) return;
       window.open(url, '_blank', 'noopener');
+    }
+
+    toggleMediaMenu(button) {
+      if (!button) return;
+      const card = button.closest('.media-card');
+      if (!card) return;
+      const isOpen = card.classList.contains('is-menu-open');
+      this.closeAllMediaMenus();
+      if (!isOpen) {
+        card.classList.add('is-menu-open');
+        const menu = card.querySelector('[data-media-menu]');
+        if (menu) {
+          menu.hidden = false;
+        }
+      }
+    }
+
+    closeAllMediaMenus() {
+      const openCards = document.querySelectorAll('.media-card.is-menu-open');
+      openCards.forEach((card) => {
+        card.classList.remove('is-menu-open');
+        const menu = card.querySelector('[data-media-menu]');
+        if (menu) {
+          menu.hidden = true;
+        }
+      });
     }
 
     escapeHtml(value) {
