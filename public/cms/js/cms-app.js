@@ -14,7 +14,12 @@
         recentArticles: initialState.recentArticles || [],
         settings: initialState.settings || {},
         branding: initialState.branding || {},
-        media: initialState.media || []
+        media: initialState.media || [],
+        mediaFolders: initialState.mediaFolders || [],
+        mediaTree: initialState.mediaTree || null,
+        mediaCurrentFolder: '',
+        mediaBreadcrumbs: [],
+        mediaSearchTerm: ''
       };
 
       this.currentArticleId = null;
@@ -73,6 +78,12 @@
       this.mediaUploadInput = document.querySelector('[data-cms="media-upload-input"]');
       this.refreshMediaBtn = document.querySelector('[data-action="refresh-media"]');
       this.openMediaUploadBtn = document.querySelector('[data-action="open-media-upload"]');
+      this.mediaTreeContainer = document.querySelector('[data-cms="media-tree"]');
+      this.mediaTreeRoot = document.querySelector('[data-cms="media-tree-root"]');
+      this.mediaBreadcrumbs = document.querySelector('[data-cms="media-breadcrumbs"]');
+      this.mediaSearchInput = document.querySelector('[data-cms="media-search-input"]');
+      this.mediaSearchClear = document.querySelector('[data-action="clear-media-search"]');
+      this.createFolderBtn = document.querySelector('[data-action="create-folder"]');
     }
 
     bindEvents() {
@@ -177,9 +188,9 @@
           } else if (action === 'copy-media-url') {
             this.copyMediaUrl(button.dataset.mediaUrl);
           } else if (action === 'delete-media') {
-            this.deleteMedia(button.dataset.mediaFilename);
+            this.deleteMedia(button.dataset.mediaPath);
           } else if (action === 'rename-media') {
-            this.promptRenameMedia(button.dataset.mediaFilename);
+            this.promptRenameMedia(button.dataset.mediaPath);
           } else if (action === 'view-media') {
             this.viewMedia(button.dataset.mediaUrl);
           }
@@ -190,6 +201,50 @@
         if (event.target.closest('.media-card__menu')) return;
         this.closeAllMediaMenus();
       });
+
+      if (this.mediaSearchInput) {
+        this.mediaSearchInput.addEventListener('input', (event) => this.handleMediaSearchInput(event));
+        this.mediaSearchInput.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+          }
+        });
+      }
+
+      if (this.mediaSearchClear) {
+        this.mediaSearchClear.addEventListener('click', () => this.clearMediaSearch());
+      }
+
+      if (this.createFolderBtn) {
+        this.createFolderBtn.addEventListener('click', () => this.promptCreateFolder());
+      }
+
+      if (this.mediaTreeContainer) {
+        this.mediaTreeContainer.addEventListener('click', (event) => {
+          const button = event.target.closest('button[data-action]');
+          if (!button) return;
+          const { action } = button.dataset;
+          if (action === 'open-folder') {
+            event.preventDefault();
+            const folder = button.dataset.folderPath || '';
+            this.openFolder(folder);
+          } else if (action === 'rename-folder') {
+            event.preventDefault();
+            const folder = button.dataset.folderPath || '';
+            this.promptRenameFolder(folder);
+          }
+        });
+      }
+
+      if (this.mediaBreadcrumbs) {
+        this.mediaBreadcrumbs.addEventListener('click', (event) => {
+          const button = event.target.closest('button[data-action="open-folder"]');
+          if (!button) return;
+          event.preventDefault();
+          const folder = button.dataset.folderPath || '';
+          this.openFolder(folder);
+        });
+      }
     }
 
     renderInitialState() {
@@ -201,6 +256,9 @@
       this.populateSettingsForm(this.state.settings);
       this.populateBrandingForm(this.state.branding);
       this.renderMediaList(this.state.media);
+      this.renderFolderTree(this.state.mediaTree);
+      this.renderBreadcrumbs(this.state.mediaBreadcrumbs);
+      this.updateMediaSearchInput(this.state.mediaSearchTerm);
       this.loadMedia();
     }
 
@@ -802,7 +860,9 @@
           empty = document.createElement('div');
           empty.className = 'cms-empty-state';
           empty.dataset.cms = 'media-empty';
-          empty.textContent = 'Henüz medya yüklenmedi. “Dosya Yükle” butonuyla yeni dosyalar ekleyebilirsiniz.';
+          empty.textContent = this.state.mediaSearchTerm
+            ? 'Aramanızla eşleşen medya bulunamadı. Farklı bir anahtar kelime deneyin.'
+            : 'Henüz medya yüklenmedi. “Dosya Yükle” butonuyla yeni dosyalar ekleyebilirsiniz.';
           this.mediaListContainer.innerHTML = '';
           this.mediaListContainer.appendChild(empty);
         }
@@ -835,16 +895,16 @@
     createMediaCard(media) {
       const article = document.createElement('article');
       article.className = 'media-card';
-      article.dataset.mediaFilename = media.filename;
+      article.dataset.mediaPath = media.path || media.filename;
 
       const preview = document.createElement('div');
       preview.className = 'media-card__preview';
       preview.dataset.mediaPreview = '';
 
-      if (media.url && media.extension && ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(media.extension.toLowerCase())) {
+      if (media.url && media.extension && ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes((media.extension || '').toLowerCase())) {
         const img = document.createElement('img');
         img.src = media.url;
-        img.alt = media.filename;
+        img.alt = media.filename || media.path;
         preview.appendChild(img);
       } else {
         const span = document.createElement('span');
@@ -860,8 +920,8 @@
 
       const title = document.createElement('span');
       title.className = 'media-card__title';
-      title.textContent = media.filename;
-      title.title = media.filename;
+      title.textContent = media.filename || media.path;
+      title.title = media.path || media.filename;
 
       const menuWrapper = document.createElement('div');
       menuWrapper.className = 'media-card__menu';
@@ -869,7 +929,7 @@
       const menuToggle = document.createElement('button');
       menuToggle.className = 'media-card__menu-btn';
       menuToggle.dataset.action = 'toggle-media-menu';
-      menuToggle.dataset.mediaFilename = media.filename;
+      menuToggle.dataset.mediaPath = media.path || media.filename;
       menuToggle.textContent = '⋮';
 
       const menuPanel = document.createElement('div');
@@ -891,13 +951,13 @@
         createMenuButton('view-media', 'Görüntüle', { mediaUrl: media.url })
       );
       menuPanel.appendChild(
-        createMenuButton('rename-media', 'Yeniden Adlandır', { mediaFilename: media.filename })
+        createMenuButton('rename-media', 'Yeniden Adlandır', { mediaPath: media.path || media.filename })
       );
       menuPanel.appendChild(
         createMenuButton('copy-media-url', 'Bağlantıyı Kopyala', { mediaUrl: media.url })
       );
       menuPanel.appendChild(
-        createMenuButton('delete-media', 'Sil', { mediaFilename: media.filename })
+        createMenuButton('delete-media', 'Sil', { mediaPath: media.path || media.filename })
       );
 
       menuWrapper.appendChild(menuToggle);
@@ -939,7 +999,6 @@
         try {
           const mediaItem = await this.uploadMediaFile(file);
           if (mediaItem) {
-            this.state.media = [mediaItem, ...this.state.media.filter((item) => item.filename !== mediaItem.filename)];
             uploadedCount += 1;
           }
         } catch (error) {
@@ -948,7 +1007,11 @@
         }
       }
 
-      this.renderMediaList(this.state.media);
+      if (uploadedCount > 0) {
+        await this.loadMedia();
+      } else {
+        this.renderMediaList(this.state.media);
+      }
 
       if (uploadedCount > 0) {
         this.showSuccess(`${uploadedCount} dosya yüklendi.`);
@@ -964,7 +1027,12 @@
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/cms/media/upload', {
+      const params = new URLSearchParams();
+      if (this.state.mediaCurrentFolder) {
+        params.set('folder', this.state.mediaCurrentFolder);
+      }
+
+      const response = await fetch(`/cms/media/upload${params.toString() ? `?${params.toString()}` : ''}`, {
         method: 'POST',
         body: formData
       });
@@ -980,23 +1048,42 @@
 
     async loadMedia() {
       try {
-        const result = await this.fetchJson('/cms/media');
+        const params = new URLSearchParams();
+        if (this.state.mediaCurrentFolder) {
+          params.set('folder', this.state.mediaCurrentFolder);
+        }
+        if (this.state.mediaSearchTerm) {
+          params.set('search', this.state.mediaSearchTerm);
+        }
+
+        const result = await this.fetchJson(`/cms/media${params.toString() ? `?${params.toString()}` : ''}`);
         const media = result.media || [];
+
         this.state.media = media;
+        this.state.mediaFolders = result.folders || [];
+        this.state.mediaTree = result.tree || null;
+        this.state.mediaBreadcrumbs = result.breadcrumbs || [];
+        this.state.mediaCurrentFolder = result.currentFolder || '';
+
         this.renderMediaList(media);
+        this.renderFolderTree(this.state.mediaTree);
+        this.renderBreadcrumbs(this.state.mediaBreadcrumbs);
+        this.updateMediaSearchInput(this.state.mediaSearchTerm);
       } catch (error) {
         console.error('Media load error:', error);
       }
     }
 
-    async deleteMedia(filename) {
-      if (!filename) return;
+    async deleteMedia(path) {
+      if (!path) return;
 
       const confirmed = window.confirm('Bu medya dosyasını silmek istediğinize emin misiniz?');
       if (!confirmed) return;
 
       try {
-        const response = await fetch(`/cms/media/${encodeURIComponent(filename)}`, {
+        const params = new URLSearchParams();
+        params.set('path', path);
+        const response = await fetch(`/cms/media?${params.toString()}`, {
           method: 'DELETE'
         });
 
@@ -1005,8 +1092,7 @@
           throw new Error(error.error || 'Dosya silinemedi');
         }
 
-        this.state.media = this.state.media.filter((item) => item.filename !== filename);
-        this.renderMediaList(this.state.media);
+        await this.loadMedia();
         this.showSuccess('Dosya silindi.');
         this.closeAllMediaMenus();
       } catch (error) {
@@ -1053,10 +1139,22 @@
       return filename;
     }
 
-    async promptRenameMedia(filename) {
-      if (!filename) return;
-      const stem = this.getFilenameStem(filename);
-      const extension = this.getFileExtension(filename);
+    getMediaByPath(path) {
+      return (this.state.media || []).find((item) => item.path === path);
+    }
+
+    getLastPathSegment(path) {
+      if (!path) return '';
+      const parts = path.split('/');
+      return parts[parts.length - 1] || '';
+    }
+
+    async promptRenameMedia(path) {
+      if (!path) return;
+      const media = this.getMediaByPath(path);
+      const currentName = media ? media.filename : this.getLastPathSegment(path);
+      const stem = this.getFilenameStem(currentName);
+      const extension = this.getFileExtension(currentName);
       const userInput = window.prompt('Yeni dosya adını girin (uzantısız):', stem);
       if (userInput === null) return;
 
@@ -1067,25 +1165,20 @@
       }
 
       try {
-        const updated = await this.renameMedia(filename, trimmed + extension);
-        if (updated?.media) {
-          this.state.media = this.state.media.map((item) =>
-            item.filename === filename ? updated.media : item
-          );
-          this.renderMediaList(this.state.media);
-          this.showSuccess('Dosya adı güncellendi.');
-          this.closeAllMediaMenus();
-        }
+        await this.renameMedia(path, trimmed + extension);
+        await this.loadMedia();
+        this.showSuccess('Dosya adı güncellendi.');
+        this.closeAllMediaMenus();
       } catch (error) {
         this.showError(error.message || 'Dosya yeniden adlandırılamadı.');
       }
     }
 
-    async renameMedia(filename, newName) {
-      const response = await fetch(`/cms/media/${encodeURIComponent(filename)}`, {
+    async renameMedia(path, newName) {
+      const response = await fetch('/cms/media', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newName })
+        body: JSON.stringify({ path, newName })
       });
 
       if (!response.ok) {
@@ -1096,6 +1189,225 @@
       return response.json();
     }
 
+    openFolder(folderPath) {
+      const normalized = folderPath || '';
+      this.state.mediaCurrentFolder = normalized;
+      this.loadMedia();
+    }
+
+    renderFolderTree(tree) {
+      if (!this.mediaTreeRoot) return;
+
+      this.mediaTreeRoot.innerHTML = '';
+
+      const rootItem = document.createElement('li');
+      const rootButton = document.createElement('button');
+      rootButton.className = 'media-tree__item';
+      if (!this.state.mediaCurrentFolder) {
+        rootButton.classList.add('is-active');
+      }
+      rootButton.dataset.action = 'open-folder';
+      rootButton.dataset.folderPath = '';
+      rootButton.textContent = 'Tüm Dosyalar';
+      rootItem.appendChild(rootButton);
+      this.mediaTreeRoot.appendChild(rootItem);
+
+      if (!tree || !Array.isArray(tree.children)) return;
+
+      const fragment = document.createDocumentFragment();
+      tree.children.forEach((child) => {
+        fragment.appendChild(this.createFolderTreeNode(child, 0));
+      });
+      this.mediaTreeRoot.appendChild(fragment);
+    }
+
+    createFolderTreeNode(node, depth = 0) {
+      const li = document.createElement('li');
+      li.className = 'media-tree__node';
+
+      const entry = document.createElement('div');
+      entry.className = 'media-tree__entry';
+      entry.style.setProperty('--depth', depth);
+
+      const openButton = document.createElement('button');
+      openButton.className = 'media-tree__item';
+      if (this.state.mediaCurrentFolder === node.path) {
+        openButton.classList.add('is-active');
+      }
+      openButton.dataset.action = 'open-folder';
+      openButton.dataset.folderPath = node.path;
+      openButton.textContent = node.name;
+
+      entry.appendChild(openButton);
+
+      if (node.path) {
+        const renameButton = document.createElement('button');
+        renameButton.className = 'media-tree__rename';
+        renameButton.dataset.action = 'rename-folder';
+        renameButton.dataset.folderPath = node.path;
+        renameButton.title = 'Klasörü yeniden adlandır';
+        renameButton.setAttribute('aria-label', 'Klasörü yeniden adlandır');
+        renameButton.textContent = '⋯';
+        entry.appendChild(renameButton);
+      }
+
+      li.appendChild(entry);
+
+      if (Array.isArray(node.children) && node.children.length > 0) {
+        const childList = document.createElement('ul');
+        childList.className = 'media-tree';
+        node.children.forEach((child) => {
+          childList.appendChild(this.createFolderTreeNode(child, depth + 1));
+        });
+        li.appendChild(childList);
+      }
+
+      return li;
+    }
+
+    renderBreadcrumbs(breadcrumbs) {
+      if (!this.mediaBreadcrumbs) return;
+      const trail = Array.isArray(breadcrumbs) ? breadcrumbs : [];
+      const container = this.mediaBreadcrumbs;
+      container.innerHTML = '';
+
+      const fragment = document.createDocumentFragment();
+
+      const rootButton = document.createElement('button');
+      rootButton.className = 'media-breadcrumbs__link';
+      if (!this.state.mediaCurrentFolder) {
+        rootButton.classList.add('is-active');
+      }
+      rootButton.dataset.action = 'open-folder';
+      rootButton.dataset.folderPath = '';
+      rootButton.textContent = 'Tüm Dosyalar';
+      fragment.appendChild(rootButton);
+
+      trail.forEach((crumb) => {
+        const separator = document.createElement('span');
+        separator.className = 'media-breadcrumbs__separator';
+        separator.textContent = '/';
+        fragment.appendChild(separator);
+
+        const button = document.createElement('button');
+        button.className = 'media-breadcrumbs__link';
+        if (this.state.mediaCurrentFolder === crumb.path) {
+          button.classList.add('is-active');
+        }
+        button.dataset.action = 'open-folder';
+        button.dataset.folderPath = crumb.path;
+        button.textContent = crumb.name;
+        fragment.appendChild(button);
+      });
+
+      container.appendChild(fragment);
+    }
+
+    handleMediaSearchInput(event) {
+      const value = event.currentTarget.value;
+      this.state.mediaSearchTerm = value.trim();
+      this.updateMediaSearchInput(this.state.mediaSearchTerm);
+      if (this.mediaSearchDebounce) {
+        clearTimeout(this.mediaSearchDebounce);
+      }
+      this.mediaSearchDebounce = setTimeout(() => this.loadMedia(), 300);
+    }
+
+    updateMediaSearchInput(value) {
+      if (this.mediaSearchInput) {
+        this.mediaSearchInput.value = value || '';
+      }
+      if (this.mediaSearchClear) {
+        this.mediaSearchClear.hidden = !(value && value.length);
+      }
+    }
+
+    clearMediaSearch() {
+      this.state.mediaSearchTerm = '';
+      this.updateMediaSearchInput('');
+      this.loadMedia();
+    }
+
+    promptCreateFolder() {
+      const userInput = window.prompt('Yeni klasör adını girin:');
+      if (userInput === null) return;
+      const trimmed = userInput.trim();
+      if (!trimmed) {
+        this.showError('Geçerli bir klasör adı girin.');
+        return;
+      }
+      this.createFolder(trimmed);
+    }
+
+    async createFolder(name) {
+      try {
+        const payload = {
+          parent: this.state.mediaCurrentFolder,
+          name
+        };
+
+        const response = await fetch('/cms/media/folders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || 'Klasör oluşturulamadı');
+        }
+
+        const result = await response.json();
+        const folder = result?.folder;
+        if (folder && typeof folder.path === 'string') {
+          this.state.mediaCurrentFolder = folder.path;
+        }
+        await this.loadMedia();
+        this.showSuccess('Klasör oluşturuldu.');
+      } catch (error) {
+        this.showError(error.message || 'Klasör oluşturulamadı.');
+      }
+    }
+
+    async promptRenameFolder(folderPath) {
+      if (!folderPath) return;
+      const currentName = this.getLastPathSegment(folderPath);
+      const userInput = window.prompt('Yeni klasör adını girin:', currentName);
+      if (userInput === null) return;
+
+      const trimmed = userInput.trim();
+      if (!trimmed) {
+        this.showError('Geçerli bir klasör adı girin.');
+        return;
+      }
+
+      try {
+        const result = await this.renameFolder(folderPath, trimmed);
+        const folder = result?.folder;
+        if (folder && typeof folder.path === 'string' && this.state.mediaCurrentFolder === folderPath) {
+          this.state.mediaCurrentFolder = folder.path;
+        }
+        await this.loadMedia();
+        this.showSuccess('Klasör adı güncellendi.');
+      } catch (error) {
+        this.showError(error.message || 'Klasör yeniden adlandırılamadı.');
+      }
+    }
+
+    async renameFolder(path, newName) {
+      const response = await fetch('/cms/media/folders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, newName })
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Klasör yeniden adlandırılamadı');
+      }
+
+      return response.json();
+    }
     viewMedia(url) {
       if (!url) return;
       window.open(url, '_blank', 'noopener');

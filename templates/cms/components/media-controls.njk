@@ -1,6 +1,6 @@
 {% macro MediaControls(initialMedia = []) %}
 <section id="media" class="cms-section" data-cms="media-section" hidden>
-  <div class="cms-content">
+  <div class="cms-content cms-content--media">
     <div class="cms-section-heading">
       <h2>Medya Kontrolleri</h2>
       <div class="cms-section-actions">
@@ -14,46 +14,73 @@
 
     <input type="file" data-cms="media-upload-input" accept="image/*,video/*,audio/*,.pdf,.doc,.docx" multiple hidden>
 
-    <div class="media-controls" data-cms="media-controls">
-      <div class="media-upload-hint">
-        <p>Dosyalar proje dizinindeki <code>/public/uploads/media</code> klasörüne kaydedilir.</p>
-        <p>Yükleme sonrası dosya URL’si <code>/uploads/media/&lt;dosya-adı&gt;</code> şeklindedir.</p>
-      </div>
+    <div class="media-layout" data-cms="media-layout">
+      <aside class="media-sidebar" data-cms="media-sidebar">
+        <div class="media-sidebar__header">
+          <h3>Klasörler</h3>
+          <button class="media-sidebar__new" data-action="create-folder">Yeni Klasör</button>
+        </div>
+        <nav class="media-sidebar__body" data-cms="media-tree">
+          <ul class="media-tree" data-cms="media-tree-root">
+            <li>
+              <button class="media-tree__item is-active" data-action="open-folder" data-folder-path="">Tüm Dosyalar</button>
+            </li>
+          </ul>
+        </nav>
+      </aside>
 
-      <div class="media-list" data-cms="media-list">
-        {% if initialMedia | length %}
-        <div class="media-grid" data-cms="media-grid">
-          {% for media in initialMedia %}
-          <article class="media-card" data-media-filename="{{ media.filename }}">
-            <div class="media-card__preview" data-media-preview>
-              <span>{{ media.extension | upper | default('DOSYA') }}</span>
-            </div>
-            <div class="media-card__body">
-              <header class="media-card__header">
-                <span class="media-card__title" title="{{ media.filename }}">{{ media.filename }}</span>
-                <div class="media-card__menu">
-                  <button class="media-card__menu-btn" data-action="toggle-media-menu" data-media-filename="{{ media.filename }}">⋮</button>
-                  <div class="media-card__menu-panel" data-media-menu hidden>
-                    <button data-action="view-media" data-media-url="{{ media.url }}">Görüntüle</button>
-                    <button data-action="rename-media" data-media-filename="{{ media.filename }}">Yeniden Adlandır</button>
-                    <button data-action="copy-media-url" data-media-url="{{ media.url }}">Bağlantıyı Kopyala</button>
-                    <button data-action="delete-media" data-media-filename="{{ media.filename }}">Sil</button>
+      <div class="media-main" data-cms="media-main">
+        <div class="media-toolbar">
+          <div class="media-toolbar__search">
+            <span class="media-toolbar__search-icon">🔍</span>
+            <input type="search" placeholder="Dosya adında ara..." data-cms="media-search-input">
+            <button class="media-toolbar__clear" type="button" data-action="clear-media-search" hidden>×</button>
+          </div>
+          <div class="media-toolbar__breadcrumbs" data-cms="media-breadcrumbs"></div>
+        </div>
+
+        <div class="media-controls" data-cms="media-controls">
+          <div class="media-upload-hint">
+            <p>Dosyalar proje dizinindeki <code>/public/uploads/media</code> klasörüne kaydedilir.</p>
+            <p>Yükleme sonrası dosya URL’si <code>/uploads/media/&lt;klasör&gt;/&lt;dosya&gt;</code> şeklindedir.</p>
+          </div>
+
+          <div class="media-list" data-cms="media-list">
+            {% if initialMedia | length %}
+            <div class="media-grid" data-cms="media-grid">
+              {% for media in initialMedia %}
+              <article class="media-card" data-media-path="{{ media.path }}">
+                <div class="media-card__preview" data-media-preview>
+                  <span>{{ media.extension | upper | default('DOSYA') }}</span>
+                </div>
+                <div class="media-card__body">
+                  <header class="media-card__header">
+                    <span class="media-card__title" title="{{ media.filename }}">{{ media.filename }}</span>
+                    <div class="media-card__menu">
+                      <button class="media-card__menu-btn" data-action="toggle-media-menu" data-media-path="{{ media.path }}">⋮</button>
+                      <div class="media-card__menu-panel" data-media-menu hidden>
+                        <button data-action="view-media" data-media-url="{{ media.url }}">Görüntüle</button>
+                        <button data-action="rename-media" data-media-path="{{ media.path }}">Yeniden Adlandır</button>
+                        <button data-action="copy-media-url" data-media-url="{{ media.url }}">Bağlantıyı Kopyala</button>
+                        <button data-action="delete-media" data-media-path="{{ media.path }}">Sil</button>
+                      </div>
+                    </div>
+                  </header>
+                  <div class="media-card__meta">
+                    <span>{{ media.size }}</span>
+                    <span>{{ media.uploadedAt | formatDate | default('-') }}</span>
                   </div>
                 </div>
-              </header>
-              <div class="media-card__meta">
-                <span>{{ media.size }}</span>
-                <span>{{ media.uploadedAt | formatDate | default('-') }}</span>
-              </div>
+              </article>
+              {% endfor %}
             </div>
-          </article>
-          {% endfor %}
+            {% else %}
+            <div class="cms-empty-state" data-cms="media-empty">
+              Henüz medya yüklenmedi. “Dosya Yükle” butonuyla yeni dosyalar ekleyebilirsiniz.
+            </div>
+            {% endif %}
+          </div>
         </div>
-        {% else %}
-        <div class="cms-empty-state" data-cms="media-empty">
-          Henüz medya yüklenmedi. “Dosya Yükle” butonuyla yeni dosyalar ekleyebilirsiniz.
-        </div>
-        {% endif %}
       </div>
     </div>
   </div>
