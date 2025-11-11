@@ -1,0 +1,58 @@
+{% macro siteHeader(branding = {}, categories = []) %}
+{% set siteName = branding.siteName or 'UHA News' %}
+{% set headerLogo = branding.headerLogo %}
+{% set navId = 'primary-navigation' %}
+<header class="site-header" data-site-header>
+  <div class="container header-inner">
+    <a class="site-logo" href="/" aria-label="{{ siteName }}">
+      {% if headerLogo %}
+      <img src="{{ headerLogo }}" alt="{{ siteName }}">
+      {% endif %}
+      <span class="site-logo__text"{% if headerLogo %} aria-hidden="true"{% endif %}>{{ siteName }}</span>
+    </a>
+
+    <button
+      class="nav-toggle"
+      type="button"
+      aria-controls="{{ navId }}"
+      aria-expanded="false"
+      data-nav-toggle
+    >
+      <span class="nav-toggle__bar"></span>
+      <span class="nav-toggle__bar"></span>
+      <span class="nav-toggle__bar"></span>
+      <span class="nav-toggle__label">Menü</span>
+    </button>
+
+    <nav class="site-nav-bar" aria-label="Ana menü">
+      <ul class="site-nav-bar__list">
+        {% for category in categories %}
+        <li class="site-nav-bar__item">
+          <a class="site-nav-bar__link" href="{{ category.href or '/kategori/' ~ (category.slug or category.name | lower | replace(' ', '-')) }}">{{ category.name }}</a>
+        </li>
+        {% endfor %}
+      </ul>
+    </nav>
+  </div>
+
+  <div class="site-nav-overlay" hidden data-nav-overlay></div>
+
+  <nav id="{{ navId }}" class="site-nav-panel" hidden data-nav-panel aria-label="Mobil menü">
+    <div class="site-nav-panel__header">
+      <span class="site-nav-panel__title">{{ siteName }}</span>
+      <button class="nav-close" type="button" data-nav-close aria-label="Menüyü kapat">
+        <span class="nav-close__bar"></span>
+        <span class="nav-close__bar"></span>
+      </button>
+    </div>
+    <ul class="site-nav-panel__list">
+      {% for category in categories %}
+      <li class="site-nav-panel__item">
+        <a class="site-nav-panel__link" href="{{ category.href or '/kategori/' ~ (category.slug or category.name | lower | replace(' ', '-')) }}">{{ category.name }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </nav>
+</header>
+{% endmacro %}
+

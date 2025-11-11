@@ -79,7 +79,7 @@
 /* Tablet and Desktop Enhancements */
 @media (min-width: 768px) {
   :root {
-    --container-max-width: 1200px;
+    --container-max-width: max(65vw, 1200px);
     --sidebar-width: 300px;
     --article-card-width: 300px;
     --article-card-height: 400px;

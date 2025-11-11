@@ -36,6 +36,26 @@ function formatBranding(raw) {
   return branding;
 }
 
+function buildNavCategories(categories = []) {
+  const items = categories.map(category => {
+    const slug = category.slug || urlSlugService.generateSlug(category.name);
+    return {
+      name: category.name,
+      slug,
+      href: `/kategori/${slug}`
+    };
+  });
+
+  return [
+    {
+      name: 'Ana Sayfa',
+      slug: '',
+      href: '/'
+    },
+    ...items
+  ];
+}
+
 /**
  * Homepage route
  */
@@ -50,6 +70,7 @@ router.get('/', async (req, res) => {
 
     // Fetch articles by category for category sections
     const categories = dataService.getCategories();
+    const navCategories = buildNavCategories(categories);
     const categorySections = [];
 
     for (const category of categories.slice(0, 3)) {
@@ -92,6 +113,7 @@ router.get('/', async (req, res) => {
               urlSlugService.generateSlug(article.title)
       })),
       categorySections,
+      navCategories,
       jsonLd: null
     };
 
@@ -125,6 +147,8 @@ router.get('/haber/:slug', async (req, res) => {
 
     // Fetch related articles
     const relatedArticles = dataService.getRelatedArticles(articleId, 4);
+    const categories = dataService.getCategories();
+    const navCategories = buildNavCategories(categories);
 
     // Branding data
     const branding = formatBranding(dataService.getBranding());
@@ -157,6 +181,7 @@ router.get('/haber/:slug', async (req, res) => {
         slug: urlSlugService.getSlugById(related.id) || 
               urlSlugService.generateSlug(related.title)
       })),
+      navCategories,
       jsonLd: articleSchema
     };
 
@@ -177,6 +202,7 @@ router.get('/kategori/:categorySlug', async (req, res) => {
     
     // Find category by slug
     const categories = dataService.getCategories();
+    const navCategories = buildNavCategories(categories);
     const category = categories.find(cat => 
       urlSlugService.generateSlug(cat.name) === categorySlug
     );
@@ -232,6 +258,7 @@ router.get('/kategori/:categorySlug', async (req, res) => {
         slug: urlSlugService.getSlugById(article.id) || 
               urlSlugService.generateSlug(article.title)
       })),
+      navCategories,
       pagination,
       jsonLd: null
     };
@@ -262,6 +289,8 @@ router.get('/arama', async (req, res) => {
       sortBy: 'publishedAt',
       sortOrder: 'desc'
     });
+    const categories = dataService.getCategories();
+    const navCategories = buildNavCategories(categories);
 
     // Prepare pagination
     const pagination = {
@@ -295,6 +324,7 @@ router.get('/arama', async (req, res) => {
         slug: urlSlugService.getSlugById(article.id) || 
               urlSlugService.generateSlug(article.title)
       })),
+      navCategories,
       pagination,
       jsonLd: null
     };

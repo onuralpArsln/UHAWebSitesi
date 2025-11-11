@@ -1,6 +1,8 @@
 {% extends "layouts/base.njk" %}
 {% from "widgets/carouselSetSize.njk" import carouselSetSize %}
 {% from "widgets/flashNews.njk" import flashNews %}
+{% from "widgets/article-view.njk" import articleView %}
+{% from "widgets/site-header.njk" import siteHeader %}
 
 {% set meta = {
   title: "Widget Önizleme",
@@ -166,6 +168,8 @@
 {% set flashNewsItems = sampleSlides %}
 
 {% block body %}
+{% set brand = branding or {} %}
+{{ siteHeader(brand, navCategories or []) }}
 <main class="container widget-test-page">
   <header class="widget-test-header">
     <h1>Widget Önizleme Alanı</h1>
@@ -192,6 +196,11 @@
       pauseDelay: 250,
       duplicateCount: 3
     }) }}
+  </section>
+
+  <section class="widget-preview">
+    <h2>articleView</h2>
+    {{ articleView(sampleSlides[0]) }}
   </section>
 </main>
 {% endblock %}

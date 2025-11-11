@@ -2,6 +2,7 @@
 {% from "widgets/comment-section.njk" import commentSection %}
 {% from "widgets/related-news.njk" import relatedNews %}
 {% from "widgets/ad-placeholder.njk" import adPlaceholder %}
+{% from "widgets/site-header.njk" import siteHeader %}
 
 {% block head_extra %}
 <meta name="keywords" content="{{ article.keywords | join(', ') if article.keywords else '' }}">
@@ -13,22 +14,7 @@
 
 {% block body %}
 {% set brand = branding or {} %}
-<header class="site-header">
-  <div class="container header-inner">
-    <a class="site-logo" href="/" aria-label="{{ brand.siteName or 'UHA News' }}">
-      {% if brand.headerLogo %}
-      <img src="{{ brand.headerLogo }}" alt="{{ brand.siteName or 'UHA News' }}">
-      {% endif %}
-      <span class="site-logo__text"{% if brand.headerLogo %} aria-hidden="true"{% endif %}>{{ brand.siteName or 'UHA News' }}</span>
-    </a>
-    <nav class="site-nav" aria-label="Ana menü">
-      <a class="site-nav__link" href="/">Ana Sayfa</a>
-      <a class="site-nav__link" href="/kategori/gundem">Gündem</a>
-      <a class="site-nav__link" href="/kategori/ekonomi">Ekonomi</a>
-      <a class="site-nav__link" href="/kategori/spor">Spor</a>
-    </nav>
-  </div>
-</header>
+{{ siteHeader(brand, navCategories or []) }}
 
 <main class="site-main">
   <nav class="breadcrumb container" aria-label="İz yolu">

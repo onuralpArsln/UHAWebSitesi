@@ -1,0 +1,40 @@
+{% macro articleView(article) %}
+{% if article %}
+{% set slug = article.slug or article.id %}
+{% set href = slug and ['/haber/', slug] | join('') or '#' %}
+{% set image = article.images and article.images[0] %}
+<article class="article-view-card" data-widget="article-view">
+  <a class="article-view-media" href="{{ href }}" aria-hidden="{{ 'true' if not image }}">
+    {% if image %}
+    <img
+      src="{{ image.lowRes or image.url }}"
+      {% if image.highRes %}
+      data-high-res="{{ image.highRes }}"
+      {% endif %}
+      alt="{{ image.alt or article.title }}"
+      loading="lazy"
+    >
+    {% endif %}
+  </a>
+  <div class="article-view-content">
+    {% if article.category %}
+    <span class="article-view-category">{{ article.category }}</span>
+    {% endif %}
+    {% if article.title %}
+    <h3 class="article-view-title">
+      <a href="{{ href }}">{{ article.title }}</a>
+    </h3>
+    {% endif %}
+    {% if article.summary %}
+    <p class="article-view-summary">{{ article.summary }}</p>
+    {% endif %}
+    {% if article.publishedAt %}
+    <time class="article-view-meta" datetime="{{ article.publishedAt }}">
+      {{ article.publishedAt | formatDate }}
+    </time>
+    {% endif %}
+  </div>
+</article>
+{% endif %}
+{% endmacro %}
+
