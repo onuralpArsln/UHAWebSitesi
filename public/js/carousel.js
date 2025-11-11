@@ -13,7 +13,7 @@ class Carousel {
    * Initialize all carousels
    */
   init() {
-    const carouselWidgets = document.querySelectorAll('[data-widget="carousel"]');
+    const carouselWidgets = document.querySelectorAll('[data-widget="carousel"], [data-widget="carousel-set-size"]');
     
     carouselWidgets.forEach((widget, index) => {
       this.initCarousel(widget, index);
@@ -31,6 +31,15 @@ class Carousel {
     const prevBtn = widget.querySelector('.carousel-prev');
     const nextBtn = widget.querySelector('.carousel-next');
     const indicators = widget.querySelectorAll('.indicator');
+    const tabsContainer = widget.querySelector('.carousel-set-size__tabs');
+    const tabs = tabsContainer ? tabsContainer.querySelectorAll('.carousel-tab') : [];
+    const sidePrev = widget.querySelector('.carousel-set-size__side--prev');
+    const sideNext = widget.querySelector('.carousel-set-size__side--next');
+
+    const { autoScroll, scrollDelay, sideClick } = widget.dataset;
+    const autoPlayEnabled = autoScroll !== undefined ? autoScroll === 'true' : true;
+    const autoPlayDelay = scrollDelay ? parseInt(scrollDelay, 10) : 5000;
+    const enableSideClick = sideClick ? sideClick === 'true' : false;
 
     if (!track || slides.length === 0) return;
 
@@ -41,10 +50,15 @@ class Carousel {
       prevBtn,
       nextBtn,
       indicators,
+      tabsContainer,
+      tabs,
+      sidePrev: enableSideClick ? sidePrev : null,
+      sideNext: enableSideClick ? sideNext : null,
       currentSlide: 0,
       totalSlides: slides.length,
-      isAutoPlaying: true,
-      autoPlayDelay: 5000
+      isAutoPlaying: autoPlayEnabled,
+      autoPlayDelay: autoPlayDelay > 0 ? autoPlayDelay : 5000,
+      autoPlayEnabled
     };
 
     this.carousels.set(index, carousel);
@@ -57,7 +71,7 @@ class Carousel {
    * Setup carousel event listeners
    */
   setupCarouselEvents(carousel) {
-    const { prevBtn, nextBtn, indicators } = carousel;
+    const { prevBtn, nextBtn, indicators, tabs, sidePrev, sideNext } = carousel;
 
     // Previous button
     if (prevBtn) {
@@ -82,6 +96,31 @@ class Carousel {
         this.triggerAdRefresh('carousel-indicator');
       });
     });
+
+    // Tabs (numeric or dots)
+    if (tabs && tabs.length) {
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => {
+          this.goToSlide(carousel, index);
+          this.triggerAdRefresh('carousel-tab');
+        });
+      });
+    }
+
+    // Side click regions
+    if (sidePrev) {
+      sidePrev.addEventListener('click', () => {
+        this.previousSlide(carousel);
+        this.triggerAdRefresh('carousel-side-prev');
+      });
+    }
+
+    if (sideNext) {
+      sideNext.addEventListener('click', () => {
+        this.nextSlide(carousel);
+        this.triggerAdRefresh('carousel-side-next');
+      });
+    }
 
     // Keyboard navigation
     carousel.widget.addEventListener('keydown', (e) => {
@@ -184,7 +223,7 @@ class Carousel {
    * Update carousel display
    */
   updateCarousel(carousel) {
-    const { slides, indicators, currentSlide } = carousel;
+    const { slides, indicators, tabs, currentSlide } = carousel;
 
     // Update slides
     slides.forEach((slide, index) => {
@@ -195,6 +234,13 @@ class Carousel {
     indicators.forEach((indicator, index) => {
       indicator.classList.toggle('active', index === currentSlide);
     });
+
+    // Update tabs
+    if (tabs && tabs.length) {
+      tabs.forEach((tab, index) => {
+        tab.classList.toggle('active', index === currentSlide);
+      });
+    }
 
     // Update button states
     this.updateButtonStates(carousel);
@@ -244,7 +290,7 @@ class Carousel {
    * Start auto-play
    */
   startAutoPlay(carousel) {
-    if (carousel.totalSlides <= 1) return;
+    if (carousel.totalSlides <= 1 || !carousel.autoPlayEnabled) return;
 
     const interval = setInterval(() => {
       if (carousel.isAutoPlaying) {
@@ -260,14 +306,18 @@ class Carousel {
    * Pause auto-play
    */
   pauseAutoPlay(carousel) {
-    carousel.isAutoPlaying = false;
+    if (carousel.autoPlayEnabled) {
+      carousel.isAutoPlaying = false;
+    }
   }
 
   /**
    * Resume auto-play
    */
   resumeAutoPlay(carousel) {
-    carousel.isAutoPlaying = true;
+    if (carousel.autoPlayEnabled) {
+      carousel.isAutoPlaying = true;
+    }
   }
 
   /**

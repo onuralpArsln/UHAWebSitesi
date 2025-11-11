@@ -183,6 +183,383 @@
   z-index: 10;
 }
 
+/* Carousel Set Size Widget */
+.carousel-set-size-widget {
+  --carousel-set-size-width: 100%;
+  --carousel-set-size-aspect: 16/9;
+  width: var(--carousel-set-size-width);
+  max-width: 100%;
+  margin: 0 auto var(--spacing-lg);
+}
+
+.carousel-set-size {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.carousel-set-size__viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--carousel-set-size-aspect);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  background-color: var(--background-dark, #111827);
+}
+
+.carousel-set-size .carousel-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform var(--transition-normal);
+}
+
+.carousel-set-size .carousel-slide {
+  min-width: 100%;
+  height: 100%;
+  position: relative;
+  display: none;
+}
+
+.carousel-set-size .carousel-slide.active {
+  display: block;
+}
+
+.carousel-set-size__media,
+.carousel-set-size__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carousel-set-size__content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--spacing-lg) var(--spacing-md) var(--spacing-md);
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.carousel-set-size__content h3 {
+  font-size: var(--font-size-xl);
+  margin: 0;
+}
+
+.carousel-set-size__content h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.carousel-set-size__content h3 a:hover {
+  text-decoration: underline;
+}
+
+.carousel-set-size__content p {
+  margin: 0;
+  opacity: 0.85;
+}
+
+.carousel-set-size__meta {
+  display: flex;
+  gap: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  opacity: 0.85;
+}
+
+.carousel-set-size__meta .category {
+  background-color: var(--accent-color);
+  color: #fff;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.carousel-set-size__meta .date {
+  color: #e2e8f0;
+}
+
+.carousel-set-size .carousel-prev,
+.carousel-set-size .carousel-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition-fast);
+  z-index: 2;
+}
+
+.carousel-set-size .carousel-prev:hover,
+.carousel-set-size .carousel-next:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.carousel-set-size .carousel-prev {
+  left: var(--spacing-md);
+}
+
+.carousel-set-size .carousel-next {
+  right: var(--spacing-md);
+}
+
+.carousel-set-size__side {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 20%;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.carousel-set-size__side--prev {
+  left: 0;
+}
+
+.carousel-set-size__side--next {
+  right: 0;
+}
+
+.carousel-set-size__tabs {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: 0 var(--spacing-md);
+}
+
+.carousel-set-size__tabs[data-variant="numbers"] .carousel-tab {
+  min-width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background-color: var(--background-light);
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.carousel-set-size__tabs .carousel-tab {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: inherit;
+  padding: 0 var(--spacing-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+}
+
+.carousel-set-size__tabs .carousel-tab:hover,
+.carousel-set-size__tabs .carousel-tab.active {
+  background-color: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+}
+
+.carousel-set-size__tabs[data-variant="dots"] .carousel-tab {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+}
+
+.carousel-set-size__tabs[data-variant="dots"] .carousel-tab span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: transparent;
+  transition: background-color var(--transition-fast);
+}
+
+.carousel-set-size__tabs[data-variant="dots"] .carousel-tab:hover span,
+.carousel-set-size__tabs[data-variant="dots"] .carousel-tab.active span {
+  background-color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+  .carousel-set-size-widget {
+    width: 100%;
+  }
+
+  .carousel-set-size__viewport {
+    aspect-ratio: 4 / 3;
+  }
+
+  .carousel-set-size .carousel-prev,
+  .carousel-set-size .carousel-next {
+    width: 36px;
+    height: 36px;
+    font-size: var(--font-size-base);
+  }
+
+  .carousel-set-size__tabs {
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+}
+
+/* Flash News Ticker */
+.flash-news-widget {
+  --flash-news-duration: 30s;
+  --flash-news-hover-duration: calc(var(--flash-news-duration) * 2);
+  --flash-news-offset: 50%;
+  position: relative;
+  margin: var(--spacing-xl) auto;
+  color: #fff;
+  background: linear-gradient(90deg, var(--accent-color), color-mix(in srgb, var(--accent-color) 65%, #0f172a));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.flash-news__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-lg);
+}
+
+.flash-news__label {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.flash-news__ticker {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  min-height: 36px;
+}
+
+.flash-news__track {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  will-change: transform;
+  animation: flash-news-marquee linear infinite;
+  animation-duration: var(--flash-news-duration);
+  transform: translateX(0);
+}
+
+.flash-news__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  white-space: nowrap;
+  color: inherit;
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  transition: opacity var(--transition-fast);
+  padding-right: var(--spacing-lg);
+  position: relative;
+}
+
+.flash-news__item::after {
+  content: '';
+  position: absolute;
+  right: calc(var(--spacing-lg) * -0.5);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.flash-news__item:last-child::after {
+  display: none;
+}
+
+.flash-news__item:hover {
+  opacity: 0.85;
+  text-decoration: underline;
+}
+
+.flash-news__time {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xs) var(--spacing-sm);
+  background: rgba(15, 23, 42, 0.45);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.flash-news__title {
+  font-weight: 600;
+}
+
+.flash-news-widget.is-slowing .flash-news__track {
+  animation-duration: var(--flash-news-hover-duration);
+}
+
+.flash-news-widget.is-paused .flash-news__track {
+  animation-play-state: paused;
+}
+
+@keyframes flash-news-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-1 * var(--flash-news-offset)));
+  }
+}
+
+@media (max-width: 768px) {
+  .flash-news-widget {
+    border-radius: var(--radius-md);
+    margin: var(--spacing-lg) auto;
+  }
+
+  .flash-news__inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .flash-news__label {
+    align-self: flex-start;
+  }
+
+  .flash-news__track {
+    gap: var(--spacing-md);
+  }
+
+  .flash-news__item {
+    padding-right: var(--spacing-md);
+  }
+}
+
 /* Ad Widget */
 .ad-widget {
   margin: var(--spacing-xl) 0;

@@ -23,12 +23,26 @@ const dateFormatter = new Intl.DateTimeFormat('tr-TR', {
   dateStyle: 'medium',
   timeStyle: 'short'
 });
+const timeFormatter = new Intl.DateTimeFormat('tr-TR', {
+  hour: '2-digit',
+  minute: '2-digit'
+});
 
 nunjucksEnv.addFilter('formatDate', (value) => {
   if (!value) return '';
   try {
     const date = value instanceof Date ? value : new Date(value);
     return dateFormatter.format(date);
+  } catch (error) {
+    return value;
+  }
+});
+
+nunjucksEnv.addFilter('formatTime', (value) => {
+  if (!value) return '';
+  try {
+    const date = value instanceof Date ? value : new Date(value);
+    return timeFormatter.format(date);
   } catch (error) {
     return value;
   }

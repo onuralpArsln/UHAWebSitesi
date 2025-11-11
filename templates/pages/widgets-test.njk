@@ -1,0 +1,204 @@
+{% extends "layouts/base.njk" %}
+{% from "widgets/carouselSetSize.njk" import carouselSetSize %}
+{% from "widgets/flashNews.njk" import flashNews %}
+
+{% set meta = {
+  title: "Widget Önizleme",
+  description: "Yeni widget bileşenlerinin önizleme sayfası",
+  type: "website"
+} %}
+
+{% set sampleSlides = [
+  {
+    id: "preview-1",
+    slug: "ornek-haber-1",
+    title: "Örnek Haber Başlığı 1",
+    summaryHead: "İzmir merkezli enerji projesi yeni yatırım aldı",
+    summary: "Bu, carouselSetSize widget'ının önizlemesi için oluşturulmuş bir örnek haber özetidir.",
+    category: "Gündem",
+    creationDate: "2025-11-10T08:00:00Z",
+    publishedAt: "2025-11-10T08:00:00Z",
+    images: [
+      {
+        lowRes: "https://picsum.photos/seed/uhapreview1/640/360",
+        highRes: "https://picsum.photos/seed/uhapreview1/1280/720",
+        alt: "Örnek görsel 1",
+        width: 1280,
+        height: 720
+      }
+    ]
+  },
+  {
+    id: "preview-2",
+    slug: "ornek-haber-2",
+    title: "Örnek Haber Başlığı 2",
+    summaryHead: "Merkez Bankası faiz beklentilerini güncelledi",
+    summary: "Responsive boyutların korunmasını ve sekmelerin davranışını test etmek için ikinci haber içeriği.",
+    category: "Ekonomi",
+    creationDate: "2025-11-09T12:30:00Z",
+    publishedAt: "2025-11-09T12:30:00Z",
+    images: [
+      {
+        lowRes: "https://picsum.photos/seed/uhapreview2/640/360",
+        highRes: "https://picsum.photos/seed/uhapreview2/1280/720",
+        alt: "Örnek görsel 2",
+        width: 1280,
+        height: 720
+      }
+    ]
+  },
+  {
+    id: "preview-3",
+    slug: "ornek-haber-3",
+    title: "Örnek Haber Başlığı 3",
+    summaryHead: "Milli takım yeni teknik direktörünü açıkladı",
+    summary: "Alt sekmelerden seçim yapılabildiğini göstermek için üçüncü haber ögesini ekliyoruz.",
+    category: "Spor",
+    creationDate: "2025-11-08T19:15:00Z",
+    publishedAt: "2025-11-08T19:15:00Z",
+    images: [
+      {
+        lowRes: "https://picsum.photos/seed/uhapreview3/640/360",
+        highRes: "https://picsum.photos/seed/uhapreview3/1280/720",
+        alt: "Örnek görsel 3",
+        width: 1280,
+        height: 720
+      }
+    ]
+  },
+  {
+    id: "preview-4",
+    slug: "ornek-haber-4",
+    title: "Örnek Haber Başlığı 4",
+    summaryHead: "Yerli girişimden oyun ekosistemine büyük yatırım",
+    summary: "Auto-scroll ve kenarlardan tıklama özelliklerini doğrulamak için dördüncü içerik.",
+    category: "Teknoloji",
+    creationDate: "2025-11-07T10:45:00Z",
+    publishedAt: "2025-11-07T10:45:00Z",
+    images: [
+      {
+        lowRes: "https://picsum.photos/seed/uhapreview4/640/360",
+        highRes: "https://picsum.photos/seed/uhapreview4/1280/720",
+        alt: "Örnek görsel 4",
+        width: 1280,
+        height: 720
+      }
+    ]
+  },
+  {
+    id: "preview-5",
+    slug: "ornek-haber-5",
+    title: "Örnek Haber Başlığı 5",
+    summaryHead: "İstanbul Film Festivali programını açıkladı",
+    summary: "İçerik kartlarının etkileşimlerini görmek için eklenen ekstra haber öğesi.",
+    category: "Kültür",
+    creationDate: "2025-11-06T09:20:00Z",
+    publishedAt: "2025-11-06T09:20:00Z",
+    images: [
+      {
+        lowRes: "https://picsum.photos/seed/uhapreview5/640/360",
+        highRes: "https://picsum.photos/seed/uhapreview5/1280/720",
+        alt: "Örnek görsel 5",
+        width: 1280,
+        height: 720
+      }
+    ]
+  },
+  {
+    id: "preview-6",
+    slug: "ornek-haber-6",
+    title: "Örnek Haber Başlığı 6",
+    summaryHead: "Sağlık Bakanlığı grip aşısı çağrısı yaptı",
+    summary: "Farklı kategorilerdeki içeriklerin görünümünü test etmek için ek bir makale.",
+    category: "Sağlık",
+    creationDate: "2025-11-05T14:05:00Z",
+    publishedAt: "2025-11-05T14:05:00Z",
+    images: [
+      {
+        lowRes: "https://picsum.photos/seed/uhapreview6/640/360",
+        highRes: "https://picsum.photos/seed/uhapreview6/1280/720",
+        alt: "Örnek görsel 6",
+        width: 1280,
+        height: 720
+      }
+    ]
+  },
+  {
+    id: "preview-7",
+    slug: "ornek-haber-7",
+    title: "Örnek Haber Başlığı 7",
+    summaryHead: "G20 zirvesinde iklim ajandası öne çıktı",
+    summary: "Sekmeler arasında geçiş yaparken fazladan içerik desteği sağlar.",
+    category: "Dünya",
+    creationDate: "2025-11-04T18:55:00Z",
+    publishedAt: "2025-11-04T18:55:00Z",
+    images: [
+      {
+        lowRes: "https://picsum.photos/seed/uhapreview7/640/360",
+        highRes: "https://picsum.photos/seed/uhapreview7/1280/720",
+        alt: "Örnek görsel 7",
+        width: 1280,
+        height: 720
+      }
+    ]
+  },
+  {
+    id: "preview-8",
+    slug: "ornek-haber-8",
+    title: "Örnek Haber Başlığı 8",
+    summaryHead: "Popüler dizinin final bölümü rekor kırdı",
+    summary: "Karuselin uzun listelerde nasıl davrandığını incelemek için eklenen son içerik.",
+    category: "Magazin",
+    creationDate: "2025-11-03T11:10:00Z",
+    publishedAt: "2025-11-03T11:10:00Z",
+    images: [
+      {
+        lowRes: "https://picsum.photos/seed/uhapreview8/640/360",
+        highRes: "https://picsum.photos/seed/uhapreview8/1280/720",
+        alt: "Örnek görsel 8",
+        width: 1280,
+        height: 720
+      }
+    ]
+  }
+] %}
+
+{% set flashNewsItems = sampleSlides %}
+
+{% block body %}
+<main class="container widget-test-page">
+  <header class="widget-test-header">
+    <h1>Widget Önizleme Alanı</h1>
+    <p>Bu sayfa henüz canlı sayfalara eklenmeyen widget bileşenlerini test etmek için oluşturulmuştur.</p>
+  </header>
+
+  <section class="widget-preview">
+    <h2>carouselSetSize</h2>
+    {{ carouselSetSize('preview-carousel', sampleSlides, {
+      size: 25,
+      aspect: '16/9',
+      autoScroll: true,
+      scrollDelay: 4000,
+      sideClick: true,
+      showTabs: true,
+      tabsStyle: 'numbers'
+    }) }}
+  </section>
+
+  <section class="widget-preview">
+    <h2>Flash News</h2>
+    {{ flashNews('flash-news-demo', flashNewsItems, {
+      speed: 80,
+      pauseDelay: 250,
+      duplicateCount: 3
+    }) }}
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="/js/carousel.js" defer></script>
+<script src="/js/flash-news.js" defer></script>
+{% endblock %}
+

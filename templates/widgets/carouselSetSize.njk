@@ -1,0 +1,82 @@
+{% macro carouselSetSize(id, slides, config) %}
+{% set cfg = config or {} %}
+{% set size = cfg.size if cfg.size is defined else 100 %}
+{% set aspect = cfg.aspect if cfg.aspect is defined else '16/9' %}
+{% set autoScroll = cfg.autoScroll if cfg.autoScroll is defined else false %}
+{% set scrollDelay = cfg.scrollDelay if cfg.scrollDelay is defined else 5000 %}
+{% set sideClick = cfg.sideClick if cfg.sideClick is defined else true %}
+{% set showTabs = cfg.showTabs if cfg.showTabs is defined else true %}
+{% set tabsStyle = cfg.tabsStyle if cfg.tabsStyle is defined else 'numbers' %}
+
+<div
+  class="carousel-set-size-widget"
+  data-widget="carousel-set-size"
+  data-carousel-id="{{ id }}"
+  data-auto-scroll="{{ autoScroll }}"
+  data-scroll-delay="{{ scrollDelay }}"
+  data-side-click="{{ sideClick }}"
+  data-show-tabs="{{ showTabs }}"
+  data-tabs-style="{{ tabsStyle }}"
+  data-width="{{ size }}"
+  data-aspect="{{ aspect }}"
+  style="--carousel-set-size-width: {{ size }}%; --carousel-set-size-aspect: {{ aspect }};"
+>
+  <div class="carousel-set-size">
+    <div class="carousel-set-size__viewport">
+      <div class="carousel-track">
+        {% for slide in slides %}
+        {% set image = slide.images and slide.images[0] %}
+        <article class="carousel-slide{% if loop.first %} active{% endif %}" data-article-id="{{ slide.id }}">
+          <div class="carousel-set-size__media">
+            {% if image %}
+            <img
+              src="{% if loop.first %}{{ image.lowRes }}{% else %}{{ placeholder_image }}{% endif %}"
+              data-low-res="{{ image.lowRes }}"
+              data-high-res="{{ image.highRes }}"
+              alt="{{ image.alt }}"
+              width="{{ image.width }}"
+              height="{{ image.height }}"
+              {% if loop.first %}loading="eager"{% else %}loading="lazy"{% endif %}
+            >
+            {% endif %}
+          </div>
+          <div class="carousel-set-size__content">
+            <h3><a href="/haber/{{ slide.slug }}">{{ slide.title }}</a></h3>
+            <p>{{ slide.summary }}</p>
+            <div class="carousel-set-size__meta">
+              <span class="category">{{ slide.category }}</span>
+              <span class="date">{{ slide.publishedAt | formatDate }}</span>
+            </div>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      <button class="carousel-prev" aria-label="Önceki içerik">‹</button>
+      <button class="carousel-next" aria-label="Sonraki içerik">›</button>
+      {% if sideClick %}
+      <div class="carousel-set-size__side carousel-set-size__side--prev" aria-hidden="true"></div>
+      <div class="carousel-set-size__side carousel-set-size__side--next" aria-hidden="true"></div>
+      {% endif %}
+    </div>
+    {% if showTabs %}
+    <div class="carousel-set-size__tabs" data-variant="{{ tabsStyle }}">
+      {% for slide in slides %}
+      <button
+        class="carousel-tab{% if loop.first %} active{% endif %}"
+        data-slide="{{ loop.index0 }}"
+        aria-label="İçerik {{ loop.index }}"
+      >
+        {% if tabsStyle == 'numbers' %}
+        {{ loop.index }}
+        {% else %}
+        <span></span>
+        {% endif %}
+      </button>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+*** End Patch
+

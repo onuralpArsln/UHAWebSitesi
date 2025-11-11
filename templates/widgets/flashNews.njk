@@ -1,0 +1,45 @@
+{% macro flashNews(id, items, config) %}
+{% set cfg = config or {} %}
+{% set tickerItems = items or [] %}
+{% if not tickerItems %}
+  {% set tickerItems = [] %}
+{% endif %}
+{% set speed = cfg.speed if cfg.speed is defined else 60 %}
+{% set pauseDelay = cfg.pauseDelay if cfg.pauseDelay is defined else 200 %}
+{% set duplicateCount = cfg.duplicateCount if cfg.duplicateCount is defined else 2 %}
+
+<section
+  class="flash-news-widget"
+  data-widget="flash-news"
+  data-flash-id="{{ id }}"
+  data-speed="{{ speed }}"
+  data-pause-delay="{{ pauseDelay }}"
+  data-duplicates="{{ duplicateCount }}"
+  aria-label="Son dakika haberleri"
+>
+  <div class="flash-news__inner">
+    <div class="flash-news__label">
+      <span class="flash-news__label-text">Flash Haber</span>
+    </div>
+    <div class="flash-news__ticker" role="marquee" aria-live="polite">
+      <div class="flash-news__track">
+        {% for item in tickerItems %}
+        <a
+          class="flash-news__item"
+          href="/haber/{{ item.slug }}"
+          data-created-at="{{ item.creationDate }}"
+        >
+          <span class="flash-news__time">
+            {{ item.creationDate | formatTime }}
+          </span>
+          <span class="flash-news__title">
+            {{ item.summaryHead or item.summary or item.title }}
+          </span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endmacro %}
+
