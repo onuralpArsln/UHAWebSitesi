@@ -26,6 +26,7 @@
   </section>
 
   <section class="container">
+    {% if articles and articles | length %}
     <div class="articles-grid">
       {% for article in articles %}
       {% set image = article.images and article.images[0] %}
@@ -51,6 +52,9 @@
       </article>
       {% endfor %}
     </div>
+    {% else %}
+    <p>Bu kategoride henüz haber yayınlanmadı.</p>
+    {% endif %}
   </section>
 
   {% if pagination.totalPages > 1 %}

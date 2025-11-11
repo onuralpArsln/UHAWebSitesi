@@ -10,11 +10,16 @@
 <main class="site-main">
   <section class="hero container">
     <h2 class="hero__title">Son Dakika Haberleri</h2>
+    {% if featuredArticles and featuredArticles | length %}
     {{ carousel('home-hero', featuredArticles) }}
+    {% else %}
+    <p>Şu anda öne çıkan haber bulunmuyor.</p>
+    {% endif %}
   </section>
 
   <section class="featured-articles container">
     <h3 class="section-title">Öne Çıkan Haberler</h3>
+    {% if featuredArticles and featuredArticles | length %}
     <div class="articles-grid">
       {% for article in featuredArticles %}
       {% set image = article.images and article.images[0] %}
@@ -42,8 +47,12 @@
       </article>
       {% endfor %}
     </div>
+    {% else %}
+    <p>Yeni haberler eklenene kadar bu alan boş.</p>
+    {% endif %}
   </section>
 
+  {% if categorySections and categorySections | length %}
   {% for section in categorySections %}
   <section class="category-section container">
     <div class="category-section__header">
@@ -73,6 +82,11 @@
     </div>
   </section>
   {% endfor %}
+  {% else %}
+  <section class="category-section container">
+    <p>Şu anda görüntülenecek kategori haberleri bulunmuyor.</p>
+  </section>
+  {% endif %}
 
   <section class="container">
     {{ adPlaceholder('home-mid', 'Reklam Alanı', '728x90') }}

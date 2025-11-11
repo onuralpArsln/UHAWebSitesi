@@ -23,6 +23,9 @@
         mediaSearchTerm: ''
       };
 
+      this.mediaLoaded = Array.isArray(this.state.media) && this.state.media.length > 0;
+      this.mediaLoadingPromise = null;
+
       this.currentArticleId = null;
       this.mediaSearchDebounce = null;
       this.articleImages = [];
@@ -311,11 +314,14 @@
       this.updateCategoryStats();
       this.populateSettingsForm(this.state.settings);
       this.populateBrandingForm(this.state.branding);
-      this.renderMediaList(this.state.media);
-      this.renderFolderTree(this.state.mediaTree);
-      this.renderBreadcrumbs(this.state.mediaBreadcrumbs);
-      this.updateMediaSearchInput(this.state.mediaSearchTerm);
-      this.loadMedia();
+      if (this.mediaLoaded) {
+        this.renderMediaList(this.state.media);
+        this.renderFolderTree(this.state.mediaTree);
+        this.renderBreadcrumbs(this.state.mediaBreadcrumbs);
+        this.updateMediaSearchInput(this.state.mediaSearchTerm);
+      } else {
+        this.updateMediaSearchInput('');
+      }
     }
 
     showSection(sectionId) {
@@ -353,6 +359,9 @@
 
       if (sectionId === 'categories') {
         this.loadCategories();
+      }
+      if (sectionId === 'media') {
+        this.ensureMediaLoaded();
       }
     }
 
@@ -1548,25 +1557,61 @@
 
     async openArticleMediaSelectModal() {
       try {
-        const result = await this.fetchJson('/cms/media?folder=articles');
-        const mediaItems = (result.media || []).filter((item) =>
-          ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(
-            (item.extension || '').toLowerCase()
-          )
-        );
+        await this.ensureMediaLoaded();
+
+        const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
+        const currentFolder = this.state.mediaCurrentFolder || '';
+        const searchTerm = this.state.mediaSearchTerm || '';
+
+        let mediaItems = Array.isArray(this.state.media)
+          ? this.state.media.filter((item) =>
+              imageExtensions.includes((item.extension || '').toLowerCase())
+            )
+          : [];
+
+        if (!mediaItems.length) {
+          const params = new URLSearchParams();
+          if (currentFolder) {
+            params.set('folder', currentFolder);
+          }
+          if (searchTerm) {
+            params.set('search', searchTerm);
+          }
+
+          const result = await this.fetchJson(
+            `/cms/media${params.toString() ? `?${params.toString()}` : ''}`
+          );
+          const fetchedMedia = result.media || [];
+
+          if (fetchedMedia.length) {
+            this.state.media = fetchedMedia;
+            this.state.mediaFolders = result.folders || this.state.mediaFolders;
+            this.state.mediaTree = result.tree || this.state.mediaTree;
+            this.state.mediaBreadcrumbs =
+              result.breadcrumbs || this.state.mediaBreadcrumbs;
+            if (result.currentFolder !== undefined) {
+              this.state.mediaCurrentFolder = result.currentFolder;
+            }
+
+            mediaItems = fetchedMedia.filter((item) =>
+              imageExtensions.includes((item.extension || '').toLowerCase())
+            );
+          }
+        }
 
         if (!mediaItems.length) {
           this.showError('Seçilebilecek görsel bulunamadı. Önce bir görsel yükleyin.');
           return;
         }
 
-        this.buildArticleMediaSelectModal(mediaItems);
+        const folderLabel = currentFolder ? currentFolder : 'Tüm Dosyalar';
+        this.buildArticleMediaSelectModal(mediaItems, folderLabel, searchTerm);
       } catch (error) {
         console.error('Article media select modal error:', error);
       }
     }
 
-    buildArticleMediaSelectModal(mediaItems) {
+    buildArticleMediaSelectModal(mediaItems, folderLabel = '', searchTerm = '') {
       this.closeArticleMediaSelectModal();
 
       const overlay = document.createElement('div');
@@ -1574,11 +1619,19 @@
       overlay.setAttribute('role', 'dialog');
       overlay.setAttribute('aria-modal', 'true');
 
+      const folderText = folderLabel ? folderLabel : 'Tüm Dosyalar';
+      const searchText = searchTerm ? ` • Arama: ${this.escapeHtml(searchTerm)}` : '';
+
       overlay.innerHTML = `
         <div class="article-media-modal__backdrop" data-action="close-article-media-modal"></div>
         <div class="article-media-modal__dialog">
           <header class="article-media-modal__header">
-            <h3>Medya Kütüphanesi</h3>
+            <div class="article-media-modal__title">
+              <h3>Medya Kütüphanesi</h3>
+              <p class="article-media-modal__meta">
+                Klasör: ${this.escapeHtml(folderText)}${searchText}
+              </p>
+            </div>
             <button type="button" class="article-media-modal__close" data-action="close-article-media-modal" aria-label="Kapat">×</button>
           </header>
           <div class="article-media-modal__grid" data-article-media-modal-grid></div>
@@ -1712,6 +1765,21 @@
       return result.media;
     }
 
+    async ensureMediaLoaded() {
+      if (this.mediaLoaded) return;
+      if (this.mediaLoadingPromise) {
+        await this.mediaLoadingPromise;
+        return;
+      }
+
+      this.mediaLoadingPromise = this.loadMedia();
+      try {
+        await this.mediaLoadingPromise;
+      } finally {
+        this.mediaLoadingPromise = null;
+      }
+    }
+
     async loadMedia() {
       try {
         const params = new URLSearchParams();
@@ -1735,8 +1803,10 @@
         this.renderFolderTree(this.state.mediaTree);
         this.renderBreadcrumbs(this.state.mediaBreadcrumbs);
         this.updateMediaSearchInput(this.state.mediaSearchTerm);
+        this.mediaLoaded = true;
       } catch (error) {
         console.error('Media load error:', error);
+        this.mediaLoaded = false;
       }
     }
 

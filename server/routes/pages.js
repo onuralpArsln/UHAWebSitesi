@@ -149,6 +149,9 @@ router.get('/haber/:slug', async (req, res) => {
     const relatedArticles = dataService.getRelatedArticles(articleId, 4);
     const categories = dataService.getCategories();
     const navCategories = buildNavCategories(categories);
+    const articleCategory = categories.find(cat => cat.name === article.category);
+    const articleCategorySlug = articleCategory?.slug ||
+      (article.category ? urlSlugService.generateSlug(article.category) : '');
 
     // Branding data
     const branding = formatBranding(dataService.getBranding());
@@ -174,7 +177,8 @@ router.get('/haber/:slug', async (req, res) => {
       article: {
         ...article,
         slug,
-        images: optimizeImageData(article.images)
+        images: optimizeImageData(article.images),
+        categorySlug: articleCategorySlug
       },
       relatedArticles: relatedArticles.map(related => ({
         ...related,

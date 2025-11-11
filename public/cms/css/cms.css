@@ -656,7 +656,7 @@
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9));
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -676,6 +676,7 @@
   letter-spacing: 0.08em;
   font-size: 1rem;
   position: relative;
+  border-radius: 1.25rem 1.25rem 0 0;
   overflow: hidden;
 }
 
@@ -683,6 +684,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: inherit;
 }
 
 .media-card__body {
@@ -750,7 +752,8 @@
 .media-card__menu-panel {
   position: absolute;
   right: 0;
-  top: calc(100% + 0.5rem);
+  top: auto;
+  bottom: calc(100% + 0.5rem);
   min-width: 200px;
   padding: 0.5rem 0.25rem;
   border-radius: 0.85rem;
@@ -760,6 +763,21 @@
   flex-direction: column;
   gap: 0.25rem;
   z-index: 30;
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.media-card:not(.is-menu-open) .media-card__menu-panel {
+  display: none;
+}
+
+.media-card.is-menu-open .media-card__menu-panel {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .media-card__menu-panel button {
@@ -975,10 +993,22 @@
   background: linear-gradient(135deg, rgba(49, 130, 206, 0.12), rgba(148, 163, 184, 0.08));
 }
 
+.article-media-modal__title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
 .article-media-modal__header h3 {
   margin: 0;
   font-size: 1.1rem;
   color: var(--cms-primary);
+}
+
+.article-media-modal__meta {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #4c566a;
 }
 
 .article-media-modal__close {

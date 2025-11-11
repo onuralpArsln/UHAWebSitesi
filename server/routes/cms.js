@@ -115,6 +115,25 @@ function normalizeColor(value, fallback) {
   return fallback;
 }
 
+function mapArticleToSummary(article) {
+  if (!article) return null;
+  const summary = {
+    id: article.id,
+    header: article.header,
+    summaryHead: article.summaryHead,
+    category: article.category,
+    writer: article.writer,
+    status: article.status,
+    creationDate: article.creationDate
+  };
+
+  if (article.updatedAt) {
+    summary.updatedAt = article.updatedAt;
+  }
+
+  return summary;
+}
+
 function buildBrandingResponse(raw) {
   const defaults = {
     siteName: 'UHA News',
@@ -195,11 +214,15 @@ router.get('/', (req, res) => {
 
   const targetOptions = ['carousel', 'manset', 'anasayfa', 'akış'];
 
+  const articleSummaries = articlesResult.articles
+    .map(mapArticleToSummary)
+    .filter(Boolean);
+
   const initialState = {
     stats,
-    articles: articlesResult.articles,
+    articles: articleSummaries,
     categories,
-    recentArticles: articlesResult.articles.slice(0, 5),
+    recentArticles: articleSummaries.slice(0, 5),
     settings,
     targetOptions,
     branding
