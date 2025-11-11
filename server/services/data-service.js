@@ -7,6 +7,8 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
+const MEDIA_UPLOAD_WEB_PATH = '/uploads/media';
+
 class DataService {
   constructor() {
     // Ensure data directory exists
@@ -717,6 +719,124 @@ class DataService {
     }
 
     return summary;
+  }
+
+  /**
+   * Update media references when a file path or URL changes
+   */
+  updateMediaReferences({ oldPath, newPath, oldUrl, newUrl }) {
+    const normalizeUrl = (relativePath) => {
+      if (!relativePath) return null;
+      return `${MEDIA_UPLOAD_WEB_PATH}/${relativePath
+        .split('/')
+        .filter(Boolean)
+        .map((segment) => encodeURIComponent(segment))
+        .join('/')}`;
+    };
+
+    const getFilenameFromPath = (value) => {
+      if (!value) return null;
+      const parts = value.split('/');
+      return parts[parts.length - 1] || null;
+    };
+
+    const newFilename = newPath ? getFilenameFromPath(newPath) : null;
+    const oldFilename = oldPath ? getFilenameFromPath(oldPath) : null;
+
+    const resolvedOldUrl = oldUrl || normalizeUrl(oldPath);
+    const resolvedNewUrl = newUrl || normalizeUrl(newPath);
+
+    if (!oldPath && !resolvedOldUrl) {
+      return;
+    }
+
+    const searchTerms = [];
+    if (resolvedOldUrl) {
+      searchTerms.push(`%${resolvedOldUrl}%`);
+    }
+    if (oldPath) {
+      searchTerms.push(`%${oldPath}%`);
+    }
+
+    if (!searchTerms.length) {
+      return;
+    }
+
+    const conditions = searchTerms.map(() => 'images LIKE ?').join(' OR ');
+    const rows = this.db.prepare(
+      `SELECT id, images FROM articles WHERE ${conditions}`
+    ).all(...searchTerms);
+
+    if (!rows.length) {
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const keysToCheck = ['url', 'src', 'href', 'original', 'preview', 'thumb', 'thumbnail'];
+
+    for (const row of rows) {
+      if (!row.images) continue;
+
+      let images;
+      try {
+        images = JSON.parse(row.images);
+      } catch (error) {
+        continue;
+      }
+
+      if (!Array.isArray(images)) {
+        continue;
+      }
+
+      let changed = false;
+
+      const updatedImages = images.map((entry) => {
+        if (typeof entry === 'string') {
+          const isMatch =
+            (resolvedOldUrl && entry === resolvedOldUrl) ||
+            (oldPath && entry === oldPath);
+          if (isMatch) {
+            changed = true;
+            return resolvedNewUrl || newPath || entry;
+          }
+          return entry;
+        }
+
+        if (entry && typeof entry === 'object') {
+          let mutated = false;
+
+          if (oldPath && entry.path === oldPath) {
+            entry.path = newPath || entry.path;
+            mutated = true;
+          }
+
+          if (newFilename && oldFilename && entry.filename === oldFilename) {
+            entry.filename = newFilename;
+            mutated = true;
+          }
+
+          for (const key of keysToCheck) {
+            if (entry[key] === resolvedOldUrl || entry[key] === oldPath) {
+              entry[key] = resolvedNewUrl || entry[key];
+              mutated = true;
+            }
+          }
+
+          if (mutated) {
+            changed = true;
+          }
+          return entry;
+        }
+
+        return entry;
+      });
+
+      if (changed) {
+        this.db.prepare(
+          'UPDATE articles SET images = ?, updatedAt = ? WHERE id = ?'
+        ).run(JSON.stringify(updatedImages), now, row.id);
+      }
+    }
   }
 
   /**

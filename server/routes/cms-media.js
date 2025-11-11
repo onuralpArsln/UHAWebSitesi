@@ -2,8 +2,10 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const DataService = require('../services/data-service');
 
 const router = express.Router();
+const dataService = new DataService();
 
 const MEDIA_UPLOAD_DIR = path.join(__dirname, '../../public/uploads/media');
 const MEDIA_WEB_PATH = '/uploads/media';
@@ -109,6 +111,25 @@ function buildFolderTree(relativePath = '') {
       return buildFolderTree(childRelative);
     })
   };
+}
+
+function listFilesRecursive(relativePath = '') {
+  const { absolutePath, relativePath: safeRelative } = resolvePath(relativePath);
+  ensureFolderExists(absolutePath);
+
+  const entries = fs.readdirSync(absolutePath, { withFileTypes: true });
+  const files = [];
+
+  for (const entry of entries) {
+    const childRelative = safeRelative ? `${safeRelative}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      files.push(...listFilesRecursive(childRelative));
+    } else if (entry.isFile()) {
+      files.push(childRelative);
+    }
+  }
+
+  return files;
 }
 
 const storage = multer.diskStorage({
@@ -336,7 +357,20 @@ function renameMedia({ path: rawPath, newName, newFolder }) {
 
   fs.renameSync(absolutePath, targetAbsolutePath);
   const stats = fs.statSync(targetAbsolutePath);
-  return buildMediaResponse(targetRelativePath, stats);
+  const media = buildMediaResponse(targetRelativePath, stats);
+
+  try {
+    dataService.updateMediaReferences({
+      oldPath: relativePath,
+      newPath: media.path,
+      oldUrl: toWebPath(relativePath),
+      newUrl: media.url
+    });
+  } catch (referenceError) {
+    console.error('Media reference update error:', referenceError);
+  }
+
+  return media;
 }
 
 router.put('/', (req, res) => {
@@ -456,6 +490,12 @@ function renameFolder({ path: rawPath, newName }) {
     throw error;
   }
 
+  const filesWithinFolder = listFilesRecursive(relativePath).map((filePath) => {
+    if (!relativePath) return { oldPath: filePath, suffix: filePath };
+    const suffix = filePath.slice(relativePath.length + 1);
+    return { oldPath: filePath, suffix };
+  });
+
   const sanitizedNewName = sanitizePathSegment(newName.trim());
   if (!sanitizedNewName) {
     const error = new Error('Geçerli bir klasör adı girin');
@@ -479,6 +519,24 @@ function renameFolder({ path: rawPath, newName }) {
   }
 
   fs.renameSync(absolutePath, newAbsolutePath);
+
+  const mappings = filesWithinFolder.map(({ oldPath, suffix }) => {
+    const newPath = newRelativePath ? `${newRelativePath}/${suffix}` : suffix;
+    return {
+      oldPath,
+      newPath,
+      oldUrl: toWebPath(oldPath),
+      newUrl: toWebPath(newPath)
+    };
+  });
+
+  for (const mapping of mappings) {
+    try {
+      dataService.updateMediaReferences(mapping);
+    } catch (referenceError) {
+      console.error('Media folder reference update error:', referenceError);
+    }
+  }
 
   return {
     name: sanitizedNewName,

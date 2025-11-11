@@ -4,6 +4,7 @@
     dateStyle: 'medium',
     timeStyle: 'short'
   });
+  const MEDIA_BASE_PATH = '/uploads/media/';
 
   class CMSDashboard {
     constructor(initialState) {
@@ -24,8 +25,12 @@
 
       this.currentArticleId = null;
       this.mediaSearchDebounce = null;
+      this.articleImages = [];
+      this.mediaSelectModal = null;
+      this.mediaSelectModalEscapeHandler = null;
       this.cacheDom();
       this.bindEvents();
+      this.initializeArticleMediaManager();
       this.renderInitialState();
     }
 
@@ -79,6 +84,20 @@
       this.mediaUploadInput = document.querySelector('[data-cms="media-upload-input"]');
       this.refreshMediaBtn = document.querySelector('[data-action="refresh-media"]');
       this.openMediaUploadBtn = document.querySelector('[data-action="open-media-upload"]');
+      this.mediaTreeContainer = document.querySelector('[data-cms="media-tree"]');
+      this.mediaTreeRoot = document.querySelector('[data-cms="media-tree-root"]');
+      this.mediaBreadcrumbs = document.querySelector('[data-cms="media-breadcrumbs"]');
+      this.mediaSearchInput = document.querySelector('[data-cms="media-search-input"]');
+      this.mediaSearchClear = document.querySelector('[data-action="clear-media-search"]');
+      this.createFolderBtn = document.querySelector('[data-action="create-folder"]');
+
+      this.articleMediaManager = this.articleForm ? this.articleForm.querySelector('[data-cms="article-media-manager"]') : null;
+      this.articleImagesField = this.articleMediaManager ? this.articleMediaManager.querySelector('[data-article-images]') : null;
+      this.articleMediaInput = this.articleMediaManager ? this.articleMediaManager.querySelector('[data-article-media-input]') : null;
+      this.articleMediaList = this.articleMediaManager ? this.articleMediaManager.querySelector('[data-article-media-list]') : null;
+      this.articleMediaEmpty = this.articleMediaManager ? this.articleMediaManager.querySelector('[data-article-media-empty]') : null;
+      this.articleMediaUploadBtn = this.articleMediaManager ? this.articleMediaManager.querySelector('[data-action="article-media-upload"]') : null;
+      this.articleMediaSelectBtn = this.articleMediaManager ? this.articleMediaManager.querySelector('[data-action="article-media-select"]') : null;
       this.mediaTreeContainer = document.querySelector('[data-cms="media-tree"]');
       this.mediaTreeRoot = document.querySelector('[data-cms="media-tree-root"]');
       this.mediaBreadcrumbs = document.querySelector('[data-cms="media-breadcrumbs"]');
@@ -245,6 +264,23 @@
           const folder = button.dataset.folderPath || '';
           this.openFolder(folder);
         });
+      }
+
+      if (this.articleMediaUploadBtn && this.articleMediaInput) {
+        this.articleMediaUploadBtn.addEventListener('click', () => this.articleMediaInput.click());
+      }
+
+      if (this.articleMediaInput) {
+        this.articleMediaInput.addEventListener('change', (event) => this.handleArticleMediaInput(event));
+      }
+
+      if (this.articleMediaSelectBtn) {
+        this.articleMediaSelectBtn.addEventListener('click', () => this.openArticleMediaSelectModal());
+      }
+
+      if (this.articleMediaList) {
+        this.articleMediaList.addEventListener('click', (event) => this.handleArticleMediaListClick(event));
+        this.articleMediaList.addEventListener('input', (event) => this.handleArticleMediaListInput(event));
       }
     }
 
@@ -631,6 +667,7 @@
 
       this.articleForm.reset();
       this.clearTargetCheckboxes();
+      this.resetArticleImages();
       this.currentArticleId = null;
 
       if (article) {
@@ -657,6 +694,7 @@
         this.articleForm.reset();
       }
       this.clearTargetCheckboxes();
+      this.resetArticleImages();
       this.switchToArticlesView();
     }
 
@@ -682,10 +720,7 @@
         tagsField.value = Array.isArray(article.tags) ? article.tags.join(', ') : '';
       }
 
-      const imagesField = this.articleForm.querySelector('[name="images"]');
-      if (imagesField) {
-        imagesField.value = this.stringifyImages(article.images);
-      }
+      this.setArticleImages(article.images || []);
 
       const outlinksField = this.articleForm.querySelector('[name="outlinks"]');
       if (outlinksField) {
@@ -697,15 +732,6 @@
       checkboxes.forEach((checkbox) => {
         checkbox.checked = targets.has(checkbox.value);
       });
-    }
-
-    stringifyImages(images) {
-      if (!images || !images.length) return '';
-      try {
-        return JSON.stringify(images, null, 2);
-      } catch (error) {
-        return '';
-      }
     }
 
     serializeArticleForm() {
@@ -721,6 +747,7 @@
       payload.pressAnnouncementId = payload.pressAnnouncementId || '';
       payload.writer = payload.writer || '';
       payload.videoUrl = payload.videoUrl || '';
+      payload.images = this.getArticleImagesPayload();
 
       return payload;
     }
@@ -986,6 +1013,460 @@
       article.appendChild(body);
 
       return article;
+    }
+
+    initializeArticleMediaManager() {
+      if (!this.articleMediaManager) return;
+      this.articleImages = Array.isArray(this.articleImages) ? this.articleImages : [];
+      this.renderArticleMediaList();
+    }
+
+    setArticleMediaLoading(isLoading) {
+      if (!this.articleMediaManager) return;
+      this.articleMediaManager.classList.toggle('is-loading', Boolean(isLoading));
+    }
+
+    resetArticleImages() {
+      this.articleImages = [];
+      this.renderArticleMediaList();
+    }
+
+    setArticleImages(images) {
+      this.articleImages = this.normalizeArticleImages(images);
+      this.renderArticleMediaList();
+    }
+
+    normalizeArticleImages(images) {
+      if (!Array.isArray(images)) return [];
+      return images
+        .map((entry) => this.normalizeArticleImageEntry(entry))
+        .filter(Boolean);
+    }
+
+    normalizeArticleImageEntry(entry) {
+      if (!entry) return null;
+
+      let source = entry;
+      if (typeof entry === 'string') {
+        source = { url: entry };
+      }
+
+      const normalized = {
+        uid: this.generateArticleImageUid(),
+        path: '',
+        url: '',
+        filename: '',
+        title: '',
+        alt: '',
+        size: null,
+        uploadedAt: null
+      };
+
+      const candidateUrl =
+        source.url ||
+        source.src ||
+        source.href ||
+        source.original ||
+        source.preview ||
+        '';
+
+      const candidatePath = source.path || this.extractMediaPathFromUrl(candidateUrl);
+
+      normalized.path = candidatePath || '';
+      normalized.url =
+        candidateUrl ||
+        (normalized.path ? this.buildMediaUrlFromPath(normalized.path) : '');
+
+      const derivedFilename =
+        source.filename ||
+        source.name ||
+        this.getFilenameFromPath(normalized.path) ||
+        this.getFilenameFromUrl(normalized.url);
+
+      normalized.filename = derivedFilename || '';
+      normalized.title = source.title || source.caption || '';
+      normalized.alt = source.alt || source.altText || source.description || normalized.title || normalized.filename || '';
+      normalized.size =
+        source.size !== undefined
+          ? Number(source.size)
+          : source.bytes !== undefined
+          ? Number(source.bytes)
+          : null;
+      normalized.uploadedAt = source.uploadedAt || source.createdAt || null;
+
+      return normalized.url ? normalized : null;
+    }
+
+    buildMediaUrlFromPath(pathValue) {
+      if (!pathValue) return '';
+      const encoded = pathValue
+        .split('/')
+        .filter(Boolean)
+        .map((segment) => encodeURIComponent(segment))
+        .join('/');
+      return `${MEDIA_BASE_PATH}${encoded}`;
+    }
+
+    extractMediaPathFromUrl(url) {
+      if (!url) return '';
+      const index = url.indexOf(MEDIA_BASE_PATH);
+      if (index === -1) return '';
+      const relative = url.slice(index + MEDIA_BASE_PATH.length);
+      return decodeURIComponent(relative.replace(/^\/+/, ''));
+    }
+
+    getFilenameFromPath(pathValue) {
+      if (!pathValue) return '';
+      const parts = pathValue.split('/');
+      return parts[parts.length - 1] || '';
+    }
+
+    getFilenameFromUrl(url) {
+      if (!url) return '';
+      try {
+        const parsed = new URL(url, window.location.origin);
+        return this.getFilenameFromPath(parsed.pathname);
+      } catch (error) {
+        return this.getFilenameFromPath(url);
+      }
+    }
+
+    generateArticleImageUid() {
+      return `img-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    addArticleImage(image) {
+      if (!image) return;
+      const existing = this.articleImages.find(
+        (item) =>
+          (item.path && image.path && item.path === image.path) ||
+          item.url === image.url
+      );
+      if (existing) {
+        this.showError('Bu görsel zaten eklenmiş.');
+        return;
+      }
+      this.articleImages.push(image);
+      this.renderArticleMediaList();
+    }
+
+    renderArticleMediaList() {
+      if (!this.articleMediaList) return;
+
+      this.articleMediaList.innerHTML = '';
+
+      if (!this.articleImages.length) {
+        if (this.articleMediaEmpty) {
+          this.articleMediaEmpty.hidden = false;
+          this.articleMediaList.appendChild(this.articleMediaEmpty);
+        }
+        this.syncArticleImagesField();
+        return;
+      }
+
+      if (this.articleMediaEmpty) {
+        this.articleMediaEmpty.hidden = true;
+      }
+
+      const fragment = document.createDocumentFragment();
+
+      this.articleImages.forEach((image, index) => {
+        const item = document.createElement('article');
+        item.className = 'article-media-item';
+        item.dataset.index = String(index);
+
+        const sizeText = image.size !== null && image.size !== undefined
+          ? this.formatFileSize(image.size)
+          : '-';
+
+        const escapedTitle = this.escapeHtml(image.title || '');
+        const escapedAlt = this.escapeHtml(image.alt || '');
+        const escapedPath = this.escapeHtml(image.path || '');
+        const escapedFilename = this.escapeHtml(image.filename || '');
+
+        item.innerHTML = `
+          <div class="article-media-item__preview">
+            <img src="${image.url}" alt="${escapedAlt || escapedTitle || escapedFilename}">
+          </div>
+          <div class="article-media-item__fields">
+            <label>
+              <span>Başlık</span>
+              <input type="text" value="${escapedTitle}" data-field="title" placeholder="Opsiyonel başlık">
+            </label>
+            <label>
+              <span>Alternatif Metin</span>
+              <input type="text" value="${escapedAlt}" data-field="alt" placeholder="Erişilebilirlik için tanımlayıcı metin">
+            </label>
+          </div>
+          <div class="article-media-item__meta">
+            <div class="article-media-item__meta-row" title="${escapedPath}">
+              <span class="article-media-item__meta-label">Dosya</span>
+              <span class="article-media-item__meta-value">${escapedFilename || '-'}</span>
+            </div>
+            <div class="article-media-item__meta-row" title="${escapedPath}">
+              <span class="article-media-item__meta-label">Yol</span>
+              <span class="article-media-item__meta-value">${escapedPath || '-'}</span>
+            </div>
+            <div class="article-media-item__meta-row">
+              <span class="article-media-item__meta-label">Boyut</span>
+              <span class="article-media-item__meta-value">${sizeText}</span>
+            </div>
+          </div>
+          <div class="article-media-item__actions">
+            <button type="button" class="cms-btn cms-btn-secondary" data-action="article-media-move-up" ${index === 0 ? 'disabled' : ''} aria-label="Bir üst sıraya taşı">▲</button>
+            <button type="button" class="cms-btn cms-btn-secondary" data-action="article-media-move-down" ${index === this.articleImages.length - 1 ? 'disabled' : ''} aria-label="Bir alt sıraya taşı">▼</button>
+            <button type="button" class="cms-btn cms-btn-danger" data-action="article-media-remove">Sil</button>
+          </div>
+        `;
+
+        fragment.appendChild(item);
+      });
+
+      this.articleMediaList.appendChild(fragment);
+      this.syncArticleImagesField();
+    }
+
+    syncArticleImagesField() {
+      if (!this.articleImagesField) return;
+      const payload = this.getArticleImagesPayload();
+      this.articleImagesField.value = JSON.stringify(payload);
+    }
+
+    getArticleImagesPayload() {
+      return this.articleImages.map((image) => ({
+        path: image.path || '',
+        url: image.url,
+        filename: image.filename || '',
+        title: image.title || '',
+        alt: image.alt || '',
+        size: image.size !== null && image.size !== undefined ? image.size : undefined,
+        uploadedAt: image.uploadedAt || undefined
+      }));
+    }
+
+    handleArticleMediaInput(event) {
+      const input = event.currentTarget;
+      const files = Array.from(input.files || []);
+      if (!files.length) return;
+      this.uploadArticleImages(files);
+      input.value = '';
+    }
+
+    async uploadArticleImages(files) {
+      if (!files.length) return;
+      this.setArticleMediaLoading(true);
+      try {
+        const uploads = files.map((file) => this.uploadSingleArticleImage(file));
+        const results = await Promise.allSettled(uploads);
+        let addedCount = 0;
+        let errorMessage = null;
+
+        for (const result of results) {
+          if (result.status === 'fulfilled' && result.value) {
+            this.addArticleImage(result.value);
+            addedCount += 1;
+          } else if (result.status === 'rejected') {
+            errorMessage = result.reason?.message || 'Bazı dosyalar yüklenemedi.';
+          }
+        }
+
+        if (addedCount) {
+          this.showSuccess(`${addedCount} görsel eklendi.`);
+        }
+        if (errorMessage) {
+          this.showError(errorMessage);
+        }
+      } finally {
+        this.setArticleMediaLoading(false);
+      }
+    }
+
+    async uploadSingleArticleImage(file) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const params = new URLSearchParams({ folder: 'articles' });
+
+      const response = await fetch(`/cms/media/upload?${params.toString()}`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || `${file.name} yüklenemedi`);
+      }
+
+      const result = await response.json();
+      return this.normalizeArticleImageEntry(result.media);
+    }
+
+    handleArticleMediaListClick(event) {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+      const { action } = button.dataset;
+      const item = button.closest('.article-media-item');
+      if (!item) return;
+      const index = Number(item.dataset.index);
+      if (Number.isNaN(index)) return;
+
+      if (action === 'article-media-remove') {
+        this.removeArticleImage(index);
+      } else if (action === 'article-media-move-up') {
+        this.moveArticleImage(index, index - 1);
+      } else if (action === 'article-media-move-down') {
+        this.moveArticleImage(index, index + 1);
+      }
+    }
+
+    handleArticleMediaListInput(event) {
+      const input = event.target.closest('input[data-field]');
+      if (!input) return;
+      const item = input.closest('.article-media-item');
+      if (!item) return;
+      const index = Number(item.dataset.index);
+      if (Number.isNaN(index)) return;
+      const field = input.dataset.field;
+      if (!field) return;
+      this.updateArticleImageField(index, field, input.value);
+    }
+
+    removeArticleImage(index) {
+      if (index < 0 || index >= this.articleImages.length) return;
+      this.articleImages.splice(index, 1);
+      this.renderArticleMediaList();
+    }
+
+    moveArticleImage(fromIndex, toIndex) {
+      if (
+        fromIndex < 0 ||
+        fromIndex >= this.articleImages.length ||
+        toIndex < 0 ||
+        toIndex >= this.articleImages.length
+      ) {
+        return;
+      }
+      const [item] = this.articleImages.splice(fromIndex, 1);
+      this.articleImages.splice(toIndex, 0, item);
+      this.renderArticleMediaList();
+    }
+
+    updateArticleImageField(index, field, value) {
+      const image = this.articleImages[index];
+      if (!image) return;
+      if (field === 'title') {
+        image.title = value.trim();
+      } else if (field === 'alt') {
+        image.alt = value.trim();
+      }
+      this.syncArticleImagesField();
+    }
+
+    async openArticleMediaSelectModal() {
+      try {
+        const result = await this.fetchJson('/cms/media?folder=articles');
+        const mediaItems = (result.media || []).filter((item) =>
+          ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(
+            (item.extension || '').toLowerCase()
+          )
+        );
+
+        if (!mediaItems.length) {
+          this.showError('Seçilebilecek görsel bulunamadı. Önce bir görsel yükleyin.');
+          return;
+        }
+
+        this.buildArticleMediaSelectModal(mediaItems);
+      } catch (error) {
+        console.error('Article media select modal error:', error);
+      }
+    }
+
+    buildArticleMediaSelectModal(mediaItems) {
+      this.closeArticleMediaSelectModal();
+
+      const overlay = document.createElement('div');
+      overlay.className = 'article-media-modal';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+
+      overlay.innerHTML = `
+        <div class="article-media-modal__backdrop" data-action="close-article-media-modal"></div>
+        <div class="article-media-modal__dialog">
+          <header class="article-media-modal__header">
+            <h3>Medya Kütüphanesi</h3>
+            <button type="button" class="article-media-modal__close" data-action="close-article-media-modal" aria-label="Kapat">×</button>
+          </header>
+          <div class="article-media-modal__grid" data-article-media-modal-grid></div>
+        </div>
+      `;
+
+      const grid = overlay.querySelector('[data-article-media-modal-grid]');
+
+      mediaItems.forEach((item) => {
+        const card = document.createElement('article');
+        card.className = 'article-media-modal__item';
+        card.innerHTML = `
+          <div class="article-media-modal__preview">
+            <img src="${item.url}" alt="${this.escapeHtml(item.filename || '')}">
+          </div>
+          <div class="article-media-modal__body">
+            <h4 title="${this.escapeHtml(item.filename || '')}">${this.escapeHtml(item.filename || '')}</h4>
+            <p>${this.escapeHtml(this.formatFileSize(item.size))}</p>
+            <button type="button"
+              class="cms-btn cms-btn-secondary"
+              data-action="article-media-select-item"
+              data-media-path="${item.path || item.filename}"
+              data-media-url="${item.url}"
+              data-media-filename="${item.filename || ''}"
+              data-media-size="${item.size !== undefined ? item.size : ''}"
+              data-media-uploaded="${item.uploadedAt || ''}">
+              Seç
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      overlay.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-action]');
+        if (!button) return;
+        const { action } = button.dataset;
+        if (action === 'close-article-media-modal') {
+          this.closeArticleMediaSelectModal();
+        } else if (action === 'article-media-select-item') {
+          const image = this.normalizeArticleImageEntry({
+            path: button.dataset.mediaPath,
+            url: button.dataset.mediaUrl,
+            filename: button.dataset.mediaFilename,
+            size: button.dataset.mediaSize ? Number(button.dataset.mediaSize) : null,
+            uploadedAt: button.dataset.mediaUploaded || null
+          });
+          if (image) {
+            this.addArticleImage(image);
+          }
+        }
+      });
+
+      this.mediaSelectModalEscapeHandler = (event) => {
+        if (event.key === 'Escape') {
+          this.closeArticleMediaSelectModal();
+        }
+      };
+
+      document.addEventListener('keydown', this.mediaSelectModalEscapeHandler);
+      document.body.appendChild(overlay);
+      this.mediaSelectModal = overlay;
+    }
+
+    closeArticleMediaSelectModal() {
+      if (!this.mediaSelectModal) return;
+      if (this.mediaSelectModalEscapeHandler) {
+        document.removeEventListener('keydown', this.mediaSelectModalEscapeHandler);
+        this.mediaSelectModalEscapeHandler = null;
+      }
+      this.mediaSelectModal.remove();
+      this.mediaSelectModal = null;
     }
 
     async handleMediaUpload(event) {

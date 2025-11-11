@@ -81,10 +81,27 @@
       <section class="cms-editor-section">
         <h3>Medya & Bağlantılar</h3>
         <div class="cms-form__grid cms-form__grid--two">
-          <div class="form-group">
-            <label for="field-images">Görseller</label>
-            <textarea id="field-images" name="images" rows="4" placeholder='["https://...","https://..."] veya her satıra bir URL'></textarea>
-            <small>JSON formatında detay verebilir veya satır satır görsel URL'leri ekleyebilirsiniz.</small>
+          <div class="form-group form-group--full">
+            <label>Görseller</label>
+            <div class="article-media-manager" data-cms="article-media-manager">
+              <input type="hidden" name="images" data-article-images>
+              <input type="file" accept="image/*" multiple hidden data-article-media-input>
+
+              <div class="article-media-manager__actions">
+                <button type="button" class="cms-btn cms-btn-secondary" data-action="article-media-upload">Bilgisayardan Yükle</button>
+                <button type="button" class="cms-btn cms-btn-secondary" data-action="article-media-select">Medyadan Seç</button>
+              </div>
+
+              <div class="article-media-manager__hint">
+                <p>Görseller otomatik olarak CDN medya klasörüne yüklenir. Dilediğiniz sıralamayı sürükleyip bırakabilirsiniz.</p>
+              </div>
+
+              <div class="article-media-manager__list" data-article-media-list>
+                <div class="article-media-empty" data-article-media-empty>
+                  Henüz görsel eklemediniz. “Bilgisayardan Yükle” veya “Medyadan Seç” butonlarını kullanın.
+                </div>
+              </div>
+            </div>
           </div>
           <div class="form-group">
             <label for="field-videoUrl">Video URL</label>
