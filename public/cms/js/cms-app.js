@@ -23,6 +23,7 @@
       };
 
       this.currentArticleId = null;
+      this.mediaSearchDebounce = null;
       this.cacheDom();
       this.bindEvents();
       this.renderInitialState();

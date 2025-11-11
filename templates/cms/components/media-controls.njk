@@ -49,25 +49,25 @@
             {% if initialMedia | length %}
             <div class="media-grid" data-cms="media-grid">
               {% for media in initialMedia %}
-              <article class="media-card" data-media-path="{{ media.path }}">
+              <article class="media-card" data-media-path="{{ media.path or media.filename }}">
                 <div class="media-card__preview" data-media-preview>
                   <span>{{ media.extension | upper | default('DOSYA') }}</span>
                 </div>
                 <div class="media-card__body">
                   <header class="media-card__header">
-                    <span class="media-card__title" title="{{ media.filename }}">{{ media.filename }}</span>
+                    <span class="media-card__title" title="{{ media.path or media.filename }}">{{ media.filename or media.path }}</span>
                     <div class="media-card__menu">
-                      <button class="media-card__menu-btn" data-action="toggle-media-menu" data-media-path="{{ media.path }}">⋮</button>
+                      <button class="media-card__menu-btn" data-action="toggle-media-menu" data-media-path="{{ media.path or media.filename }}">⋮</button>
                       <div class="media-card__menu-panel" data-media-menu hidden>
                         <button data-action="view-media" data-media-url="{{ media.url }}">Görüntüle</button>
-                        <button data-action="rename-media" data-media-path="{{ media.path }}">Yeniden Adlandır</button>
+                        <button data-action="rename-media" data-media-path="{{ media.path or media.filename }}">Yeniden Adlandır</button>
                         <button data-action="copy-media-url" data-media-url="{{ media.url }}">Bağlantıyı Kopyala</button>
-                        <button data-action="delete-media" data-media-path="{{ media.path }}">Sil</button>
+                        <button data-action="delete-media" data-media-path="{{ media.path or media.filename }}">Sil</button>
                       </div>
                     </div>
                   </header>
                   <div class="media-card__meta">
-                    <span>{{ media.size }}</span>
+                    <span>{{ media.size | default('-') }}</span>
                     <span>{{ media.uploadedAt | formatDate | default('-') }}</span>
                   </div>
                 </div>
