@@ -13,7 +13,8 @@
         stats: initialState.stats || {},
         recentArticles: initialState.recentArticles || [],
         settings: initialState.settings || {},
-        branding: initialState.branding || {}
+        branding: initialState.branding || {},
+        media: initialState.media || []
       };
 
       this.currentArticleId = null;
@@ -66,6 +67,12 @@
       this.brandingColorInputs = this.brandingForm ? this.brandingForm.querySelectorAll('[data-branding-color]') : [];
       this.brandingChipNodes = this.brandingPreview ? this.brandingPreview.querySelectorAll('[data-cms="branding-preview-chip"]') : [];
       this.brandingFileInputs = this.brandingForm ? this.brandingForm.querySelectorAll('[data-branding-upload]') : [];
+
+      this.mediaSection = document.querySelector('[data-cms="media-section"]');
+      this.mediaListContainer = this.mediaSection ? this.mediaSection.querySelector('[data-cms="media-list"]') : null;
+      this.mediaUploadInput = document.querySelector('[data-cms="media-upload-input"]');
+      this.refreshMediaBtn = document.querySelector('[data-action="refresh-media"]');
+      this.openMediaUploadBtn = document.querySelector('[data-action="open-media-upload"]');
     }
 
     bindEvents() {
@@ -145,6 +152,37 @@
           this.handleBrandingFileInput(event);
         });
       });
+
+      if (this.openMediaUploadBtn && this.mediaUploadInput) {
+        this.openMediaUploadBtn.addEventListener('click', () => this.mediaUploadInput.click());
+      }
+
+      if (this.mediaUploadInput) {
+        this.mediaUploadInput.addEventListener('change', (event) => {
+          this.handleMediaUpload(event);
+        });
+      }
+
+      if (this.refreshMediaBtn) {
+        this.refreshMediaBtn.addEventListener('click', () => this.loadMedia());
+      }
+
+      if (this.mediaSection) {
+        this.mediaSection.addEventListener('click', (event) => {
+          const button = event.target.closest('button[data-action]');
+          if (!button) return;
+          const { action } = button.dataset;
+          if (action === 'copy-media-url') {
+            this.copyMediaUrl(button.dataset.mediaUrl);
+          } else if (action === 'delete-media') {
+            this.deleteMedia(button.dataset.mediaFilename);
+          } else if (action === 'rename-media') {
+            this.promptRenameMedia(button.dataset.mediaFilename);
+          } else if (action === 'view-media') {
+            this.viewMedia(button.dataset.mediaUrl);
+          }
+        });
+      }
     }
 
     renderInitialState() {
@@ -155,6 +193,8 @@
       this.renderCategories(this.state.categories);
       this.populateSettingsForm(this.state.settings);
       this.populateBrandingForm(this.state.branding);
+      this.renderMediaList(this.state.media);
+      this.loadMedia();
     }
 
     showSection(sectionId) {
@@ -162,6 +202,7 @@
         dashboard: 'Dashboard',
         articles: 'Haberler',
         categories: 'Kategoriler',
+        media: 'Medya Kontrolleri',
         branding: 'Marka',
         settings: 'Site Ayarları'
       };
@@ -736,6 +777,313 @@
       } catch (error) {
         return fallback;
       }
+    }
+
+    renderMediaList(mediaItems) {
+      if (!this.mediaListContainer) return;
+
+      let grid = this.mediaListContainer.querySelector('[data-cms="media-grid"]');
+      let empty = this.mediaListContainer.querySelector('[data-cms="media-empty"]');
+
+      if (!Array.isArray(mediaItems) || mediaItems.length === 0) {
+        if (grid) {
+          grid.remove();
+          grid = null;
+        }
+        if (!empty) {
+          empty = document.createElement('div');
+          empty.className = 'cms-empty-state';
+          empty.dataset.cms = 'media-empty';
+          empty.textContent = 'Henüz medya yüklenmedi. “Dosya Yükle” butonuyla yeni dosyalar ekleyebilirsiniz.';
+          this.mediaListContainer.innerHTML = '';
+          this.mediaListContainer.appendChild(empty);
+        }
+        return;
+      }
+
+      if (!grid) {
+        grid = document.createElement('div');
+        grid.className = 'media-grid';
+        grid.dataset.cms = 'media-grid';
+        this.mediaListContainer.innerHTML = '';
+        this.mediaListContainer.appendChild(grid);
+      } else {
+        grid.innerHTML = '';
+      }
+
+      if (empty) {
+        empty.remove();
+      }
+
+      const fragment = document.createDocumentFragment();
+
+      mediaItems.forEach((item) => {
+        fragment.appendChild(this.createMediaCard(item));
+      });
+
+      grid.appendChild(fragment);
+    }
+
+    createMediaCard(media) {
+      const article = document.createElement('article');
+      article.className = 'media-card';
+      article.dataset.mediaFilename = media.filename;
+
+      const preview = document.createElement('div');
+      preview.className = 'media-card__preview';
+      preview.dataset.mediaPreview = '';
+
+      if (media.url && media.extension && ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(media.extension.toLowerCase())) {
+        const img = document.createElement('img');
+        img.src = media.url;
+        img.alt = media.filename;
+        preview.appendChild(img);
+      } else {
+        const span = document.createElement('span');
+        span.textContent = (media.extension || 'DOSYA').toUpperCase();
+        preview.appendChild(span);
+      }
+
+      const body = document.createElement('div');
+      body.className = 'media-card__body';
+
+      const title = document.createElement('h3');
+      title.className = 'media-card__title';
+      title.textContent = media.filename;
+
+      const meta = document.createElement('dl');
+      meta.className = 'media-card__meta';
+
+      const sizeGroup = document.createElement('div');
+      const sizeLabel = document.createElement('dt');
+      sizeLabel.textContent = 'Boyut';
+      const sizeValue = document.createElement('dd');
+      sizeValue.textContent = this.formatFileSize(media.size);
+      sizeGroup.appendChild(sizeLabel);
+      sizeGroup.appendChild(sizeValue);
+
+      const dateGroup = document.createElement('div');
+      const dateLabel = document.createElement('dt');
+      dateLabel.textContent = 'Yüklendi';
+      const dateValue = document.createElement('dd');
+      dateValue.textContent = this.formatDate(media.uploadedAt);
+      dateGroup.appendChild(dateLabel);
+      dateGroup.appendChild(dateValue);
+
+      meta.appendChild(sizeGroup);
+      meta.appendChild(dateGroup);
+
+      const actions = document.createElement('div');
+      actions.className = 'media-card__actions';
+
+      const viewButton = document.createElement('button');
+      viewButton.className = 'cms-btn cms-btn--ghost';
+      viewButton.dataset.action = 'view-media';
+      viewButton.dataset.mediaUrl = media.url;
+      viewButton.textContent = 'Görüntüle';
+
+      const renameButton = document.createElement('button');
+      renameButton.className = 'cms-btn cms-btn-secondary';
+      renameButton.dataset.action = 'rename-media';
+      renameButton.dataset.mediaFilename = media.filename;
+      renameButton.textContent = 'Yeniden Adlandır';
+
+      const copyButton = document.createElement('button');
+      copyButton.className = 'cms-btn cms-btn-secondary';
+      copyButton.dataset.action = 'copy-media-url';
+      copyButton.dataset.mediaUrl = media.url;
+      copyButton.textContent = 'Bağlantıyı Kopyala';
+
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'cms-btn cms-btn-danger';
+      deleteButton.dataset.action = 'delete-media';
+      deleteButton.dataset.mediaFilename = media.filename;
+      deleteButton.textContent = 'Sil';
+
+      actions.appendChild(viewButton);
+      actions.appendChild(renameButton);
+      actions.appendChild(copyButton);
+      actions.appendChild(deleteButton);
+
+      body.appendChild(title);
+      body.appendChild(meta);
+      body.appendChild(actions);
+
+      article.appendChild(preview);
+      article.appendChild(body);
+
+      return article;
+    }
+
+    async handleMediaUpload(event) {
+      const input = event.currentTarget;
+      const files = Array.from(input.files || []);
+      if (!files.length) return;
+
+      let uploadedCount = 0;
+      let lastError = null;
+
+      for (const file of files) {
+        try {
+          const mediaItem = await this.uploadMediaFile(file);
+          if (mediaItem) {
+            this.state.media = [mediaItem, ...this.state.media.filter((item) => item.filename !== mediaItem.filename)];
+            uploadedCount += 1;
+          }
+        } catch (error) {
+          lastError = error;
+          console.error('Media upload error:', error);
+        }
+      }
+
+      this.renderMediaList(this.state.media);
+
+      if (uploadedCount > 0) {
+        this.showSuccess(`${uploadedCount} dosya yüklendi.`);
+      }
+      if (lastError) {
+        this.showError(lastError.message || 'Bazı dosyalar yüklenemedi.');
+      }
+
+      input.value = '';
+    }
+
+    async uploadMediaFile(file) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/cms/media/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || `${file.name} yüklenemedi`);
+      }
+
+      const result = await response.json();
+      return result.media;
+    }
+
+    async loadMedia() {
+      try {
+        const result = await this.fetchJson('/cms/media');
+        const media = result.media || [];
+        this.state.media = media;
+        this.renderMediaList(media);
+      } catch (error) {
+        console.error('Media load error:', error);
+      }
+    }
+
+    async deleteMedia(filename) {
+      if (!filename) return;
+
+      const confirmed = window.confirm('Bu medya dosyasını silmek istediğinize emin misiniz?');
+      if (!confirmed) return;
+
+      try {
+        const response = await fetch(`/cms/media/${encodeURIComponent(filename)}`, {
+          method: 'DELETE'
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || 'Dosya silinemedi');
+        }
+
+        this.state.media = this.state.media.filter((item) => item.filename !== filename);
+        this.renderMediaList(this.state.media);
+        this.showSuccess('Dosya silindi.');
+      } catch (error) {
+        this.showError(error.message || 'Dosya silinemedi.');
+      }
+    }
+
+    async copyMediaUrl(url) {
+      if (!url) return;
+      try {
+        await navigator.clipboard.writeText(url);
+        this.showSuccess('Bağlantı kopyalandı.');
+      } catch (error) {
+        console.error('Clipboard error:', error);
+        this.showError('Bağlantı kopyalanamadı.');
+      }
+    }
+
+    formatFileSize(bytes) {
+      if (!bytes && bytes !== 0) return '-';
+      const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      let size = bytes;
+      let unitIndex = 0;
+      while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex += 1;
+      }
+      return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+    }
+
+    getFileExtension(filename) {
+      if (!filename) return '';
+      const index = filename.lastIndexOf('.');
+      return index > 0 ? filename.slice(index) : '';
+    }
+
+    getFilenameStem(filename) {
+      if (!filename) return '';
+      const index = filename.lastIndexOf('.');
+      if (index > 0) {
+        return filename.slice(0, index);
+      }
+      return filename;
+    }
+
+    async promptRenameMedia(filename) {
+      if (!filename) return;
+      const stem = this.getFilenameStem(filename);
+      const extension = this.getFileExtension(filename);
+      const userInput = window.prompt('Yeni dosya adını girin (uzantısız):', stem);
+      if (userInput === null) return;
+
+      const trimmed = userInput.trim();
+      if (!trimmed) {
+        this.showError('Geçerli bir dosya adı girin.');
+        return;
+      }
+
+      try {
+        const updated = await this.renameMedia(filename, trimmed + extension);
+        if (updated?.media) {
+          this.state.media = this.state.media.map((item) =>
+            item.filename === filename ? updated.media : item
+          );
+          this.renderMediaList(this.state.media);
+          this.showSuccess('Dosya adı güncellendi.');
+        }
+      } catch (error) {
+        this.showError(error.message || 'Dosya yeniden adlandırılamadı.');
+      }
+    }
+
+    async renameMedia(filename, newName) {
+      const response = await fetch(`/cms/media/${encodeURIComponent(filename)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newName })
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Dosya yeniden adlandırılamadı');
+      }
+
+      return response.json();
+    }
+
+    viewMedia(url) {
+      if (!url) return;
+      window.open(url, '_blank', 'noopener');
     }
 
     escapeHtml(value) {

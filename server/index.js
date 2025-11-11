@@ -108,6 +108,7 @@ app.use('/cms', express.static(path.join(__dirname, '../public/cms'), {
 
 // Routes
 app.use('/api', require('./routes/api'));
+app.use('/cms/media', require('./routes/cms-media'));
 app.use('/cms', require('./routes/cms'));
 app.use('/', require('./routes/pages'));
 

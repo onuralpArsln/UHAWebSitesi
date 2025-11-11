@@ -1,0 +1,64 @@
+{% macro MediaControls(initialMedia = []) %}
+<section id="media" class="cms-section" data-cms="media-section" hidden>
+  <div class="cms-content">
+    <div class="cms-section-heading">
+      <h2>Medya Kontrolleri</h2>
+      <div class="cms-section-actions">
+        <button class="cms-btn cms-btn-primary" data-action="open-media-upload">Dosya Yükle</button>
+        <button class="cms-btn cms-btn-secondary" data-action="refresh-media">Yenile</button>
+      </div>
+    </div>
+    <p class="cms-section-subtitle">
+      Yüklediğiniz medya dosyalarının bağlantılarını kopyalayarak içeriklerde kullanabilirsiniz.
+    </p>
+
+    <input type="file" data-cms="media-upload-input" accept="image/*,video/*,audio/*,.pdf,.doc,.docx" multiple hidden>
+
+    <div class="media-controls" data-cms="media-controls">
+      <div class="media-upload-hint">
+        <p>Dosyalar proje dizinindeki <code>/public/uploads/media</code> klasörüne kaydedilir.</p>
+        <p>Yükleme sonrası dosya URL’si <code>/uploads/media/&lt;dosya-adı&gt;</code> şeklindedir.</p>
+      </div>
+
+      <div class="media-list" data-cms="media-list">
+        {% if initialMedia | length %}
+        <div class="media-grid" data-cms="media-grid">
+          {% for media in initialMedia %}
+          <article class="media-card" data-media-filename="{{ media.filename }}">
+            <div class="media-card__preview" data-media-preview>
+              <span>{{ media.extension | upper | default('DOSYA') }}</span>
+            </div>
+            <div class="media-card__body">
+              <h3 class="media-card__title">{{ media.filename }}</h3>
+              <dl class="media-card__meta">
+                <div>
+                  <dt>Boyut</dt>
+                  <dd>{{ media.size }}</dd>
+                </div>
+                <div>
+                  <dt>Yüklendi</dt>
+                  <dd>{{ media.uploadedAt | formatDate | default('-') }}</dd>
+                </div>
+              </dl>
+              <div class="media-card__actions">
+            <button class="cms-btn cms-btn--ghost" data-action="view-media" data-media-url="{{ media.url }}">Görüntüle</button>
+            <button class="cms-btn cms-btn-secondary" data-action="rename-media" data-media-filename="{{ media.filename }}">Yeniden Adlandır</button>
+                <button class="cms-btn cms-btn-secondary" data-action="copy-media-url" data-media-url="{{ media.url }}">Bağlantıyı Kopyala</button>
+                <button class="cms-btn cms-btn-danger" data-action="delete-media" data-media-filename="{{ media.filename }}">Sil</button>
+              </div>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="cms-empty-state" data-cms="media-empty">
+          Henüz medya yüklenmedi. “Dosya Yükle” butonuyla yeni dosyalar ekleyebilirsiniz.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endmacro %}
+
+

@@ -8,6 +8,7 @@
 {% from "cms/components/settings-form.njk" import SettingsForm %}
 {% from "cms/components/article-editor.njk" import ArticleEditor %}
 {% from "cms/components/branding-form.njk" import BrandingForm %}
+{% from "cms/components/media-controls.njk" import MediaControls %}
 
 {% set articles = initialState.articles or [] %}
 {% set categories = initialState.categories or [] %}
@@ -32,6 +33,8 @@
   {{ ArticleEditor(categories, targetOptions) }}
 
   {{ CategoryTable(categories) }}
+
+  {{ MediaControls() }}
 
   {{ BrandingForm(branding) }}
 
