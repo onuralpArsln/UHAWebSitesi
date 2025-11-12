@@ -27,12 +27,12 @@
         {% if image %}
         <div class="article-card__media">
           <img
-            src="{{ image.lowRes }}"
+            src="{{ image.lowRes or image.url }}"
             alt="{{ image.alt }}"
             width="{{ image.width }}"
             height="{{ image.height }}"
             loading="lazy"
-            data-high-res="{{ image.highRes }}"
+            data-high-res="{{ image.highRes or '' }}"
           >
         </div>
         {% endif %}
@@ -65,10 +65,10 @@
         {% if image %}
         <div class="article-item__media">
           <img
-            src="{{ image.lowRes }}"
+            src="{{ image.lowRes or image.url }}"
             alt="{{ image.alt }}"
             loading="lazy"
-            data-high-res="{{ image.highRes }}"
+            data-high-res="{{ image.highRes or '' }}"
           >
         </div>
         {% endif %}

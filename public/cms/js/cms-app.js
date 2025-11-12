@@ -1133,17 +1133,6 @@
         preview.appendChild(span);
       }
 
-      const body = document.createElement('div');
-      body.className = 'media-card__body';
-
-      const header = document.createElement('header');
-      header.className = 'media-card__header';
-
-      const title = document.createElement('span');
-      title.className = 'media-card__title';
-      title.textContent = media.filename || media.path;
-      title.title = media.path || media.filename;
-
       const menuWrapper = document.createElement('div');
       menuWrapper.className = 'media-card__menu';
 
@@ -1183,9 +1172,20 @@
 
       menuWrapper.appendChild(menuToggle);
       menuWrapper.appendChild(menuPanel);
+      preview.appendChild(menuWrapper);
+
+      const body = document.createElement('div');
+      body.className = 'media-card__body';
+
+      const header = document.createElement('header');
+      header.className = 'media-card__header';
+
+      const title = document.createElement('span');
+      title.className = 'media-card__title';
+      title.textContent = media.filename || media.path;
+      title.title = media.path || media.filename;
 
       header.appendChild(title);
-      header.appendChild(menuWrapper);
 
       const meta = document.createElement('div');
       meta.className = 'media-card__meta';

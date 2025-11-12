@@ -87,6 +87,7 @@ router.get('/', async (req, res) => {
           slug: urlSlugService.generateSlug(category.name),
           articles: categoryArticles.articles.map(article => ({
             ...article,
+            images: optimizeImageData(article.images),
             slug: urlSlugService.getSlugById(article.id) || 
                   urlSlugService.generateSlug(article.title)
           }))
@@ -109,6 +110,7 @@ router.get('/', async (req, res) => {
       branding,
       featuredArticles: featuredArticles.articles.map(article => ({
         ...article,
+        images: optimizeImageData(article.images),
         slug: urlSlugService.getSlugById(article.id) || 
               urlSlugService.generateSlug(article.title)
       })),
@@ -259,6 +261,7 @@ router.get('/kategori/:categorySlug', async (req, res) => {
       },
       articles: articlesData.articles.map(article => ({
         ...article,
+        images: optimizeImageData(article.images),
         slug: urlSlugService.getSlugById(article.id) || 
               urlSlugService.generateSlug(article.title)
       })),
@@ -325,6 +328,7 @@ router.get('/arama', async (req, res) => {
       searchQuery: query,
       articles: searchResults.articles.map(article => ({
         ...article,
+        images: optimizeImageData(article.images),
         slug: urlSlugService.getSlugById(article.id) || 
               urlSlugService.generateSlug(article.title)
       })),

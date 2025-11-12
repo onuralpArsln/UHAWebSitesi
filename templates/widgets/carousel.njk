@@ -8,9 +8,9 @@
         <div class="slide-image">
           {% if image %}
           <img
-            src="{% if loop.first %}{{ image.lowRes }}{% else %}{{ placeholder_image }}{% endif %}"
-            data-low-res="{{ image.lowRes }}"
-            data-high-res="{{ image.highRes }}"
+            src="{% if loop.first %}{{ image.lowRes or image.url }}{% else %}{{ placeholder_image }}{% endif %}"
+            data-low-res="{{ image.lowRes or image.url }}"
+            data-high-res="{{ image.highRes or '' }}"
             alt="{{ image.alt }}"
             width="{{ image.width }}"
             height="{{ image.height }}"
