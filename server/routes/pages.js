@@ -202,6 +202,42 @@ router.get('/haber/:slug', async (req, res) => {
 });
 
 /**
+ * Redirect direct category name URLs to /kategori/:slug
+ * This handles URLs like /ekonomi → /kategori/ekonomi
+ */
+router.get('/:potentialCategorySlug', async (req, res, next) => {
+  try {
+    const { potentialCategorySlug } = req.params;
+    const rawBasePath = process.env.BASE_PATH || '';
+    const BASE_PATH = ('/' + rawBasePath.replace(/^\/+|\/+$/g, '')).replace(/^\/$/, '');
+    
+    // Skip if this is a known route path
+    const knownPaths = ['haber', 'kategori', 'arama', 'sitemap.xml', 'news-sitemap.xml', 'robots.txt', 'rss.xml', 'cms', 'api', 'static', 'css', 'js', 'uploads'];
+    if (knownPaths.includes(potentialCategorySlug)) {
+      return next();
+    }
+    
+    // Check if this matches a category slug
+    const categories = dataService.getCategories();
+    const matchingCategory = categories.find(cat => {
+      const categorySlug = cat.slug || urlSlugService.generateSlug(cat.name);
+      return categorySlug === potentialCategorySlug;
+    });
+    
+    if (matchingCategory) {
+      const categorySlug = matchingCategory.slug || urlSlugService.generateSlug(matchingCategory.name);
+      return res.redirect(302, `${BASE_PATH}/kategori/${categorySlug}`);
+    }
+    
+    // Not a category, continue to next route/404
+    next();
+  } catch (error) {
+    console.error('Category redirect error:', error);
+    next();
+  }
+});
+
+/**
  * Category page route
  */
 router.get('/kategori/:categorySlug', async (req, res) => {
