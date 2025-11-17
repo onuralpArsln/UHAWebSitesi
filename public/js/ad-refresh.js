@@ -194,12 +194,6 @@ class AdRefresh {
       // Simulate refresh delay
       setTimeout(() => {
         placeholder.classList.remove('loading');
-        placeholder.innerHTML = `
-          <div style="background: #e0e0e0; padding: 20px; text-align: center; border-radius: 4px;">
-            <p>Ad Refreshed</p>
-            <small>${slotId} - Refresh #${this.refreshCount}</small>
-          </div>
-        `;
       }, 500);
     }
   }
