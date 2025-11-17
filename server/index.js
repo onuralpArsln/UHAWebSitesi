@@ -145,18 +145,21 @@ app.use((req, res, next) => {
     };
     
     res.end = function(...args) {
-      // Remove any existing problematic headers first
-      res.removeHeader('Content-Security-Policy');
-      res.removeHeader('Cross-Origin-Opener-Policy');
-      res.removeHeader('Cross-Origin-Resource-Policy');
-      res.removeHeader('Origin-Agent-Cluster');
-      res.removeHeader('Strict-Transport-Security');
-      
-      // Set our clean headers
-      res.setHeader('Content-Security-Policy', cspHeader);
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-      res.setHeader('X-XSS-Protection', '0');
+      // Only manipulate headers if they haven't been sent yet
+      if (!res.headersSent) {
+        // Remove any existing problematic headers first
+        res.removeHeader('Content-Security-Policy');
+        res.removeHeader('Cross-Origin-Opener-Policy');
+        res.removeHeader('Cross-Origin-Resource-Policy');
+        res.removeHeader('Origin-Agent-Cluster');
+        res.removeHeader('Strict-Transport-Security');
+        
+        // Set our clean headers
+        res.setHeader('Content-Security-Policy', cspHeader);
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+        res.setHeader('X-XSS-Protection', '0');
+      }
       
       return originalEnd.apply(this, args);
     };
