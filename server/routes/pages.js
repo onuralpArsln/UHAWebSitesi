@@ -217,11 +217,16 @@ router.get('/:potentialCategorySlug', async (req, res, next) => {
       return next();
     }
     
+    // Normalize the potential category slug from URL
+    const normalizedPotentialSlug = urlSlugService.normalizeSlugFromUrl(potentialCategorySlug);
+    
     // Check if this matches a category slug
     const categories = dataService.getCategories();
     const matchingCategory = categories.find(cat => {
-      const categorySlug = cat.slug || urlSlugService.generateSlug(cat.name);
-      return categorySlug === potentialCategorySlug;
+      const storedSlug = cat.slug || '';
+      const generatedSlug = urlSlugService.generateSlug(cat.name);
+      // Match against normalized slug from URL
+      return storedSlug === normalizedPotentialSlug || generatedSlug === normalizedPotentialSlug;
     });
     
     if (matchingCategory) {
@@ -245,15 +250,33 @@ router.get('/kategori/:categorySlug', async (req, res) => {
     const { categorySlug } = req.params;
     const { page = 1 } = req.query;
     
-    // Find category by slug
+    // Normalize the slug from URL (handles URL-encoded Turkish characters)
+    const normalizedSlug = urlSlugService.normalizeSlugFromUrl(categorySlug);
+    
+    // Find category by slug - check both stored slug and generated slug
     const categories = dataService.getCategories();
     const navCategories = buildNavCategories(categories);
-    const category = categories.find(cat => 
-      urlSlugService.generateSlug(cat.name) === categorySlug
-    );
+    const category = categories.find(cat => {
+      const storedSlug = cat.slug || '';
+      const generatedSlug = urlSlugService.generateSlug(cat.name);
+      // Match against normalized slug from URL
+      return storedSlug === normalizedSlug || generatedSlug === normalizedSlug;
+    });
     
     if (!category) {
       return res.status(404).send('Category not found');
+    }
+
+    // Get canonical slug (prefer stored slug, fallback to generated slug)
+    const canonicalSlug = category.slug || urlSlugService.generateSlug(category.name);
+    
+    // Redirect to canonical slug if normalized slug matches but URL doesn't (for SEO consistency)
+    // This handles cases where URL has Turkish characters but normalizes to the same slug
+    if (normalizedSlug === canonicalSlug && categorySlug !== canonicalSlug) {
+      const rawBasePath = process.env.BASE_PATH || '';
+      const BASE_PATH = ('/' + rawBasePath.replace(/^\/+|\/+$/g, '')).replace(/^\/$/, '');
+      const queryString = req.url.includes('?') ? '?' + req.url.split('?')[1] : '';
+      return res.redirect(301, `${BASE_PATH}/kategori/${canonicalSlug}${queryString}`);
     }
 
     // Fetch articles for category
@@ -285,10 +308,10 @@ router.get('/kategori/:categorySlug', async (req, res) => {
     const meta = buildMeta({
       title: `${category.name} Haberleri - ${process.env.SITE_NAME || 'UHA News'}`,
       description: `${category.name} kategorisindeki son haberler ve güncel gelişmeler`,
-      url: `${process.env.SITE_URL || 'http://localhost:3000'}/kategori/${categorySlug}`,
+      url: `${process.env.SITE_URL || 'http://localhost:3000'}/kategori/${canonicalSlug}`,
       image: process.env.SITE_URL
-        ? `${process.env.SITE_URL}/static/images/category-${categorySlug}.jpg`
-        : `/static/images/category-${categorySlug}.jpg`
+        ? `${process.env.SITE_URL}/static/images/category-${canonicalSlug}.jpg`
+        : `/static/images/category-${canonicalSlug}.jpg`
     });
 
     const pageData = {
@@ -296,7 +319,7 @@ router.get('/kategori/:categorySlug', async (req, res) => {
       branding,
       category: {
         ...category,
-        slug: categorySlug
+        slug: canonicalSlug
       },
       articles: articlesData.articles.map(article => ({
         ...article,

@@ -79,6 +79,28 @@ class URLSlugService {
   }
 
   /**
+   * Normalize slug from URL parameter
+   * Handles URL-encoded Turkish characters and normalizes them to match generated slugs
+   * @param {string} urlSlug - The slug from the URL (may be URL-encoded or contain Turkish characters)
+   * @returns {string} - Normalized slug that can be compared with generated slugs
+   */
+  normalizeSlugFromUrl(urlSlug) {
+    if (!urlSlug) return '';
+    
+    try {
+      // Decode URL-encoded characters (e.g., %C4%9F becomes ğ)
+      let decoded = decodeURIComponent(urlSlug);
+      
+      // Normalize by generating a slug from the decoded string
+      // This ensures Turkish characters are converted to ASCII equivalents
+      return this.generateSlug(decoded);
+    } catch (error) {
+      // If decoding fails (invalid encoding), try direct normalization
+      return this.generateSlug(urlSlug);
+    }
+  }
+
+  /**
    * Get or create slug for article
    */
   async getSlugForArticle(articleId, title) {

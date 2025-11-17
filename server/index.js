@@ -87,6 +87,9 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Note: Express automatically decodes URL-encoded route parameters
+// Turkish characters in URLs are handled by normalizeSlugFromUrl() in url-slug service
+
 // Static files
 function mountStaticBoth(mountPath, dir) {
   const options = {
