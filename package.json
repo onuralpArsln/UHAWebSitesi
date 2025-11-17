@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "nodemon server/index.js",
+    "deploy": "node scripts/deploy.js",
     "build": "echo 'No build step needed for SSR'",
     "test": "echo 'Tests to be implemented'"
   },
