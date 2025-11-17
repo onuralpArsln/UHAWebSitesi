@@ -65,10 +65,12 @@ nunjucksEnv.addGlobal('asset', (p) => {
 });
 
 // Security and performance middleware
-// Check if using HTTPS
-const isHttps = process.env.SITE_URL && process.env.SITE_URL.startsWith('https:');
+// Check if using HTTPS (only enable HTTPS headers if SITE_URL starts with https:)
+const siteUrl = process.env.SITE_URL || '';
+const isHttps = siteUrl.startsWith('https:');
 
 // Configure Helmet based on protocol
+// For HTTP-only sites (no SSL certificate), we disable HTTPS-related headers
 const helmetConfig = {
   contentSecurityPolicy: {
     directives: {
@@ -79,20 +81,23 @@ const helmetConfig = {
       scriptSrc: ["'self'", "'unsafe-inline'", "https://pagead2.googlesyndication.com"],
       connectSrc: ["'self'", "https://pagead2.googlesyndication.com"],
       frameSrc: ["'self'", "https://googleads.g.doubleclick.net"]
+      // Note: upgradeInsecureRequests is NOT set for HTTP sites
     }
-  }
+  },
+  // Disable HSTS (HTTP Strict Transport Security) for HTTP-only sites
+  strictTransportSecurity: false
 };
 
-// Only enable HTTPS-related headers if using HTTPS
+// Only enable HTTPS-related headers if explicitly using HTTPS
 if (isHttps) {
   helmetConfig.contentSecurityPolicy.directives.upgradeInsecureRequests = [];
   helmetConfig.strictTransportSecurity = {
     maxAge: 15552000,
     includeSubDomains: true
   };
+  console.log('🔒 HTTPS mode: Enabling security headers for HTTPS');
 } else {
-  // Explicitly disable for HTTP
-  helmetConfig.strictTransportSecurity = false;
+  console.log('🌐 HTTP mode: HTTPS security headers disabled (no SSL certificate)');
 }
 
 app.use(helmet(helmetConfig));
