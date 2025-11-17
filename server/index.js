@@ -1,9 +1,10 @@
 const express = require('express');
 const compression = require('compression');
-const helmet = require('helmet');
 const cors = require('cors');
 const path = require('path');
 const nunjucks = require('nunjucks');
+// Import Helmet middleware only for HTTPS
+const helmet = require('helmet');
 // Optional: Load .env if it exists (not required - system auto-configures)
 try {
   require('dotenv').config();
@@ -78,44 +79,90 @@ nunjucksEnv.addGlobal('config', config);
 // Support both HTTP and HTTPS - detect protocol per request
 // This allows the server to work with or without SSL certificate
 
-// Base Helmet configuration (works for both HTTP and HTTPS)
-const baseHelmetConfig = {
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:", "http:"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://pagead2.googlesyndication.com"],
-      connectSrc: ["'self'", "https://pagead2.googlesyndication.com"],
-      frameSrc: ["'self'", "https://googleads.g.doubleclick.net"]
-    }
-  }
+// Base CSP directives (shared for both HTTP and HTTPS)
+const baseCSPDirectives = {
+  defaultSrc: ["'self'"],
+  styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+  fontSrc: ["'self'", "https://fonts.gstatic.com"],
+  imgSrc: ["'self'", "data:", "https:", "http:"],
+  scriptSrc: ["'self'", "'unsafe-inline'", "https://pagead2.googlesyndication.com"],
+  connectSrc: ["'self'", "https://pagead2.googlesyndication.com"],
+  frameSrc: ["'self'", "https://googleads.g.doubleclick.net"]
 };
 
-// Middleware to dynamically configure Helmet based on request protocol
+// Middleware to dynamically configure security headers based on request protocol
 app.use((req, res, next) => {
-  // Use config service to detect HTTPS
   const isHttps = config.isHttps(req);
   
-  // Create dynamic Helmet config for this request
-  const helmetConfig = { ...baseHelmetConfig };
-  
   if (isHttps) {
-    // Enable HTTPS security headers for HTTPS requests
-    helmetConfig.contentSecurityPolicy.directives.upgradeInsecureRequests = [];
-    helmetConfig.strictTransportSecurity = {
-      maxAge: 15552000,
-      includeSubDomains: true
-    };
+    // For HTTPS: Use Helmet with full security headers
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          ...baseCSPDirectives,
+          upgradeInsecureRequests: []
+        }
+      },
+      strictTransportSecurity: {
+        maxAge: 15552000,
+        includeSubDomains: true
+      },
+      crossOriginOpenerPolicy: { policy: 'same-origin' },
+      crossOriginResourcePolicy: { policy: 'same-origin' },
+      originAgentCluster: true
+    })(req, res, next);
   } else {
-    // Disable HTTPS-only headers for HTTP requests
-    helmetConfig.strictTransportSecurity = false;
-    // upgradeInsecureRequests is not set, allowing HTTP resources
+    // For HTTP: Set headers manually (NO Helmet to avoid defaults)
+    // Build CSP header manually
+    const cspParts = [];
+    Object.entries(baseCSPDirectives).forEach(([key, value]) => {
+      if (Array.isArray(value) && value.length > 0) {
+        const headerKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+        cspParts.push(`${headerKey} ${value.join(' ')}`);
+      }
+    });
+    const cspHeader = cspParts.join('; ');
+    
+    // Intercept response to set headers at the very last moment
+    const originalEnd = res.end;
+    const originalWriteHead = res.writeHead;
+    
+    res.writeHead = function(...args) {
+      // Remove any existing problematic headers first
+      res.removeHeader('Content-Security-Policy');
+      res.removeHeader('Cross-Origin-Opener-Policy');
+      res.removeHeader('Cross-Origin-Resource-Policy');
+      res.removeHeader('Origin-Agent-Cluster');
+      res.removeHeader('Strict-Transport-Security');
+      
+      // Set our clean headers
+      res.setHeader('Content-Security-Policy', cspHeader);
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      res.setHeader('X-XSS-Protection', '0');
+      
+      return originalWriteHead.apply(this, args);
+    };
+    
+    res.end = function(...args) {
+      // Remove any existing problematic headers first
+      res.removeHeader('Content-Security-Policy');
+      res.removeHeader('Cross-Origin-Opener-Policy');
+      res.removeHeader('Cross-Origin-Resource-Policy');
+      res.removeHeader('Origin-Agent-Cluster');
+      res.removeHeader('Strict-Transport-Security');
+      
+      // Set our clean headers
+      res.setHeader('Content-Security-Policy', cspHeader);
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      res.setHeader('X-XSS-Protection', '0');
+      
+      return originalEnd.apply(this, args);
+    };
+    
+    next();
   }
-  
-  // Apply Helmet with dynamic config
-  helmet(helmetConfig)(req, res, next);
 });
 
 console.log('🌐 Server configured to support both HTTP and HTTPS');
@@ -194,6 +241,7 @@ mountRoutesBoth('/api', require('./routes/api'));
 mountRoutesBoth('/cms/media', require('./routes/cms-media'));
 mountRoutesBoth('/cms', require('./routes/cms'));
 mountRoutesBoth('/', require('./routes/pages'));
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {
