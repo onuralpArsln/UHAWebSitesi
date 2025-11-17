@@ -1,5 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
+const config = require('./config');
 
 class SitemapService {
   constructor(dataService, urlSlugService) {
@@ -11,12 +12,12 @@ class SitemapService {
   /**
    * Generate XML sitemap
    */
-  async generateSitemap() {
+  async generateSitemap(req = null) {
     try {
       const articles = this.dataService.getArticles({ limit: 1000 });
       const slugs = this.urlSlugService.getAllSlugs();
       
-      const sitemap = this.buildSitemapXML(articles.articles, slugs);
+      const sitemap = this.buildSitemapXML(articles.articles, slugs, req);
       
       // Save sitemap.xml
       await fs.writeFile(
@@ -36,7 +37,7 @@ class SitemapService {
   /**
    * Generate news sitemap for Google News
    */
-  async generateNewsSitemap() {
+  async generateNewsSitemap(req = null) {
     try {
       // Get articles from last 2 days
       const twoDaysAgo = new Date();
@@ -54,7 +55,7 @@ class SitemapService {
         return publishedDate >= twoDaysAgo;
       });
       
-      const newsSitemap = this.buildNewsSitemapXML(recentArticles);
+      const newsSitemap = this.buildNewsSitemapXML(recentArticles, req);
       
       // Save news-sitemap.xml
       await fs.writeFile(
@@ -74,8 +75,8 @@ class SitemapService {
   /**
    * Build XML sitemap
    */
-  buildSitemapXML(articles, slugs) {
-    const baseURL = process.env.SITE_URL || 'http://localhost:3000';
+  buildSitemapXML(articles, slugs, req = null) {
+    const baseURL = req ? config.getSiteUrl(req) : 'http://localhost:3000';
     const slugMap = new Map(slugs.map(s => [s.id, s.slug]));
     
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -127,8 +128,9 @@ class SitemapService {
   /**
    * Build news sitemap XML
    */
-  buildNewsSitemapXML(articles) {
-    const baseURL = process.env.SITE_URL || 'http://localhost:3000';
+  buildNewsSitemapXML(articles, req = null) {
+    const baseURL = req ? config.getSiteUrl(req) : 'http://localhost:3000';
+    const siteDefaults = config.getSiteDefaults();
     const slugMap = new Map(this.urlSlugService.getAllSlugs().map(s => [s.id, s.slug]));
     
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -147,7 +149,7 @@ class SitemapService {
     <lastmod>${lastmod.toISOString()}</lastmod>
     <news:news>
       <news:publication>
-        <news:name>${process.env.SITE_NAME || 'UHA News'}</news:name>
+        <news:name>${siteDefaults.name}</news:name>
         <news:language>tr</news:language>
       </news:publication>
       <news:publication_date>${publishedDate.toISOString()}</news:publication_date>
@@ -168,8 +170,8 @@ class SitemapService {
   /**
    * Generate robots.txt
    */
-  async generateRobotsTxt() {
-    const baseURL = process.env.SITE_URL || 'http://localhost:3000';
+  async generateRobotsTxt(req = null) {
+    const baseURL = req ? config.getSiteUrl(req) : 'http://localhost:3000';
     
     const robots = `User-agent: *
 Allow: /

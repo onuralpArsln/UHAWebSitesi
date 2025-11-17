@@ -2,6 +2,7 @@ const express = require('express');
 const DataService = require('../services/data-service');
 const URLSlugService = require('../services/url-slug');
 const SitemapService = require('../services/sitemap');
+const config = require('../services/config');
 const {
   buildMeta,
   buildNewsArticleSchema,
@@ -37,8 +38,7 @@ function formatBranding(raw) {
 }
 
 function buildNavCategories(categories = []) {
-  const rawBasePath = process.env.BASE_PATH || '';
-  const BASE_PATH = ('/' + rawBasePath.replace(/^\/+|\/+$/g, '')).replace(/^\/$/, '');
+  const BASE_PATH = config.getBasePath();
   
   const items = categories.map(category => {
     const slug = category.slug || urlSlugService.generateSlug(category.name);
@@ -103,10 +103,8 @@ router.get('/', async (req, res) => {
 
     // Prepare page data
     const meta = buildMeta({
-      image: process.env.SITE_URL
-        ? `${process.env.SITE_URL}/static/images/og-home.jpg`
-        : '/static/images/og-home.jpg'
-    });
+      image: `${config.getSiteUrl(req)}/static/images/og-home.jpg`
+    }, req);
 
     const pageData = {
       meta,
@@ -162,19 +160,21 @@ router.get('/haber/:slug', async (req, res) => {
     const branding = formatBranding(dataService.getBranding());
 
     // Prepare page data
+    const siteUrl = config.getSiteUrl(req);
+    const siteDefaults = config.getSiteDefaults();
     const meta = buildMeta({
-      title: `${article.title} - ${process.env.SITE_NAME || 'UHA News'}`,
+      title: `${article.title} - ${siteDefaults.name}`,
       description: article.summary,
-      url: `${process.env.SITE_URL || 'http://localhost:3000'}/haber/${slug}`,
+      url: `${siteUrl}/haber/${slug}`,
       image: article.images?.[0]?.highRes,
       type: 'article'
-    });
+    }, req);
 
     const articleSchema = buildNewsArticleSchema({
       ...article,
       slug,
       images: optimizeImageData(article.images)
-    });
+    }, req);
 
     const pageData = {
       meta,
@@ -208,8 +208,7 @@ router.get('/haber/:slug', async (req, res) => {
 router.get('/:potentialCategorySlug', async (req, res, next) => {
   try {
     const { potentialCategorySlug } = req.params;
-    const rawBasePath = process.env.BASE_PATH || '';
-    const BASE_PATH = ('/' + rawBasePath.replace(/^\/+|\/+$/g, '')).replace(/^\/$/, '');
+    const BASE_PATH = config.getBasePath();
     
     // Skip if this is a known route path
     const knownPaths = ['haber', 'kategori', 'arama', 'sitemap.xml', 'news-sitemap.xml', 'robots.txt', 'rss.xml', 'cms', 'api', 'static', 'css', 'js', 'uploads'];
@@ -273,8 +272,7 @@ router.get('/kategori/:categorySlug', async (req, res) => {
     // Redirect to canonical slug if normalized slug matches but URL doesn't (for SEO consistency)
     // This handles cases where URL has Turkish characters but normalizes to the same slug
     if (normalizedSlug === canonicalSlug && categorySlug !== canonicalSlug) {
-      const rawBasePath = process.env.BASE_PATH || '';
-      const BASE_PATH = ('/' + rawBasePath.replace(/^\/+|\/+$/g, '')).replace(/^\/$/, '');
+      const BASE_PATH = config.getBasePath();
       const queryString = req.url.includes('?') ? '?' + req.url.split('?')[1] : '';
       return res.redirect(301, `${BASE_PATH}/kategori/${canonicalSlug}${queryString}`);
     }
@@ -305,14 +303,14 @@ router.get('/kategori/:categorySlug', async (req, res) => {
     const branding = formatBranding(dataService.getBranding());
 
     // Prepare page data
+    const siteUrl = config.getSiteUrl(req);
+    const siteDefaults = config.getSiteDefaults();
     const meta = buildMeta({
-      title: `${category.name} Haberleri - ${process.env.SITE_NAME || 'UHA News'}`,
+      title: `${category.name} Haberleri - ${siteDefaults.name}`,
       description: `${category.name} kategorisindeki son haberler ve güncel gelişmeler`,
-      url: `${process.env.SITE_URL || 'http://localhost:3000'}/kategori/${canonicalSlug}`,
-      image: process.env.SITE_URL
-        ? `${process.env.SITE_URL}/static/images/category-${canonicalSlug}.jpg`
-        : `/static/images/category-${canonicalSlug}.jpg`
-    });
+      url: `${siteUrl}/kategori/${canonicalSlug}`,
+      image: `${siteUrl}/static/images/category-${canonicalSlug}.jpg`
+    }, req);
 
     const pageData = {
       meta,
@@ -345,8 +343,7 @@ router.get('/kategori/:categorySlug', async (req, res) => {
 router.get('/arama', async (req, res) => {
   try {
     const { q: query, page = 1 } = req.query;
-    const rawBasePath = process.env.BASE_PATH || '';
-    const BASE_PATH = ('/' + rawBasePath.replace(/^\/+|\/+$/g, '')).replace(/^\/$/, '');
+    const BASE_PATH = config.getBasePath();
     
     if (!query) {
       return res.redirect(`${BASE_PATH}/`);
@@ -380,11 +377,13 @@ router.get('/arama', async (req, res) => {
     const branding = formatBranding(dataService.getBranding());
 
     // Prepare page data
+    const siteUrl = config.getSiteUrl(req);
+    const siteDefaults = config.getSiteDefaults();
     const meta = buildMeta({
-      title: `"${query}" Arama Sonuçları - ${process.env.SITE_NAME || 'UHA News'}`,
+      title: `"${query}" Arama Sonuçları - ${siteDefaults.name}`,
       description: `"${query}" için arama sonuçları`,
-      url: `${process.env.SITE_URL || 'http://localhost:3000'}/arama?q=${encodeURIComponent(query)}`
-    });
+      url: `${siteUrl}/arama?q=${encodeURIComponent(query)}`
+    }, req);
 
     const pageData = {
       meta,
@@ -413,7 +412,7 @@ router.get('/arama', async (req, res) => {
  */
 router.get('/sitemap.xml', async (req, res) => {
   try {
-    const sitemap = await sitemapService.generateSitemap();
+    const sitemap = await sitemapService.generateSitemap(req);
     res.set('Content-Type', 'application/xml');
     res.send(sitemap);
   } catch (error) {
@@ -424,7 +423,7 @@ router.get('/sitemap.xml', async (req, res) => {
 
 router.get('/news-sitemap.xml', async (req, res) => {
   try {
-    const newsSitemap = await sitemapService.generateNewsSitemap();
+    const newsSitemap = await sitemapService.generateNewsSitemap(req);
     res.set('Content-Type', 'application/xml');
     res.send(newsSitemap);
   } catch (error) {
@@ -435,7 +434,7 @@ router.get('/news-sitemap.xml', async (req, res) => {
 
 router.get('/robots.txt', async (req, res) => {
   try {
-    const robots = await sitemapService.generateRobotsTxt();
+    const robots = await sitemapService.generateRobotsTxt(req);
     res.set('Content-Type', 'text/plain');
     res.send(robots);
   } catch (error) {
@@ -450,24 +449,26 @@ router.get('/robots.txt', async (req, res) => {
 router.get('/rss.xml', async (req, res) => {
   try {
     const rssFeed = dataService.getRSSFeed();
+    const siteUrl = config.getSiteUrl(req);
+    const siteDefaults = config.getSiteDefaults();
     
     // Convert to RSS XML format
     const rssXML = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>${process.env.SITE_NAME}</title>
-    <description>${process.env.SITE_DESCRIPTION}</description>
-    <link>${process.env.SITE_URL}</link>
+    <title>${siteDefaults.name}</title>
+    <description>${siteDefaults.description}</description>
+    <link>${siteUrl}</link>
     <language>tr</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <atom:link href="${process.env.SITE_URL}/rss.xml" rel="self" type="application/rss+xml"/>
+    <atom:link href="${siteUrl}/rss.xml" rel="self" type="application/rss+xml"/>
     
     ${rssFeed.articles.map(article => `
     <item>
       <title><![CDATA[${article.title}]]></title>
       <description><![CDATA[${article.summary}]]></description>
-      <link>${process.env.SITE_URL}/haber/${urlSlugService.getSlugById(article.id) || urlSlugService.generateSlug(article.title)}</link>
-      <guid isPermaLink="true">${process.env.SITE_URL}/haber/${urlSlugService.getSlugById(article.id) || urlSlugService.generateSlug(article.title)}</guid>
+      <link>${siteUrl}/haber/${urlSlugService.getSlugById(article.id) || urlSlugService.generateSlug(article.title)}</link>
+      <guid isPermaLink="true">${siteUrl}/haber/${urlSlugService.getSlugById(article.id) || urlSlugService.generateSlug(article.title)}</guid>
       <pubDate>${new Date(article.publishedAt).toUTCString()}</pubDate>
       <category>${article.category}</category>
       ${article.images?.[0] ? `<enclosure url="${article.images[0].highRes}" type="image/jpeg" length="0"/>` : ''}
@@ -489,13 +490,15 @@ router.get('/rss.xml', async (req, res) => {
  * 404 handler
  */
 router.use((req, res) => {
+  const siteDefaults = config.getSiteDefaults();
+  const BASE_PATH = config.getBasePath();
   res.status(404).send(`
     <!DOCTYPE html>
     <html lang="tr">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Sayfa Bulunamadı - ${process.env.SITE_NAME}</title>
+      <title>Sayfa Bulunamadı - ${siteDefaults.name}</title>
       <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
         h1 { color: #e53e3e; }
@@ -505,7 +508,7 @@ router.use((req, res) => {
     <body>
       <h1>404 - Sayfa Bulunamadı</h1>
       <p>Aradığınız sayfa mevcut değil.</p>
-      <a href="${process.env.BASE_PATH ? '/' + process.env.BASE_PATH.replace(/^\/+|\/+$/g, '') : ''}/">Ana Sayfaya Dön</a>
+      <a href="${BASE_PATH}/">Ana Sayfaya Dön</a>
     </body>
     </html>
   `);

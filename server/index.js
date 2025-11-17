@@ -4,25 +4,31 @@ const helmet = require('helmet');
 const cors = require('cors');
 const path = require('path');
 const nunjucks = require('nunjucks');
-require('dotenv').config();
+// Optional: Load .env if it exists (not required - system auto-configures)
+try {
+  require('dotenv').config();
+} catch (e) {
+  // dotenv not available or .env doesn't exist - that's fine
+}
+const config = require('./services/config');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const rawBasePath = process.env.BASE_PATH || '';
-const BASE_PATH = ('/' + rawBasePath.replace(/^\/+|\/+$/g, '')).replace(/^\/$/, '');
+const serverConfig = config.getServerConfig();
+const paths = config.getPaths();
+const PORT = serverConfig.port;
+const BASE_PATH = serverConfig.basePath;
 
 // Trust proxy for accurate protocol detection (important for reverse proxies like nginx)
 // This allows req.secure and req.protocol to work correctly when behind a proxy
-app.set('trust proxy', true);
+app.set('trust proxy', serverConfig.trustProxy);
 
 // View engine configuration
-const templatesPath = path.join(__dirname, '../templates');
-const nunjucksEnv = nunjucks.configure(templatesPath, {
+const nunjucksEnv = nunjucks.configure(paths.templates, {
   autoescape: true,
   express: app,
-  noCache: process.env.NODE_ENV !== 'production'
+  noCache: !config.isProduction()
 });
-app.set('views', templatesPath);
+app.set('views', paths.templates);
 app.set('view engine', 'njk');
 
 const dateFormatter = new Intl.DateTimeFormat('tr-TR', {
@@ -63,10 +69,10 @@ nunjucksEnv.addGlobal('placeholder_image', 'data:image/gif;base64,R0lGODlhAQABAI
 nunjucksEnv.addGlobal('current_year', new Date().getFullYear());
 nunjucksEnv.addGlobal('BASE_PATH', BASE_PATH);
 nunjucksEnv.addGlobal('asset', (p) => {
-  const s = String(p || '');
-  const clean = s.startsWith('/') ? s : '/' + s;
-  return (BASE_PATH || '') + clean;
+  return config.getAssetPath(p);
 });
+// Add config service to templates for request-aware URL generation
+nunjucksEnv.addGlobal('config', config);
 
 // Security and performance middleware
 // Support both HTTP and HTTPS - detect protocol per request
@@ -89,12 +95,8 @@ const baseHelmetConfig = {
 
 // Middleware to dynamically configure Helmet based on request protocol
 app.use((req, res, next) => {
-  // Detect if request is HTTPS
-  // req.secure works with trust proxy enabled
-  // Also check X-Forwarded-Proto header for reverse proxies
-  const isHttps = req.secure || 
-                   (req.headers['x-forwarded-proto'] && 
-                    req.headers['x-forwarded-proto'].toLowerCase() === 'https');
+  // Use config service to detect HTTPS
+  const isHttps = config.isHttps(req);
   
   // Create dynamic Helmet config for this request
   const helmetConfig = { ...baseHelmetConfig };
@@ -120,7 +122,7 @@ console.log('🌐 Server configured to support both HTTP and HTTPS');
 console.log('   - HTTP requests: HTTPS security headers disabled');
 console.log('   - HTTPS requests: Full security headers enabled');
 
-if (process.env.ENABLE_COMPRESSION === 'true') {
+if (serverConfig.enableCompression) {
   app.use(compression());
 }
 
@@ -134,7 +136,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static files
 function mountStaticBoth(mountPath, dir) {
   const options = {
-    maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
+    maxAge: config.isProduction() ? '1d' : 0,
     etag: true,
     index: false, // Don't serve index files
     dotfiles: 'ignore' // Ignore dotfiles
@@ -147,21 +149,21 @@ function mountStaticBoth(mountPath, dir) {
 }
 
 // Mount static files - these must come BEFORE routes
-mountStaticBoth('/static', path.join(__dirname, '../public'));
-mountStaticBoth('/css', path.join(__dirname, '../public/css'));
-mountStaticBoth('/js', path.join(__dirname, '../public/js'));
-mountStaticBoth('/uploads', path.join(__dirname, '../public/uploads'));
-mountStaticBoth('/cms', path.join(__dirname, '../public/cms'));
+mountStaticBoth('/static', paths.public);
+mountStaticBoth('/css', paths.css);
+mountStaticBoth('/js', paths.js);
+mountStaticBoth('/uploads', paths.uploads);
+mountStaticBoth('/cms', paths.cms);
 
 // Direct style.css for external references (e.g., /style.css)
 app.get('/style.css', (req, res) => {
   res.type('text/css');
-  res.sendFile(path.join(__dirname, '../public/style.css'));
+  res.sendFile(path.join(paths.public, 'style.css'));
 });
 if (BASE_PATH) {
   app.get(BASE_PATH + '/style.css', (req, res) => {
     res.type('text/css');
-    res.sendFile(path.join(__dirname, '../public/style.css'));
+    res.sendFile(path.join(paths.public, 'style.css'));
   });
 }
 
@@ -170,12 +172,12 @@ const cssFiles = ['variables.css', 'main.css', 'widgets.css'];
 cssFiles.forEach(cssFile => {
   app.get(`/css/${cssFile}`, (req, res) => {
     res.type('text/css');
-    res.sendFile(path.join(__dirname, '../public/css', cssFile));
+    res.sendFile(path.join(paths.css, cssFile));
   });
   if (BASE_PATH) {
     app.get(`${BASE_PATH}/css/${cssFile}`, (req, res) => {
       res.type('text/css');
-      res.sendFile(path.join(__dirname, '../public/css', cssFile));
+      res.sendFile(path.join(paths.css, cssFile));
     });
   }
 });
@@ -225,10 +227,11 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 UHA News Server running on port ${PORT}`);
-  console.log(`📰 Environment: ${process.env.NODE_ENV}`);
-  const baseUrl = `http://localhost:${PORT}`;
-  console.log(`🌐 Frontend: ${baseUrl}/`);
-  console.log(`🛠️ CMS: ${baseUrl}/cms`);
+  console.log(`📰 Environment: ${config.getNodeEnv()}`);
+  console.log(`🌐 Auto-configuring: Protocol and URLs detected from requests`);
+  console.log(`   - Base Path: ${BASE_PATH || '(root)'}`);
+  console.log(`   - Frontend: http://localhost:${PORT}${BASE_PATH}/`);
+  console.log(`   - CMS: http://localhost:${PORT}${BASE_PATH}/cms`);
 });
 
 module.exports = app;

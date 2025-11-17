@@ -4,9 +4,10 @@
  * Deployment script for UHA News Server
  * - Kills processes on port 3000
  * - Checks CSS files exist
- * - Checks .env file and detects HTTP/HTTPS configuration
- * - Starts the server with appropriate protocol settings
+ * - Auto-detects configuration (no .env required)
+ * - Starts the server with fully self-configuring system
  * - Supports both HTTP and HTTPS automatically
+ * - Works on any server without configuration files
  */
 
 const { execSync, spawn } = require('child_process');
@@ -109,74 +110,41 @@ function checkCSSFiles() {
   }
 }
 
-// Step 3: Check .env file and protocol configuration
-function checkEnvFile() {
+// Step 3: Check configuration (no .env required - fully dynamic)
+function checkConfiguration() {
+  console.log('✅ Configuration check (auto-detecting)...');
+  
+  // Check if .env exists (optional - system works without it)
   const envPath = path.join(PROJECT_DIR, '.env');
-  const envExamplePath = path.join(PROJECT_DIR, 'env.example');
-  
-  if (!fs.existsSync(envPath)) {
-    console.log('⚠️  Warning: .env file not found');
-    if (fs.existsSync(envExamplePath)) {
-      console.log('   You can copy env.example to .env and configure it:');
-      console.log('   cp env.example .env\n');
-    }
-    return { found: false, protocol: 'http' };
+  if (fs.existsSync(envPath)) {
+    console.log('   ℹ️  .env file found (optional - system auto-configures)');
+  } else {
+    console.log('   ✅ No .env file needed - system auto-configures from runtime');
   }
   
-  console.log('✅ .env file found');
+  // Display auto-configuration info
+  console.log('   🌐 Auto-configuration enabled:');
+  console.log('      - Port: Auto-detected from PORT env or defaults to 3000');
+  console.log('      - Protocol: Auto-detected per request (HTTP/HTTPS)');
+  console.log('      - Site URL: Auto-detected from request headers');
+  console.log('      - Base Path: Auto-detected from BASE_PATH env or empty');
+  console.log('      - File paths: Auto-detected from project structure');
+  console.log('   ✅ Server supports both HTTP and HTTPS automatically');
+  console.log('   ✅ Works on any server without configuration files');
+  console.log('');
   
-  // Read and check SITE_URL for protocol
-  try {
-    const envContent = fs.readFileSync(envPath, 'utf8');
-    const siteUrlMatch = envContent.match(/SITE_URL=(.+)/);
-    let protocol = 'http';
-    let siteUrl = '';
-    
-    if (siteUrlMatch) {
-      siteUrl = siteUrlMatch[1].trim();
-      if (siteUrl.startsWith('https://')) {
-        protocol = 'https';
-      } else if (siteUrl.startsWith('http://')) {
-        protocol = 'http';
-      }
-      
-      console.log(`   📍 SITE_URL: ${siteUrl}`);
-      console.log(`   🔐 Protocol: ${protocol.toUpperCase()}`);
-      
-      if (protocol === 'https') {
-        console.log('   ✅ HTTPS mode: Full security headers will be enabled');
-        console.log('   ℹ️  Make sure SSL certificate is configured');
-      } else {
-        console.log('   ✅ HTTP mode: Works without SSL certificate');
-        console.log('   ℹ️  Server supports both HTTP and HTTPS automatically');
-      }
-    } else {
-      console.log('   ⚠️  SITE_URL not found in .env');
-      console.log('   ℹ️  Defaulting to HTTP mode');
-    }
-    
-    console.log('');
-    return { found: true, protocol, siteUrl };
-  } catch (error) {
-    console.log(`   ⚠️  Could not read .env file: ${error.message}\n`);
-    return { found: true, protocol: 'http' };
-  }
+  return { protocol: 'auto' }; // Protocol detected per request
 }
 
 // Step 4: Start the server
-function startServer(protocol) {
+function startServer() {
   console.log(`🚀 Starting server on port ${PORT}...`);
   console.log(`📁 Project directory: ${PROJECT_DIR}`);
-  
-  if (protocol === 'https') {
-    console.log(`🔒 HTTPS mode: Server will use HTTPS security headers`);
-    console.log(`   Make sure your SSL certificate is properly configured`);
-  } else {
-    console.log(`🌐 HTTP mode: Server supports both HTTP and HTTPS`);
-    console.log(`   - HTTP requests: HTTPS headers disabled (CSS loads properly)`);
-    console.log(`   - HTTPS requests: Full security headers enabled`);
-  }
-  
+  console.log(`🌐 Auto-configuring system:`);
+  console.log(`   - Protocol: Detected per request (HTTP/HTTPS)`);
+  console.log(`   - URLs: Auto-detected from request headers`);
+  console.log(`   - Paths: Auto-detected from project structure`);
+  console.log(`   - No .env file required - fully self-configuring`);
   console.log('');
   
   const serverPath = path.join(PROJECT_DIR, 'server/index.js');
@@ -223,13 +191,13 @@ function startServer(protocol) {
 try {
   killProcessOnPort(PORT);
   const cssOk = checkCSSFiles();
-  const envInfo = checkEnvFile();
+  checkConfiguration();
   
   if (!cssOk) {
     console.log('⚠️  Starting server despite CSS issues...\n');
   }
   
-  startServer(envInfo.protocol);
+  startServer();
 } catch (error) {
   console.error(`❌ Deployment failed: ${error.message}`);
   process.exit(1);

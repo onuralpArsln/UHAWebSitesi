@@ -4,6 +4,7 @@ const fs = require('fs');
 const multer = require('multer');
 const DataService = require('../services/data-service');
 const URLSlugService = require('../services/url-slug');
+const config = require('../services/config');
 
 const router = express.Router();
 const dataService = new DataService();
@@ -205,11 +206,11 @@ router.get('/', (req, res) => {
   };
 
   const settings = {
-    siteName: process.env.SITE_NAME || 'UHA News',
-    siteDescription: process.env.SITE_DESCRIPTION || 'Son haberler ve güncellemeler',
-    siteUrl: process.env.SITE_URL || `http://localhost:${process.env.PORT || 3000}`,
-    adsenseClientId: process.env.ADSENSE_CLIENT_ID || '',
-    adsenseSlotId: process.env.ADSENSE_SLOT_ID || ''
+    siteName: config.getSiteDefaults().name,
+    siteDescription: config.getSiteDefaults().description,
+    siteUrl: config.getSiteUrl(req),
+    adsenseClientId: config.getFeatures().adsenseClientId,
+    adsenseSlotId: config.getFeatures().adsenseSlotId
   };
 
   const targetOptions = ['carousel', 'manset', 'anasayfa', 'akış'];
@@ -811,11 +812,11 @@ router.post('/preview', async (req, res) => {
 router.get('/settings', async (req, res) => {
   try {
     const settings = {
-      siteName: process.env.SITE_NAME || 'UHA News',
-      siteDescription: process.env.SITE_DESCRIPTION || 'Latest news and updates',
-      siteUrl: process.env.SITE_URL || 'http://localhost:3000',
-      adsenseClientId: process.env.ADSENSE_CLIENT_ID || '',
-      adsenseSlotId: process.env.ADSENSE_SLOT_ID || ''
+      siteName: config.getSiteDefaults().name,
+      siteDescription: config.getSiteDefaults().description,
+      siteUrl: config.getSiteUrl(req),
+      adsenseClientId: config.getFeatures().adsenseClientId,
+      adsenseSlotId: config.getFeatures().adsenseSlotId
     };
 
     res.json({ settings });

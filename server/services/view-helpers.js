@@ -1,14 +1,15 @@
-const DEFAULT_OG_IMAGE = process.env.SITE_URL
-  ? `${process.env.SITE_URL}/static/images/default-og.jpg`
-  : '/static/images/default-og.jpg';
+const config = require('./config');
 
-function buildMeta(overrides = {}) {
+function buildMeta(overrides = {}, req = null) {
+  const siteDefaults = config.getSiteDefaults();
+  const siteUrl = req ? config.getSiteUrl(req) : 'http://localhost:3000';
+  const defaultOgImage = `${siteUrl}/static/images/default-og.jpg`;
+  
   const defaults = {
-    title: process.env.SITE_NAME || 'UHA News',
-    description:
-      process.env.SITE_DESCRIPTION || 'Son dakika haberleri ve güncel gelişmeler',
-    url: process.env.SITE_URL || 'http://localhost:3000',
-    image: DEFAULT_OG_IMAGE,
+    title: siteDefaults.name,
+    description: siteDefaults.description,
+    url: siteUrl,
+    image: defaultOgImage,
     type: 'website'
   };
 
@@ -28,12 +29,13 @@ function buildMeta(overrides = {}) {
   return meta;
 }
 
-function buildNewsArticleSchema(article = {}) {
+function buildNewsArticleSchema(article = {}, req = null) {
   if (!article || !article.title) {
     return null;
   }
 
-  const baseUrl = process.env.SITE_URL || 'http://localhost:3000';
+  const siteDefaults = config.getSiteDefaults();
+  const baseUrl = req ? config.getSiteUrl(req) : 'http://localhost:3000';
 
   const schema = {
     '@context': 'https://schema.org',
@@ -44,11 +46,11 @@ function buildNewsArticleSchema(article = {}) {
     dateModified: article.updatedAt || article.publishedAt,
     author: {
       '@type': 'Person',
-      name: article.author || 'UHA News'
+      name: article.author || siteDefaults.name
     },
     publisher: {
       '@type': 'Organization',
-      name: process.env.SITE_NAME || 'UHA News',
+      name: siteDefaults.name,
       logo: {
         '@type': 'ImageObject',
         url: `${baseUrl}/static/images/logo.png`
