@@ -65,7 +65,11 @@ nunjucksEnv.addGlobal('asset', (p) => {
 });
 
 // Security and performance middleware
-app.use(helmet({
+// Check if using HTTPS
+const isHttps = process.env.SITE_URL && process.env.SITE_URL.startsWith('https:');
+
+// Configure Helmet based on protocol
+const helmetConfig = {
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -77,7 +81,21 @@ app.use(helmet({
       frameSrc: ["'self'", "https://googleads.g.doubleclick.net"]
     }
   }
-}));
+};
+
+// Only enable HTTPS-related headers if using HTTPS
+if (isHttps) {
+  helmetConfig.contentSecurityPolicy.directives.upgradeInsecureRequests = [];
+  helmetConfig.strictTransportSecurity = {
+    maxAge: 15552000,
+    includeSubDomains: true
+  };
+} else {
+  // Explicitly disable for HTTP
+  helmetConfig.strictTransportSecurity = false;
+}
+
+app.use(helmet(helmetConfig));
 
 if (process.env.ENABLE_COMPRESSION === 'true') {
   app.use(compression());
