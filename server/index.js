@@ -94,14 +94,18 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 function mountStaticBoth(mountPath, dir) {
   const options = {
     maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
-    etag: true
+    etag: true,
+    index: false, // Don't serve index files
+    dotfiles: 'ignore' // Ignore dotfiles
   };
+  // Mount static files - these will be served before any routes
   app.use(mountPath, express.static(dir, options));
   if (BASE_PATH) {
     app.use(BASE_PATH + mountPath, express.static(dir, options));
   }
 }
 
+// Mount static files - these must come BEFORE routes
 mountStaticBoth('/static', path.join(__dirname, '../public'));
 mountStaticBoth('/css', path.join(__dirname, '../public/css'));
 mountStaticBoth('/js', path.join(__dirname, '../public/js'));
@@ -119,6 +123,21 @@ if (BASE_PATH) {
     res.sendFile(path.join(__dirname, '../public/style.css'));
   });
 }
+
+// Explicit CSS file handlers to ensure they're served
+const cssFiles = ['variables.css', 'main.css', 'widgets.css'];
+cssFiles.forEach(cssFile => {
+  app.get(`/css/${cssFile}`, (req, res) => {
+    res.type('text/css');
+    res.sendFile(path.join(__dirname, '../public/css', cssFile));
+  });
+  if (BASE_PATH) {
+    app.get(`${BASE_PATH}/css/${cssFile}`, (req, res) => {
+      res.type('text/css');
+      res.sendFile(path.join(__dirname, '../public/css', cssFile));
+    });
+  }
+});
 
 // Routes
 function mountRoutesBoth(mountPath, router) {
