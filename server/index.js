@@ -8,6 +8,8 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const rawBasePath = process.env.BASE_PATH || '';
+const BASE_PATH = ('/' + rawBasePath.replace(/^\/+|\/+$/g, '')).replace(/^\/$/, '');
 
 // View engine configuration
 const templatesPath = path.join(__dirname, '../templates');
@@ -55,6 +57,12 @@ nunjucksEnv.addFilter('initials', (value) => {
 
 nunjucksEnv.addGlobal('placeholder_image', 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==');
 nunjucksEnv.addGlobal('current_year', new Date().getFullYear());
+nunjucksEnv.addGlobal('BASE_PATH', BASE_PATH);
+nunjucksEnv.addGlobal('asset', (p) => {
+  const s = String(p || '');
+  const clean = s.startsWith('/') ? s : '/' + s;
+  return (BASE_PATH || '') + clean;
+});
 
 // Security and performance middleware
 app.use(helmet({
@@ -80,31 +88,22 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static files
-app.use('/static', express.static(path.join(__dirname, '../public'), {
-  maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
-  etag: true
-}));
+function mountStaticBoth(mountPath, dir) {
+  const options = {
+    maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
+    etag: true
+  };
+  app.use(mountPath, express.static(dir, options));
+  if (BASE_PATH) {
+    app.use(BASE_PATH + mountPath, express.static(dir, options));
+  }
+}
 
-// Direct CSS and JS serving
-app.use('/css', express.static(path.join(__dirname, '../public/css'), {
-  maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
-  etag: true
-}));
-
-app.use('/js', express.static(path.join(__dirname, '../public/js'), {
-  maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
-  etag: true
-}));
-
-app.use('/uploads', express.static(path.join(__dirname, '../public/uploads'), {
-  maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
-  etag: true
-}));
-
-app.use('/cms', express.static(path.join(__dirname, '../public/cms'), {
-  maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
-  etag: true
-}));
+mountStaticBoth('/static', path.join(__dirname, '../public'));
+mountStaticBoth('/css', path.join(__dirname, '../public/css'));
+mountStaticBoth('/js', path.join(__dirname, '../public/js'));
+mountStaticBoth('/uploads', path.join(__dirname, '../public/uploads'));
+mountStaticBoth('/cms', path.join(__dirname, '../public/cms'));
 
 // Routes
 app.use('/api', require('./routes/api'));

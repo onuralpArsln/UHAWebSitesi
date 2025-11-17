@@ -106,6 +106,9 @@ SITE_NAME=UHA News
 SITE_DESCRIPTION=Son haberler ve güncellemeler
 ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxx
 ADSENSE_SLOT_ID=xxxxxxxxxx
+# Uygulama bir alt yol altında servis ediliyorsa (ör. /projects/uhawebsite) ayarlayın
+# Kökten servis ediliyorsa boş bırakın veya değişkeni eklemeyin
+BASE_PATH=/projects/uhawebsite
 ```
 
 ## 💾 Veritabanı Şeması

@@ -20,9 +20,9 @@
   <meta property="twitter:description" content="{{ meta.description }}">
   <meta property="twitter:image" content="{{ meta.image }}">
   <meta name="theme-color" content="{{ primary_color }}">
-  <link rel="stylesheet" href="/css/variables.css">
-  <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/widgets.css">
+  <link rel="stylesheet" href="{{ asset('css/variables.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/main.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/widgets.css') }}">
   <style id="branding-variables">
     :root {
       --primary-color: {{ primary_color }};
@@ -38,10 +38,10 @@
 <body class="{% block body_class %}{% endblock %}">
   {% block body %}{% endblock %}
   {% block scripts %}
-  <script src="/js/nav.js" defer></script>
-  <script src="/js/hydration.js" defer></script>
-  <script src="/js/lazy-load.js" defer></script>
-  <script src="/js/ad-refresh.js" defer></script>
+  <script src="{{ asset('js/nav.js') }}" defer></script>
+  <script src="{{ asset('js/hydration.js') }}" defer></script>
+  <script src="{{ asset('js/lazy-load.js') }}" defer></script>
+  <script src="{{ asset('js/ad-refresh.js') }}" defer></script>
   {% endblock %}
 </body>
 </html>
