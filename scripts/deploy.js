@@ -4,7 +4,9 @@
  * Deployment script for UHA News Server
  * - Kills processes on port 3000
  * - Checks CSS files exist
- * - Starts the server
+ * - Checks .env file and detects HTTP/HTTPS configuration
+ * - Starts the server with appropriate protocol settings
+ * - Supports both HTTP and HTTPS automatically
  */
 
 const { execSync, spawn } = require('child_process');
@@ -107,7 +109,7 @@ function checkCSSFiles() {
   }
 }
 
-// Step 3: Check .env file
+// Step 3: Check .env file and protocol configuration
 function checkEnvFile() {
   const envPath = path.join(PROJECT_DIR, '.env');
   const envExamplePath = path.join(PROJECT_DIR, 'env.example');
@@ -118,15 +120,64 @@ function checkEnvFile() {
       console.log('   You can copy env.example to .env and configure it:');
       console.log('   cp env.example .env\n');
     }
-  } else {
-    console.log('✅ .env file found\n');
+    return { found: false, protocol: 'http' };
+  }
+  
+  console.log('✅ .env file found');
+  
+  // Read and check SITE_URL for protocol
+  try {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    const siteUrlMatch = envContent.match(/SITE_URL=(.+)/);
+    let protocol = 'http';
+    let siteUrl = '';
+    
+    if (siteUrlMatch) {
+      siteUrl = siteUrlMatch[1].trim();
+      if (siteUrl.startsWith('https://')) {
+        protocol = 'https';
+      } else if (siteUrl.startsWith('http://')) {
+        protocol = 'http';
+      }
+      
+      console.log(`   📍 SITE_URL: ${siteUrl}`);
+      console.log(`   🔐 Protocol: ${protocol.toUpperCase()}`);
+      
+      if (protocol === 'https') {
+        console.log('   ✅ HTTPS mode: Full security headers will be enabled');
+        console.log('   ℹ️  Make sure SSL certificate is configured');
+      } else {
+        console.log('   ✅ HTTP mode: Works without SSL certificate');
+        console.log('   ℹ️  Server supports both HTTP and HTTPS automatically');
+      }
+    } else {
+      console.log('   ⚠️  SITE_URL not found in .env');
+      console.log('   ℹ️  Defaulting to HTTP mode');
+    }
+    
+    console.log('');
+    return { found: true, protocol, siteUrl };
+  } catch (error) {
+    console.log(`   ⚠️  Could not read .env file: ${error.message}\n`);
+    return { found: true, protocol: 'http' };
   }
 }
 
 // Step 4: Start the server
-function startServer() {
+function startServer(protocol) {
   console.log(`🚀 Starting server on port ${PORT}...`);
-  console.log(`📁 Project directory: ${PROJECT_DIR}\n`);
+  console.log(`📁 Project directory: ${PROJECT_DIR}`);
+  
+  if (protocol === 'https') {
+    console.log(`🔒 HTTPS mode: Server will use HTTPS security headers`);
+    console.log(`   Make sure your SSL certificate is properly configured`);
+  } else {
+    console.log(`🌐 HTTP mode: Server supports both HTTP and HTTPS`);
+    console.log(`   - HTTP requests: HTTPS headers disabled (CSS loads properly)`);
+    console.log(`   - HTTPS requests: Full security headers enabled`);
+  }
+  
+  console.log('');
   
   const serverPath = path.join(PROJECT_DIR, 'server/index.js');
   
@@ -172,13 +223,13 @@ function startServer() {
 try {
   killProcessOnPort(PORT);
   const cssOk = checkCSSFiles();
-  checkEnvFile();
+  const envInfo = checkEnvFile();
   
   if (!cssOk) {
     console.log('⚠️  Starting server despite CSS issues...\n');
   }
   
-  startServer();
+  startServer(envInfo.protocol);
 } catch (error) {
   console.error(`❌ Deployment failed: ${error.message}`);
   process.exit(1);

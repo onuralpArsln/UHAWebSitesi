@@ -11,6 +11,10 @@ const PORT = process.env.PORT || 3000;
 const rawBasePath = process.env.BASE_PATH || '';
 const BASE_PATH = ('/' + rawBasePath.replace(/^\/+|\/+$/g, '')).replace(/^\/$/, '');
 
+// Trust proxy for accurate protocol detection (important for reverse proxies like nginx)
+// This allows req.secure and req.protocol to work correctly when behind a proxy
+app.set('trust proxy', true);
+
 // View engine configuration
 const templatesPath = path.join(__dirname, '../templates');
 const nunjucksEnv = nunjucks.configure(templatesPath, {
@@ -65,13 +69,11 @@ nunjucksEnv.addGlobal('asset', (p) => {
 });
 
 // Security and performance middleware
-// Check if using HTTPS (only enable HTTPS headers if SITE_URL starts with https:)
-const siteUrl = process.env.SITE_URL || '';
-const isHttps = siteUrl.startsWith('https:');
+// Support both HTTP and HTTPS - detect protocol per request
+// This allows the server to work with or without SSL certificate
 
-// Configure Helmet based on protocol
-// For HTTP-only sites (no SSL certificate), we disable HTTPS-related headers
-const helmetConfig = {
+// Base Helmet configuration (works for both HTTP and HTTPS)
+const baseHelmetConfig = {
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -81,26 +83,42 @@ const helmetConfig = {
       scriptSrc: ["'self'", "'unsafe-inline'", "https://pagead2.googlesyndication.com"],
       connectSrc: ["'self'", "https://pagead2.googlesyndication.com"],
       frameSrc: ["'self'", "https://googleads.g.doubleclick.net"]
-      // Note: upgradeInsecureRequests is NOT set for HTTP sites
     }
-  },
-  // Disable HSTS (HTTP Strict Transport Security) for HTTP-only sites
-  strictTransportSecurity: false
+  }
 };
 
-// Only enable HTTPS-related headers if explicitly using HTTPS
-if (isHttps) {
-  helmetConfig.contentSecurityPolicy.directives.upgradeInsecureRequests = [];
-  helmetConfig.strictTransportSecurity = {
-    maxAge: 15552000,
-    includeSubDomains: true
-  };
-  console.log('🔒 HTTPS mode: Enabling security headers for HTTPS');
-} else {
-  console.log('🌐 HTTP mode: HTTPS security headers disabled (no SSL certificate)');
-}
+// Middleware to dynamically configure Helmet based on request protocol
+app.use((req, res, next) => {
+  // Detect if request is HTTPS
+  // req.secure works with trust proxy enabled
+  // Also check X-Forwarded-Proto header for reverse proxies
+  const isHttps = req.secure || 
+                   (req.headers['x-forwarded-proto'] && 
+                    req.headers['x-forwarded-proto'].toLowerCase() === 'https');
+  
+  // Create dynamic Helmet config for this request
+  const helmetConfig = { ...baseHelmetConfig };
+  
+  if (isHttps) {
+    // Enable HTTPS security headers for HTTPS requests
+    helmetConfig.contentSecurityPolicy.directives.upgradeInsecureRequests = [];
+    helmetConfig.strictTransportSecurity = {
+      maxAge: 15552000,
+      includeSubDomains: true
+    };
+  } else {
+    // Disable HTTPS-only headers for HTTP requests
+    helmetConfig.strictTransportSecurity = false;
+    // upgradeInsecureRequests is not set, allowing HTTP resources
+  }
+  
+  // Apply Helmet with dynamic config
+  helmet(helmetConfig)(req, res, next);
+});
 
-app.use(helmet(helmetConfig));
+console.log('🌐 Server configured to support both HTTP and HTTPS');
+console.log('   - HTTP requests: HTTPS security headers disabled');
+console.log('   - HTTPS requests: Full security headers enabled');
 
 if (process.env.ENABLE_COMPRESSION === 'true') {
   app.use(compression());
