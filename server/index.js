@@ -105,6 +105,16 @@ mountStaticBoth('/js', path.join(__dirname, '../public/js'));
 mountStaticBoth('/uploads', path.join(__dirname, '../public/uploads'));
 mountStaticBoth('/cms', path.join(__dirname, '../public/cms'));
 
+// Direct style.css for external references (e.g., /style.css)
+app.get('/style.css', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/style.css'));
+});
+if (BASE_PATH) {
+  app.get(BASE_PATH + '/style.css', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/style.css'));
+  });
+}
+
 // Routes
 app.use('/api', require('./routes/api'));
 app.use('/cms/media', require('./routes/cms-media'));
