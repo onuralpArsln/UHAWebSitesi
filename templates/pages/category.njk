@@ -13,7 +13,7 @@
 <main class="site-main">
   <nav class="breadcrumb container" aria-label="İz yolu">
     <ol class="breadcrumb__list">
-      <li class="breadcrumb__item"><a href="/">Ana Sayfa</a></li>
+      <li class="breadcrumb__item"><a href="{{ asset('/') }}">Ana Sayfa</a></li>
       <li class="breadcrumb__item"><span>{{ category.name }}</span></li>
     </ol>
   </nav>
@@ -46,7 +46,7 @@
             <span class="badge badge--category">{{ article.category }}</span>
             <span class="badge badge--date">{{ article.publishedAt | formatDate }}</span>
           </div>
-          <h4 class="article-card__title"><a href="/haber/{{ article.slug }}">{{ article.title }}</a></h4>
+          <h4 class="article-card__title"><a href="{{ asset('haber/' ~ article.slug) }}">{{ article.title }}</a></h4>
           <p class="article-card__summary">{{ article.summary }}</p>
         </div>
       </article>

@@ -41,7 +41,7 @@
             {% endif %}
           </div>
           <div class="carousel-set-size__content">
-            <h3><a href="/haber/{{ slide.slug }}">{{ slide.title }}</a></h3>
+            <h3><a href="{{ asset('haber/' ~ slide.slug) }}">{{ slide.title }}</a></h3>
             <p>{{ slide.summary }}</p>
             <div class="carousel-set-size__meta">
               <span class="category">{{ slide.category }}</span>

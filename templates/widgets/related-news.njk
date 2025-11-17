@@ -19,7 +19,7 @@
         {% endif %}
       </div>
       <div class="related-content">
-        <h4><a href="/haber/{{ article.slug }}">{{ article.title }}</a></h4>
+        <h4><a href="{{ asset('haber/' ~ article.slug) }}">{{ article.title }}</a></h4>
         <p>{{ article.summary }}</p>
         <span class="related-date">{{ article.publishedAt | formatDate }}</span>
       </div>

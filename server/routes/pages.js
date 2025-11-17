@@ -37,12 +37,15 @@ function formatBranding(raw) {
 }
 
 function buildNavCategories(categories = []) {
+  const rawBasePath = process.env.BASE_PATH || '';
+  const BASE_PATH = ('/' + rawBasePath.replace(/^\/+|\/+$/g, '')).replace(/^\/$/, '');
+  
   const items = categories.map(category => {
     const slug = category.slug || urlSlugService.generateSlug(category.name);
     return {
       name: category.name,
       slug,
-      href: `/kategori/${slug}`
+      href: `${BASE_PATH}/kategori/${slug}`
     };
   });
 
@@ -50,7 +53,7 @@ function buildNavCategories(categories = []) {
     {
       name: 'Ana Sayfa',
       slug: '',
-      href: '/'
+      href: `${BASE_PATH}/`
     },
     ...items
   ];
@@ -283,9 +286,11 @@ router.get('/kategori/:categorySlug', async (req, res) => {
 router.get('/arama', async (req, res) => {
   try {
     const { q: query, page = 1 } = req.query;
+    const rawBasePath = process.env.BASE_PATH || '';
+    const BASE_PATH = ('/' + rawBasePath.replace(/^\/+|\/+$/g, '')).replace(/^\/$/, '');
     
     if (!query) {
-      return res.redirect('/');
+      return res.redirect(`${BASE_PATH}/`);
     }
 
     // Search articles
@@ -441,7 +446,7 @@ router.use((req, res) => {
     <body>
       <h1>404 - Sayfa Bulunamadı</h1>
       <p>Aradığınız sayfa mevcut değil.</p>
-      <a href="/">Ana Sayfaya Dön</a>
+      <a href="${process.env.BASE_PATH ? '/' + process.env.BASE_PATH.replace(/^\/+|\/+$/g, '') : ''}/">Ana Sayfaya Dön</a>
     </body>
     </html>
   `);

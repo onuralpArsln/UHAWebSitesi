@@ -19,7 +19,7 @@
           {% endif %}
         </div>
         <div class="slide-content">
-          <h3><a href="/haber/{{ slide.slug }}">{{ slide.title }}</a></h3>
+          <h3><a href="{{ asset('haber/' ~ slide.slug) }}">{{ slide.title }}</a></h3>
           <p>{{ slide.summary }}</p>
           <div class="slide-meta">
             <span class="category">{{ slide.category }}</span>

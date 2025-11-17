@@ -26,7 +26,7 @@
         {% for item in tickerItems %}
         <a
           class="flash-news__item"
-          href="/haber/{{ item.slug }}"
+          href="{{ asset('haber/' ~ item.slug) }}"
           data-created-at="{{ item.creationDate }}"
         >
           <span class="flash-news__time">

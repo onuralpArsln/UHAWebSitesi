@@ -118,10 +118,17 @@ if (BASE_PATH) {
 }
 
 // Routes
-app.use('/api', require('./routes/api'));
-app.use('/cms/media', require('./routes/cms-media'));
-app.use('/cms', require('./routes/cms'));
-app.use('/', require('./routes/pages'));
+function mountRoutesBoth(mountPath, router) {
+  app.use(mountPath, router);
+  if (BASE_PATH) {
+    app.use(BASE_PATH + mountPath, router);
+  }
+}
+
+mountRoutesBoth('/api', require('./routes/api'));
+mountRoutesBoth('/cms/media', require('./routes/cms-media'));
+mountRoutesBoth('/cms', require('./routes/cms'));
+mountRoutesBoth('/', require('./routes/pages'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -131,7 +138,26 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).send('Page not found');
+  res.status(404).send(`
+    <!DOCTYPE html>
+    <html lang="tr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Sayfa Bulunamadı</title>
+      <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #e53e3e; }
+        a { color: #3182ce; text-decoration: none; }
+      </style>
+    </head>
+    <body>
+      <h1>404 - Sayfa Bulunamadı</h1>
+      <p>Aradığınız sayfa mevcut değil.</p>
+      <a href="${BASE_PATH || ''}/">Ana Sayfaya Dön</a>
+    </body>
+    </html>
+  `);
 });
 
 app.listen(PORT, () => {

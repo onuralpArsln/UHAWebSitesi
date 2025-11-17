@@ -5,7 +5,7 @@
 <header class="site-header" data-site-header>
   <div class="container header-inner">
     <div class="header-upper">
-      <a class="site-logo" href="/" aria-label="{{ siteName }}">
+      <a class="site-logo" href="{{ asset('/') }}" aria-label="{{ siteName }}">
         {% if headerLogo %}
         <img src="{{ headerLogo }}" alt="{{ siteName }}">
         {% endif %}
@@ -31,7 +31,7 @@
         <ul class="site-nav-bar__list">
           {% for category in categories %}
           <li class="site-nav-bar__item">
-            <a class="site-nav-bar__link" href="{{ category.href or '/kategori/' ~ (category.slug or category.name | lower | replace(' ', '-')) }}">{{ category.name }}</a>
+            <a class="site-nav-bar__link" href="{{ category.href or asset('kategori/' ~ (category.slug or category.name | lower | replace(' ', '-'))) }}">{{ category.name }}</a>
           </li>
           {% endfor %}
         </ul>
@@ -52,7 +52,7 @@
     <ul class="site-nav-panel__list">
       {% for category in categories %}
       <li class="site-nav-panel__item">
-        <a class="site-nav-panel__link" href="{{ category.href or '/kategori/' ~ (category.slug or category.name | lower | replace(' ', '-')) }}">{{ category.name }}</a>
+        <a class="site-nav-panel__link" href="{{ category.href or asset('kategori/' ~ (category.slug or category.name | lower | replace(' ', '-'))) }}">{{ category.name }}</a>
       </li>
       {% endfor %}
     </ul>

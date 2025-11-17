@@ -37,7 +37,7 @@
             <span class="badge badge--category">{{ article.category }}</span>
             <span class="badge badge--date">{{ article.publishedAt | formatDate }}</span>
           </div>
-          <h2 class="search-result__title"><a href="/haber/{{ article.slug }}">{{ article.title }}</a></h2>
+          <h2 class="search-result__title"><a href="{{ asset('haber/' ~ article.slug) }}">{{ article.title }}</a></h2>
           <p class="search-result__summary">{{ article.summary }}</p>
         </div>
       </article>
