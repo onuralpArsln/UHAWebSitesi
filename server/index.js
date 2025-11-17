@@ -107,10 +107,12 @@ mountStaticBoth('/cms', path.join(__dirname, '../public/cms'));
 
 // Direct style.css for external references (e.g., /style.css)
 app.get('/style.css', (req, res) => {
+  res.type('text/css');
   res.sendFile(path.join(__dirname, '../public/style.css'));
 });
 if (BASE_PATH) {
   app.get(BASE_PATH + '/style.css', (req, res) => {
+    res.type('text/css');
     res.sendFile(path.join(__dirname, '../public/style.css'));
   });
 }
