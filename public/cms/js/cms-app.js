@@ -1643,6 +1643,13 @@
       mediaItems.forEach((item) => {
         const card = document.createElement('article');
         card.className = 'article-media-modal__item';
+        // Make the whole card selectable by setting action and data attributes
+        card.dataset.action = 'article-media-select-item';
+        card.dataset.mediaPath = item.path || item.filename;
+        card.dataset.mediaUrl = item.url;
+        card.dataset.mediaFilename = item.filename || '';
+        card.dataset.mediaSize = item.size !== undefined ? item.size : '';
+        card.dataset.mediaUploaded = item.uploadedAt || '';
         card.innerHTML = `
           <div class="article-media-modal__preview">
             <img src="${item.url}" alt="${this.escapeHtml(item.filename || '')}">
@@ -1681,6 +1688,7 @@
           });
           if (image) {
             this.addArticleImage(image);
+            this.closeArticleMediaSelectModal();
           }
         }
       });
