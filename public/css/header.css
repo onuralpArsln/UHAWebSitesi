@@ -15,6 +15,10 @@
   font-size: var(--font-size-sm);
 }
 
+#header-date {
+  color: var(--color-nav-text);
+}
+
 .header-socials a {
   color: rgba(255, 255, 255, 0.8);
   transition: color var(--transition-base);
