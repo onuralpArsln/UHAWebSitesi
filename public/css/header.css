@@ -31,7 +31,7 @@
 /* Main Header */
 .header-main {
   padding: var(--spacing-md) 0;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-accent);
 }
 
 .site-logo {

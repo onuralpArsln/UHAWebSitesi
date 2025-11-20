@@ -222,7 +222,146 @@ submitButton.addEventListener('click', () => this.saveBranding());
 
 ---
 
-## 5. Frontend Visual Application
+## 5. Color Suggestion System
+
+### Overview
+The CMS includes an intelligent color suggestion system that automatically generates complementary colors based on the primary color selection. When a user changes the primary color, the system calculates suggested values for all other color fields using HSL color space transformations.
+
+**Location**: [`public/cms/js/cms-app.js:664-735`](file:///e:/Projeler/UHAWebSitesi/public/cms/js/cms-app.js#L664-L735)
+
+### Trigger Mechanism
+Color suggestions are automatically generated when:
+- The primary color input changes (both `input` and `change` events)
+- The branding form is initially populated with existing branding data
+
+**Code**:
+```javascript
+this.brandingColorInputs.forEach((input) => {
+  input.addEventListener('input', (event) => {
+    this.handleBrandingColorInput(event);
+    if (input.dataset.brandingColor === 'primary') {
+      this.generateColorSuggestions(input.value);
+    }
+  });
+});
+```
+
+### Color Suggestion Formulas
+
+All formulas use the primary color's HSL values (Hp, Sp, Lp) as input. All S and L values are clamped between 0 and 100.
+
+#### İkincil Renk (Secondary Color)
+```
+H = Hp + 5 (wrapped to 0-360)
+S = Sp - 15 (clamped 0-100)
+L = Lp + 10 (clamped 0-100)
+```
+
+#### Vurgu Rengi (Accent Color)
+```
+H = Hp + 12 (wrapped to 0-360)
+S = min(100, Sp + 25)
+L = Lp + 8 (clamped 0-100)
+```
+
+#### Logo Metin Rengi (Logo Text Color)
+```
+H = Hp (same hue)
+
+If Lp < 50:
+  S = Sp * 0.2 (clamped 0-100)
+  L = 85
+Else:
+  S = Sp * 0.2 (clamped 0-100)
+  L = 15
+```
+
+#### Navigasyon Arkaplan Rengi (Navigation Background Color)
+```
+H = Hp (same hue)
+S = Sp - 20 (clamped 0-100)
+L = Lp - 5 (clamped 0-100)
+```
+
+#### İkincil Metin Rengi (Navigation Text Color)
+```
+H = Hp (same hue)
+S = 5
+
+If NavBackground L < 50:
+  L = 85
+Else:
+  L = 20
+```
+
+**Note**: NavText calculation depends on NavBackground lightness, so NavBackground must be calculated first.
+
+### Suggestion Button UI
+
+Each color field (except primary) has a suggestion button that appears when suggestions are available:
+
+**Template**:
+```html
+<button type="button" class="cms-color-suggestion" 
+        data-action="suggest-color" 
+        data-suggest-for="secondary" 
+        title="Önerilen rengi uygula" 
+        hidden>
+  <span class="cms-color-suggestion__preview"></span>
+  <span class="cms-color-suggestion__icon">✨</span>
+</button>
+```
+
+**Behavior**:
+- Buttons are hidden by default (`hidden` attribute)
+- When suggestions are generated, buttons are shown (`btn.hidden = false`)
+- Preview span shows the suggested color as background
+- Clicking applies the suggested color to the input field
+
+**Application**:
+```javascript
+applySuggestedColor(key, color) {
+  const input = this.brandingForm.querySelector(`[data-branding-color="${key}"]`);
+  if (input) {
+    input.value = color;
+    input.dispatchEvent(new Event('input')); // Triggers preview update
+    this.showToast('Önerilen renk uygulandı', 'success');
+  }
+}
+```
+
+### Color Utilities
+
+The system uses a `ColorUtils` class for HSL conversions:
+
+**Location**: [`public/cms/js/cms-app.js:9-74`](file:///e:/Projeler/UHAWebSitesi/public/cms/js/cms-app.js#L9-L74)
+
+**Methods**:
+- `hexToHsl(hex)` - Converts hex color to HSL object `{h, s, l}`
+- `hslToHex(h, s, l)` - Converts HSL values back to hex color string
+
+**Example**:
+```javascript
+const hsl = ColorUtils.hexToHsl('#284b7b');
+// Returns: { h: 215, s: 50.9, l: 32 }
+
+const hex = ColorUtils.hslToHex(215, 50.9, 32);
+// Returns: '#284b7b'
+```
+
+### Example Calculation
+
+For primary color `#284b7b`:
+- **HSL**: H=215, S=50.9, L=32
+- **Secondary**: H=220, S=35.9, L=42 → `#3d5a7a`
+- **Accent**: H=227, S=75.9, L=40 → `#2d5fb8`
+- **LogoText**: H=215, S=10.18, L=85 → `#d5d8dd` (light gray-blue)
+- **NavBackground**: H=215, S=30.9, L=27 → `#1f3a5a`
+- **NavText**: H=215, S=5, L=85 → `#d4d5d6` (very light gray)
+
+---
+
+## 6. Frontend Visual Application
 
 ### CSS Variable Injection
 **Location**: [`templates/layouts/base.njk:32-38`](file:///e:/Projeler/UHAWebSitesi/templates/layouts/base.njk#L32-L38)
@@ -307,7 +446,7 @@ submitButton.addEventListener('click', () => this.saveBranding());
 
 ---
 
-## 6. Page Injection Points
+## 7. Page Injection Points
 
 ### All Public Pages
 **Location**: [`server/routes/pages.js`](file:///e:/Projeler/UHAWebSitesi/server/routes/pages.js)
@@ -358,7 +497,7 @@ function formatBranding(raw) {
 
 ---
 
-## 7. Visual Elements Controlled
+## 8. Visual Elements Controlled
 
 ### Color Controls
 The branding system provides granular control over the site's color palette.
@@ -387,7 +526,7 @@ The branding system provides granular control over the site's color palette.
 
 ---
 
-## 8. Default Values
+## 9. Default Values
 
 **Hardcoded Defaults** (used when database is empty):
 
@@ -412,7 +551,7 @@ The branding system provides granular control over the site's color palette.
 
 ---
 
-## 9. File Upload Specifications
+## 10. File Upload Specifications
 
 ### Accepted Formats
 - PNG (`.png`)
@@ -438,7 +577,7 @@ The branding system provides granular control over the site's color palette.
 
 ---
 
-## 10. Integration Points
+## 11. Integration Points
 
 ### Templates Using Branding
 - [base.njk](file:///e:/Projeler/UHAWebSitesi/templates/layouts/base.njk) - CSS variables, meta tags
@@ -456,7 +595,7 @@ The branding system provides granular control over the site's color palette.
 
 ---
 
-## 11. Testing the System
+## 12. Testing the System
 
 ### Manual Testing Steps
 
@@ -508,7 +647,7 @@ curl -X POST http://localhost:3000/cms/branding \
 
 ---
 
-## 12. Troubleshooting
+## 13. Troubleshooting
 
 ### Colors Not Applying
 - **Check**: CSS variable injection in `<style id="branding-variables">`
