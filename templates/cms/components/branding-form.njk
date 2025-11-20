@@ -49,6 +49,33 @@
             </div>
             <small>Linkler, bildirimler ve önemli butonlar için.</small>
           </div>
+
+          <div class="form-group">
+            <label for="branding-logo-text-color">Logo Metin Rengi</label>
+            <div class="cms-color-picker">
+              <input id="branding-logo-text-color" name="logoTextColor" type="color" value="{{ branding.logoTextColor or '#3182ce' }}" data-branding-color="logoText">
+              <span class="cms-color-value" data-branding-color-value="logoText">{{ branding.logoTextColor or '#3182ce' }}</span>
+            </div>
+            <small>Logo metni için renk.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="branding-nav-text-color">İkincil Metin Rengi</label>
+            <div class="cms-color-picker">
+              <input id="branding-nav-text-color" name="navTextColor" type="color" value="{{ branding.navTextColor or '#ffffff' }}" data-branding-color="navText">
+              <span class="cms-color-value" data-branding-color-value="navText">{{ branding.navTextColor or '#ffffff' }}</span>
+            </div>
+            <small>Navigasyon linkleri ve footer başlıkları için.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="branding-nav-bg-color">Navigasyon Arkaplan Rengi</label>
+            <div class="cms-color-picker">
+              <input id="branding-nav-bg-color" name="navBackgroundColor" type="color" value="{{ branding.navBackgroundColor or '#1a365d' }}" data-branding-color="navBackground">
+              <span class="cms-color-value" data-branding-color-value="navBackground">{{ branding.navBackgroundColor or '#1a365d' }}</span>
+            </div>
+            <small>Navigasyon çubuğu arkaplan rengi.</small>
+          </div>
         </div>
 
         <div class="cms-form__grid cms-form__grid--two">

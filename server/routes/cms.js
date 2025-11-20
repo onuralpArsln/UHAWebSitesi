@@ -141,6 +141,9 @@ function buildBrandingResponse(raw) {
     primaryColor: '#1a365d',
     secondaryColor: '#2d3748',
     accentColor: '#3182ce',
+    logoTextColor: '#3182ce',
+    navTextColor: '#ffffff',
+    navBackgroundColor: '#1a365d',
     headerLogo: '',
     footerLogo: ''
   };
@@ -277,6 +280,9 @@ router.post('/branding', (req, res, next) => {
       primaryColor: normalizeColor(body.primaryColor, current.primaryColor),
       secondaryColor: normalizeColor(body.secondaryColor, current.secondaryColor),
       accentColor: normalizeColor(body.accentColor, current.accentColor),
+      logoTextColor: normalizeColor(body.logoTextColor, current.logoTextColor),
+      navTextColor: normalizeColor(body.navTextColor, current.navTextColor),
+      navBackgroundColor: normalizeColor(body.navBackgroundColor, current.navBackgroundColor),
       headerLogo: current.headerLogo,
       footerLogo: current.footerLogo
     };
@@ -314,10 +320,10 @@ router.get('/dashboard', async (req, res) => {
   try {
     // Get recent articles
     const recentArticles = dataService.getArticles({ limit: 10 });
-    
+
     // Get categories
     const categories = dataService.getCategories();
-    
+
     // Get statistics
     const stats = {
       totalArticles: recentArticles.pagination.total,
@@ -361,8 +367,8 @@ router.get('/articles', async (req, res) => {
       ...articles,
       articles: articles.articles.map(article => ({
         ...article,
-        slug: urlSlugService.getSlugById(article.id) || 
-              urlSlugService.generateSlug(article.title)
+        slug: urlSlugService.getSlugById(article.id) ||
+          urlSlugService.generateSlug(article.title)
       }))
     };
 
@@ -389,8 +395,8 @@ router.get('/articles/:id', async (req, res) => {
     // Add slug to article
     const articleWithSlug = {
       ...article,
-      slug: urlSlugService.getSlugById(article.id) || 
-            urlSlugService.generateSlug(article.title)
+      slug: urlSlugService.getSlugById(article.id) ||
+        urlSlugService.generateSlug(article.title)
     };
 
     res.json(articleWithSlug);

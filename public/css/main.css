@@ -527,66 +527,6 @@ body {
   color: var(--primary-color);
 }
 
-.article-item__summary {
-  color: var(--text-light);
-  line-height: 1.5;
-}
-
-@media (min-width: 768px) {
-  .article-item {
-    grid-template-columns: 180px 1fr;
-    align-items: center;
-  }
-
-  .article-item__media {
-    height: 140px;
-    border-radius: var(--radius-md);
-  }
-}
-
-/* Footer */
-.site-footer {
-  background: var(--background-light);
-  padding: var(--spacing-lg) 0;
-  border-top: 1px solid var(--border-color);
-  color: var(--text-light);
-  text-align: center;
-}
-
-.site-footer__logo {
-  display: flex;
-  justify-content: center;
-  margin-bottom: var(--spacing-sm);
-}
-
-.site-footer__logo img {
-  max-height: 48px;
-  width: auto;
-  object-fit: contain;
-}
-
-.site-footer p {
-  margin: 0;
-}
-
-/* Loading states */
-.breadcrumb {
-  background: var(--background-light);
-  padding: var(--spacing-sm) 0;
-  font-size: var(--font-size-sm);
-  color: var(--text-light);
-}
-
-.breadcrumb__list {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-}
-
-.breadcrumb__item {
-  display: inline-flex;
-  align-items: center;
   gap: var(--spacing-xs);
 }
 

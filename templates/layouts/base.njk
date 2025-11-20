@@ -34,6 +34,9 @@
       --primary-color: {{ primary_color }};
       --secondary-color: {{ secondary_color }};
       --accent-color: {{ accent_color }};
+      --logo-text-color: {{ brand.logoTextColor or '#3182ce' }};
+      --nav-text-color: {{ brand.navTextColor or '#ffffff' }};
+      --nav-background-color: {{ brand.navBackgroundColor or '#1a365d' }};
     }
   </style>
   {% block head_extra %}{% endblock %}

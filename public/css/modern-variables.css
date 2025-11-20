@@ -2,13 +2,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Colors */
+  /* Colors - Mapped to CMS Branding Variables */
   --color-bg-primary: #FFFFFF;
-  --color-bg-secondary: #122d4a; /* Dark Blue/Grey from target header */
+  --color-bg-secondary: var(--primary-color, #122d4a); /* Maps to CMS primary color */
   --color-bg-light: #f8f9fa;
   
-  --color-accent: #D32F2F; /* Red for breaking news, buttons */
-  --color-accent-hover: #b71c1c;
+  --color-accent: var(--accent-color, #D32F2F); /* Maps to CMS accent color */
+  --color-accent-hover: var(--accent-color, #b71c1c); /* Maps to CMS accent color */
+  
+  /* NEW: Logo and navigation color mappings */
+  --color-logo-text: var(--logo-text-color, #3182ce);
+  --color-nav-text: var(--nav-text-color, #ffffff);
+  --color-nav-bg: var(--nav-background-color, #1a365d);
   
   --color-text-main: #000000;
   --color-text-secondary: #4a5568;

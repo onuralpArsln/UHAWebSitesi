@@ -1,6 +1,6 @@
 /* Footer Styles */
 .site-footer {
-  background: var(--color-bg-secondary);
+  background: var(--primary-color);
   color: rgba(255, 255, 255, 0.8);
   margin-top: var(--spacing-2xl);
 }
@@ -92,7 +92,7 @@
 .footer-title {
   font-size: var(--font-size-lg);
   font-weight: 700;
-  color: #fff;
+  color: var(--color-nav-text);
   margin: 0 0 var(--spacing-sm) 0;
   position: relative;
   padding-bottom: var(--spacing-sm);

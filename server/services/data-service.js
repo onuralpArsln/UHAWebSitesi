@@ -27,16 +27,16 @@ class DataService {
     // Initialize database
     const dbPath = path.join(dataDir, 'news.db');
     this.db = new Database(dbPath);
-    
+
     // Enable foreign keys and WAL mode for better concurrency
     this.db.pragma('journal_mode = WAL');
-    
+
     // Initialize schema
     this.initializeDatabase();
 
     // Ensure branding defaults exist
     this.ensureBrandingDefaults();
-    
+
     // Migrate mock data if database is empty
     this.migrateMockDataIfNeeded();
   }
@@ -105,6 +105,9 @@ class DataService {
         primaryColor TEXT,
         secondaryColor TEXT,
         accentColor TEXT,
+        logoTextColor TEXT,
+        navTextColor TEXT,
+        navBackgroundColor TEXT,
         headerLogo TEXT,
         footerLogo TEXT,
         updatedAt TEXT
@@ -120,12 +123,12 @@ class DataService {
       // Check if new columns exist
       const tableInfo = this.db.prepare("PRAGMA table_info(articles)").all();
       const columnNames = tableInfo.map(col => col.name);
-      
+
       const needsMigration = !columnNames.includes('header') || !columnNames.includes('summaryHead');
 
       if (needsMigration) {
         console.log('🔄 Migrating database schema to new structure...');
-        
+
         // Add new columns if they don't exist
         const newColumns = [
           { name: 'header', type: 'TEXT', default: "COALESCE(title, '')" },
@@ -172,14 +175,17 @@ class DataService {
     if (!existing || existing.count === 0) {
       const now = new Date().toISOString();
       this.db.prepare(`
-        INSERT INTO branding (id, siteName, primaryColor, secondaryColor, accentColor, headerLogo, footerLogo, updatedAt)
-        VALUES (@id, @siteName, @primaryColor, @secondaryColor, @accentColor, @headerLogo, @footerLogo, @updatedAt)
+        INSERT INTO branding (id, siteName, primaryColor, secondaryColor, accentColor, logoTextColor, navTextColor, navBackgroundColor, headerLogo, footerLogo, updatedAt)
+        VALUES (@id, @siteName, @primaryColor, @secondaryColor, @accentColor, @logoTextColor, @navTextColor, @navBackgroundColor, @headerLogo, @footerLogo, @updatedAt)
       `).run({
         id: 'branding',
         siteName: 'UHA News',
         primaryColor: '#1a365d',
         secondaryColor: '#2d3748',
         accentColor: '#3182ce',
+        logoTextColor: '#3182ce',
+        navTextColor: '#ffffff',
+        navBackgroundColor: '#1a365d',
         headerLogo: '',
         footerLogo: '',
         updatedAt: now
@@ -202,6 +208,9 @@ class DataService {
       primaryColor: row.primaryColor || '#1a365d',
       secondaryColor: row.secondaryColor || '#2d3748',
       accentColor: row.accentColor || '#3182ce',
+      logoTextColor: row.logoTextColor || '#3182ce',
+      navTextColor: row.navTextColor || '#ffffff',
+      navBackgroundColor: row.navBackgroundColor || '#1a365d',
       headerLogo: row.headerLogo || '',
       footerLogo: row.footerLogo || '',
       updatedAt: row.updatedAt || new Date().toISOString()
@@ -225,6 +234,9 @@ class DataService {
           primaryColor = @primaryColor,
           secondaryColor = @secondaryColor,
           accentColor = @accentColor,
+          logoTextColor = @logoTextColor,
+          navTextColor = @navTextColor,
+          navBackgroundColor = @navBackgroundColor,
           headerLogo = @headerLogo,
           footerLogo = @footerLogo,
           updatedAt = @updatedAt
@@ -240,10 +252,10 @@ class DataService {
   migrateMockDataIfNeeded() {
     // Check if articles table is empty
     const articleCount = this.db.prepare('SELECT COUNT(*) as count FROM articles').get();
-    
+
     if (articleCount.count === 0) {
       console.log('📦 Migrating mock data to database...');
-      
+
       // Generate mock articles
       const mockArticles = this.generateMockArticles();
       const mockCategories = this.generateMockCategories();
@@ -303,7 +315,7 @@ class DataService {
       });
 
       insertArticleTransaction(mockArticles);
-      
+
       console.log('✅ Mock data migrated successfully');
     }
   }
@@ -534,15 +546,15 @@ class DataService {
    */
   parseArticle(row) {
     if (!row) return null;
-    
+
     // Use new fields if available, fallback to legacy fields for backward compatibility
     const header = row.header || row.title || '';
     const body = row.body || row.content || '';
     const writer = row.writer || row.author || '';
     const creationDate = row.creationDate || row.publishedAt || '';
-    const tags = row.tags ? (typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags) : 
-               (row.keywords ? (typeof row.keywords === 'string' ? JSON.parse(row.keywords) : row.keywords) : []);
-    
+    const tags = row.tags ? (typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags) :
+      (row.keywords ? (typeof row.keywords === 'string' ? JSON.parse(row.keywords) : row.keywords) : []);
+
     const status = row.status ? row.status.toLowerCase() : 'visible';
 
     return {
@@ -605,8 +617,8 @@ class DataService {
     }
 
     // Sort
-    const validSortBy = ['publishedAt', 'updatedAt', 'title', 'category'].includes(sortBy) 
-      ? sortBy 
+    const validSortBy = ['publishedAt', 'updatedAt', 'title', 'category'].includes(sortBy)
+      ? sortBy
       : 'publishedAt';
     const validSortOrder = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
     query += ` ORDER BY ${validSortBy} ${validSortOrder}`;
@@ -657,7 +669,7 @@ class DataService {
     const placeholders = article.relatedArticles.map(() => '?').join(',');
     const query = `SELECT * FROM articles WHERE id IN (${placeholders}) LIMIT ?`;
     const rows = this.db.prepare(query).all(...article.relatedArticles, limit);
-    
+
     return rows.map(row => this.parseArticle(row));
   }
 
@@ -767,9 +779,9 @@ class DataService {
       ORDER BY publishedAt DESC 
       LIMIT 10
     `).all();
-    
+
     const articles = rows.map(row => this.parseArticle(row));
-    
+
     return {
       articles,
       lastUpdated: new Date().toISOString()
@@ -929,14 +941,14 @@ class DataService {
   createArticle(articleData) {
     const id = Date.now().toString();
     const now = new Date().toISOString();
-    
+
     // Use new fields, fallback to legacy fields for backward compatibility
     const header = articleData.header || articleData.title || '';
     const body = articleData.body || articleData.content || '';
     const writer = articleData.writer || articleData.author || 'UHA News';
     const creationDate = articleData.creationDate || articleData.publishedAt || now;
     const tags = articleData.tags || articleData.keywords || [];
-    
+
     const newArticle = {
       id,
       header,
@@ -1010,14 +1022,14 @@ class DataService {
     const oldCategory = existing.category;
 
     // Use new fields, fallback to legacy or existing values
-    const header = articleData.header !== undefined ? articleData.header : 
-                  (articleData.title !== undefined ? articleData.title : existing.header);
-    const body = articleData.body !== undefined ? articleData.body : 
-                (articleData.content !== undefined ? articleData.content : existing.body);
-    const writer = articleData.writer !== undefined ? articleData.writer : 
-                  (articleData.author !== undefined ? articleData.author : existing.writer);
-    const tags = articleData.tags !== undefined ? articleData.tags : 
-                (articleData.keywords !== undefined ? articleData.keywords : existing.tags);
+    const header = articleData.header !== undefined ? articleData.header :
+      (articleData.title !== undefined ? articleData.title : existing.header);
+    const body = articleData.body !== undefined ? articleData.body :
+      (articleData.content !== undefined ? articleData.content : existing.body);
+    const writer = articleData.writer !== undefined ? articleData.writer :
+      (articleData.author !== undefined ? articleData.author : existing.writer);
+    const tags = articleData.tags !== undefined ? articleData.tags :
+      (articleData.keywords !== undefined ? articleData.keywords : existing.tags);
 
     const updatedArticle = {
       header,
@@ -1026,29 +1038,29 @@ class DataService {
       category: articleData.category !== undefined ? articleData.category : existing.category,
       tags: JSON.stringify(tags),
       body,
-      videoUrl: articleData.videoUrl !== undefined ? articleData.videoUrl : 
-                (articleData.video !== undefined ? articleData.video : existing.videoUrl),
-      images: articleData.images !== undefined ? JSON.stringify(articleData.images) : 
-              (existing.images ? JSON.stringify(existing.images) : '[]'),
+      videoUrl: articleData.videoUrl !== undefined ? articleData.videoUrl :
+        (articleData.video !== undefined ? articleData.video : existing.videoUrl),
+      images: articleData.images !== undefined ? JSON.stringify(articleData.images) :
+        (existing.images ? JSON.stringify(existing.images) : '[]'),
       writer,
-      creationDate: articleData.creationDate !== undefined ? articleData.creationDate : 
-                   (articleData.publishedAt !== undefined ? articleData.publishedAt : existing.creationDate),
+      creationDate: articleData.creationDate !== undefined ? articleData.creationDate :
+        (articleData.publishedAt !== undefined ? articleData.publishedAt : existing.creationDate),
       source: articleData.source !== undefined ? articleData.source : existing.source,
-      outlinks: articleData.outlinks !== undefined ? JSON.stringify(articleData.outlinks) : 
-               (existing.outlinks ? JSON.stringify(existing.outlinks) : '[]'),
-      targettedViews: articleData.targettedViews !== undefined ? JSON.stringify(articleData.targettedViews) : 
-                     (existing.targettedViews ? JSON.stringify(existing.targettedViews) : '[]'),
+      outlinks: articleData.outlinks !== undefined ? JSON.stringify(articleData.outlinks) :
+        (existing.outlinks ? JSON.stringify(existing.outlinks) : '[]'),
+      targettedViews: articleData.targettedViews !== undefined ? JSON.stringify(articleData.targettedViews) :
+        (existing.targettedViews ? JSON.stringify(existing.targettedViews) : '[]'),
       updatedAt,
-      relatedArticles: articleData.relatedArticles !== undefined ? JSON.stringify(articleData.relatedArticles) : 
-                      (existing.relatedArticles ? JSON.stringify(existing.relatedArticles) : '[]'),
+      relatedArticles: articleData.relatedArticles !== undefined ? JSON.stringify(articleData.relatedArticles) :
+        (existing.relatedArticles ? JSON.stringify(existing.relatedArticles) : '[]'),
       status: articleData.status !== undefined ? articleData.status : existing.status || 'visible',
       pressAnnouncementId: articleData.pressAnnouncementId !== undefined ? articleData.pressAnnouncementId : (existing.pressAnnouncementId || ''),
       // Legacy fields
       title: header,
       content: body,
       author: writer,
-      publishedAt: articleData.creationDate !== undefined ? articleData.creationDate : 
-                  (articleData.publishedAt !== undefined ? articleData.publishedAt : existing.creationDate),
+      publishedAt: articleData.creationDate !== undefined ? articleData.creationDate :
+        (articleData.publishedAt !== undefined ? articleData.publishedAt : existing.creationDate),
       keywords: JSON.stringify(tags)
     };
 

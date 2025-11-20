@@ -21,6 +21,9 @@ function formatBranding(raw) {
     primaryColor: '#1a365d',
     secondaryColor: '#2d3748',
     accentColor: '#3182ce',
+    logoTextColor: '#3182ce',
+    navTextColor: '#ffffff',
+    navBackgroundColor: '#1a365d',
     headerLogo: '',
     footerLogo: ''
   };
@@ -39,7 +42,7 @@ function formatBranding(raw) {
 
 function buildNavCategories(categories = []) {
   const BASE_PATH = config.getBasePath();
-  
+
   const items = categories.map(category => {
     const slug = category.slug || urlSlugService.generateSlug(category.name);
     return {
@@ -65,10 +68,10 @@ function buildNavCategories(categories = []) {
 router.get('/', async (req, res) => {
   try {
     // Fetch featured articles
-    const featuredArticles = dataService.getArticles({ 
-      limit: 8, 
-      sortBy: 'publishedAt', 
-      sortOrder: 'desc' 
+    const featuredArticles = dataService.getArticles({
+      limit: 8,
+      sortBy: 'publishedAt',
+      sortOrder: 'desc'
     });
 
     // Fetch articles by category for category sections
@@ -83,7 +86,7 @@ router.get('/', async (req, res) => {
         sortBy: 'publishedAt',
         sortOrder: 'desc'
       });
-      
+
       if (categoryArticles.articles.length > 0) {
         categorySections.push({
           name: category.name,
@@ -91,8 +94,8 @@ router.get('/', async (req, res) => {
           articles: categoryArticles.articles.map(article => ({
             ...article,
             images: optimizeImageData(article.images),
-            slug: urlSlugService.getSlugById(article.id) || 
-                  urlSlugService.generateSlug(article.title)
+            slug: urlSlugService.getSlugById(article.id) ||
+              urlSlugService.generateSlug(article.title)
           }))
         });
       }
@@ -112,8 +115,8 @@ router.get('/', async (req, res) => {
       featuredArticles: featuredArticles.articles.map(article => ({
         ...article,
         images: optimizeImageData(article.images),
-        slug: urlSlugService.getSlugById(article.id) || 
-              urlSlugService.generateSlug(article.title)
+        slug: urlSlugService.getSlugById(article.id) ||
+          urlSlugService.generateSlug(article.title)
       })),
       categorySections,
       navCategories,
@@ -133,17 +136,17 @@ router.get('/', async (req, res) => {
 router.get('/haber/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
-    
+
     // Get article ID from slug
     const articleId = urlSlugService.getIdBySlug(slug);
-    
+
     if (!articleId) {
       return res.status(404).send('Article not found');
     }
 
     // Fetch article
     const article = dataService.getArticleById(articleId);
-    
+
     if (!article) {
       return res.status(404).send('Article not found');
     }
@@ -187,8 +190,8 @@ router.get('/haber/:slug', async (req, res) => {
       },
       relatedArticles: relatedArticles.map(related => ({
         ...related,
-        slug: urlSlugService.getSlugById(related.id) || 
-              urlSlugService.generateSlug(related.title)
+        slug: urlSlugService.getSlugById(related.id) ||
+          urlSlugService.generateSlug(related.title)
       })),
       navCategories,
       jsonLd: articleSchema
@@ -209,16 +212,16 @@ router.get('/:potentialCategorySlug', async (req, res, next) => {
   try {
     const { potentialCategorySlug } = req.params;
     const BASE_PATH = config.getBasePath();
-    
+
     // Skip if this is a known route path
     const knownPaths = ['haber', 'kategori', 'arama', 'sitemap.xml', 'news-sitemap.xml', 'robots.txt', 'rss.xml', 'cms', 'api', 'static', 'css', 'js', 'uploads'];
     if (knownPaths.includes(potentialCategorySlug)) {
       return next();
     }
-    
+
     // Normalize the potential category slug from URL
     const normalizedPotentialSlug = urlSlugService.normalizeSlugFromUrl(potentialCategorySlug);
-    
+
     // Check if this matches a category slug
     const categories = dataService.getCategories();
     const matchingCategory = categories.find(cat => {
@@ -227,12 +230,12 @@ router.get('/:potentialCategorySlug', async (req, res, next) => {
       // Match against normalized slug from URL
       return storedSlug === normalizedPotentialSlug || generatedSlug === normalizedPotentialSlug;
     });
-    
+
     if (matchingCategory) {
       const categorySlug = matchingCategory.slug || urlSlugService.generateSlug(matchingCategory.name);
       return res.redirect(302, `${BASE_PATH}/kategori/${categorySlug}`);
     }
-    
+
     // Not a category, continue to next route/404
     next();
   } catch (error) {
@@ -248,10 +251,10 @@ router.get('/kategori/:categorySlug', async (req, res) => {
   try {
     const { categorySlug } = req.params;
     const { page = 1 } = req.query;
-    
+
     // Normalize the slug from URL (handles URL-encoded Turkish characters)
     const normalizedSlug = urlSlugService.normalizeSlugFromUrl(categorySlug);
-    
+
     // Find category by slug - check both stored slug and generated slug
     const categories = dataService.getCategories();
     const navCategories = buildNavCategories(categories);
@@ -261,14 +264,14 @@ router.get('/kategori/:categorySlug', async (req, res) => {
       // Match against normalized slug from URL
       return storedSlug === normalizedSlug || generatedSlug === normalizedSlug;
     });
-    
+
     if (!category) {
       return res.status(404).send('Category not found');
     }
 
     // Get canonical slug (prefer stored slug, fallback to generated slug)
     const canonicalSlug = category.slug || urlSlugService.generateSlug(category.name);
-    
+
     // Redirect to canonical slug if normalized slug matches but URL doesn't (for SEO consistency)
     // This handles cases where URL has Turkish characters but normalizes to the same slug
     if (normalizedSlug === canonicalSlug && categorySlug !== canonicalSlug) {
@@ -322,8 +325,8 @@ router.get('/kategori/:categorySlug', async (req, res) => {
       articles: articlesData.articles.map(article => ({
         ...article,
         images: optimizeImageData(article.images),
-        slug: urlSlugService.getSlugById(article.id) || 
-              urlSlugService.generateSlug(article.title)
+        slug: urlSlugService.getSlugById(article.id) ||
+          urlSlugService.generateSlug(article.title)
       })),
       navCategories,
       pagination,
@@ -344,7 +347,7 @@ router.get('/arama', async (req, res) => {
   try {
     const { q: query, page = 1 } = req.query;
     const BASE_PATH = config.getBasePath();
-    
+
     if (!query) {
       return res.redirect(`${BASE_PATH}/`);
     }
@@ -392,8 +395,8 @@ router.get('/arama', async (req, res) => {
       articles: searchResults.articles.map(article => ({
         ...article,
         images: optimizeImageData(article.images),
-        slug: urlSlugService.getSlugById(article.id) || 
-              urlSlugService.generateSlug(article.title)
+        slug: urlSlugService.getSlugById(article.id) ||
+          urlSlugService.generateSlug(article.title)
       })),
       navCategories,
       pagination,
@@ -451,7 +454,7 @@ router.get('/rss.xml', async (req, res) => {
     const rssFeed = dataService.getRSSFeed();
     const siteUrl = config.getSiteUrl(req);
     const siteDefaults = config.getSiteDefaults();
-    
+
     // Convert to RSS XML format
     const rssXML = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
