@@ -1,162 +1,71 @@
 <!-- For AI agents and code editors contributing to this repo -->
-# agentReadme.md – Guide for AI Code Editors
+# agentReadme.md – System Context & Guide
 
-## Purpose
-An information-dense reference so AI agents can safely navigate, edit, and extend this codebase without breaking SSR, CMS, or data integrity.
+## 1. System Architecture
+**Stack**: Node.js (v18+), Express, Nunjucks (SSR), SQLite3 (WAL mode).
+**Pattern**: Monolithic SSR with file-backed database. No build step required for SSR.
+**Assets**: Static files served from `public/`.
 
-## System Overview
-- Backend: Node.js + Express
-- Templating: Nunjucks (SSR, autoescape enabled)
-- Database: SQLite3 via better-sqlite3 (file-backed), WAL mode
-- Storage: `data/news.db`, uploads under `public/uploads/*`
+## 2. Critical File Map
+### Core Services (`server/services/`)
+- **`data-service.js`**: **PRIMARY DATA LAYER**. Handles SQLite connection, schema init, migrations, and all CRUD.
+  - *Schema*: `articles` (JSON-in-TEXT for arrays), `categories`, `branding`.
+  - *Key Methods*: `getArticles()`, `getArticleById()`, `createArticle()`, `getBranding()`.
+- **`config.js`**: **SINGLE SOURCE OF TRUTH**. Auto-detects env, paths, and URLs.
+  - *Usage*: `config.getSiteUrl(req)`, `config.getPaths()`. **DO NOT** use `process.env` directly.
+- **`url-slug.js`**: SEO slug management. Handles Turkish char normalization (`ğ`->`g`).
+  - *Usage*: `getSlugForArticle(id, title)`, `generateSlug(text)`.
+- **`sitemap.js`**: Generates `sitemap.xml`, `news-sitemap.xml`, `robots.txt`.
+- **`view-helpers.js`**: Generators for Meta tags (OG/Twitter) and Schema.org JSON-LD.
 
-Key directories and files:
-- `server/index.js` – Express, Nunjucks env setup
-- `server/routes/pages.js` – Public site pages (home/article/category/search)
-- `server/routes/api.js` – Public JSON APIs
-- `server/routes/cms.js` – CMS panel + CMS actions
-- `server/services/data-service.js` – DB init/schema/migrations/queries
-- `templates/layouts/`, `templates/pages/` – Frontend SSR pages
-- `templates/widgets/` – Reusable Nunjucks macro widgets
-- `templates/cms/**` – CMS layouts/components/pages
-- `public/css`, `public/js` – Frontend assets
-- `public/cms/css`, `public/cms/js` – CMS assets
-- `public/uploads/branding` – Branding asset uploads
-- `data/news.db` – SQLite database (gitignored)
+### Routes (`server/routes/`)
+- **`pages.js`**: Public SSR pages (`/`, `/haber/:slug`, `/kategori/:slug`). Injects `branding`, `meta`, `navCategories`.
+- **`api.js`**: Public JSON API (`/api/articles`, `/api/breaking-news`).
+- **`cms.js`**: Admin panel (`/cms`). Renders `dashboard.njk` with injected `initialState` JSON.
 
-## Rendering & Routing
-Server-side rendering uses Nunjucks with autoescape on. Routes render templates and inject data.
-- Public pages: handled in `server/routes/pages.js`
-- Public API endpoints: `server/routes/api.js`
-- CMS panel and CMS actions: `server/routes/cms.js`
-- Template root: `templates/` with view engine set to `.njk`
+### Templates (`templates/`)
+- **`layouts/`**: Base HTML wrappers (`main.njk`, `cms-layout.njk`).
+- **`pages/`**: Public views (`home.njk`, `article.njk`).
+- **`widgets/`**: Reusable macros (`flashNews.njk`, `articleCard.njk`).
+- **`cms/`**: Admin views. Heavily relies on client-side JS (`public/cms/js/cms-app.js`).
 
-Example map (high-level):
-- `/` → `templates/pages/home.njk`
-- `/article/:slug` → `templates/pages/article.njk`
-- `/category/:slug` → `templates/pages/category.njk`
-- `/search` → `templates/pages/search.njk` (if present)
-- `/api/*` → JSON responses
-- `/cms` → `templates/cms/pages/dashboard.njk` (dashboard with injected `initialState`)
+## 3. Data Conventions
+**Database**: `data/news.db` (SQLite).
+**JSON-in-SQL**: Arrays/Objects stored as TEXT.
+- *Read*: `JSON.parse(row.field || '[]')`
+- *Write*: `JSON.stringify(data)`
+- *Fields*: `tags`, `images`, `outlinks`, `targettedViews`, `relatedArticles`.
 
-## Database & Data Service
-SQLite DB located at `data/news.db` (created on first run). Managed by `server/services/data-service.js`.
-- Pragmas: `journal_mode = WAL`
-- Indices: category, creationDate, targettedViews, etc.
-- Migration approach: additive, backward-compatible
+**Images**:
+- Stored in `public/uploads/`.
+- Object structure: `{ url, lowRes, highRes, width, height, alt }`.
+- Use `view-helpers.optimizeImageData()` before rendering.
 
-Tables (summary):
-- `articles` (TEXT primary key `id`; key fields)
-  - `header`, `summaryHead`, `summary`, `body` (HTML), `category`, `writer`, `source`
-  - `creationDate`, `updatedAt`, `publishedAt` (legacy), `status` (default `'visible'`)
-  - JSON-in-TEXT: `tags`, `images`, `outlinks`, `targettedViews`, `relatedArticles`
-  - Legacy/back-compat fields: `title`, `content`, `author`, `publishedAt`, `keywords`
-- `categories`
-  - `id` (TEXT PK), `name` (UNIQUE), `description`, `slug`, `articleCount`
-- `branding`
-  - `siteName`, `primaryColor`, `secondaryColor`, `accentColor`, `headerLogo`, `footerLogo`, `updatedAt`
+## 4. Coding Standards for Agents
+1. **Config Access**: ALWAYS use `require('./services/config')`. Never hardcode paths or URLs.
+2. **Slugs**: ALWAYS use `urlSlugService` for slug generation/lookup. Never manually slugify.
+3. **Turkish Support**: Respect `tr-TR` locale in dates/slugs. Use provided formatters.
+4. **Safety**:
+   - **XSS**: Nunjucks `autoescape: true` is ON. Do not use `| safe` unless content is sanitized HTML (e.g., article body).
+   - **SQL**: Use `better-sqlite3` prepared statements (`db.prepare().run()`). NO string concatenation.
+5. **Modifications**:
+   - **DB**: Additive changes only. Update `initializeDatabase()` and `migrateSchemaIfNeeded()`.
+   - **CMS**: Update both `server/routes/cms.js` (backend) and `public/cms/js/cms-app.js` (frontend).
 
-JSON-in-TEXT convention:
-- When reading: `JSON.parse(field || '[]'/'{}')`
-- When writing: `JSON.stringify(value)` and store as TEXT
+## 5. Extension Workflows
+### Adding a New Service
+1. Create `server/services/MyService.js`.
+2. Instantiate in `server/index.js` or route files.
+3. Add to `agentReadme.md`.
 
-## Widgets & Nunjucks Conventions
-Widgets are Nunjucks macros under `templates/widgets/*`. Import and call:
-```njk
-{% from "widgets/flashNews.njk" import flashNews %}
-{{ flashNews("breaking", items, { limit: 10, showTime: true, className: "is-compact" }) }}
-```
+### Adding a New Widget
+1. Create `templates/widgets/myWidget.njk`.
+2. Define macro: `{% macro myWidget(data, options) %}`.
+3. Import in page: `{% from "widgets/myWidget.njk" import myWidget %}`.
 
-Guidelines:
-- Keep widgets pure: accept data, return HTML
-- Validate presence of required fields; handle optional ones defensively
-- Prefer semantic markup and BEM-like classes already in use
-
-flashNews widget (example contract):
-- Signature: `{% macro flashNews(id, items, config) %}`
-- items[] expected minimal fields:
-  - `id` (string)
-  - `slug` (string) – used for links
-  - `title` or `header` (string) – display text
-  - `creationDate` or `publishedAt` (ISO string) – optional time badge
-- config (optional):
-  - `limit` (number) – max items to render
-  - `showTime` (boolean) – show relative/absolute time
-  - `className` (string) – extra CSS classes on container
-
-Sample items:
-```json
-[
-  { "id": "a1", "slug": "breaking-1", "title": "Breaking news one", "creationDate": "2025-11-10T08:00:00Z" },
-  { "id": "a2", "slug": "breaking-2", "header": "Breaking news two", "publishedAt": "2025-11-10T09:00:00Z" }
-]
-```
-
-## CMS Panel
-- Entry: `/cms` → `templates/cms/pages/dashboard.njk`
-- Components under `templates/cms/components/*` (sidebar, topbar, tables, forms, editor)
-- Assets: `public/cms/css/cms.css`, `public/cms/js/cms-app.js`
-- Branding:
-  - Uploads saved to `public/uploads/branding/`
-  - Route composes `initialState` in `server/routes/cms.js` and injects `initialStateJson` into the template
-- Typical initialState keys: `stats`, `articles`, `categories`, `recentArticles`, `settings`, `targetOptions`, `branding`
-
-## Environment & Running Locally
-Requirements:
-- Node.js >= 18
-
-Scripts:
-```bash
-npm install
-npm run dev           # start dev server with nodemon
-node server/index.js  # start production-style server
-```
-
-Example `.env` (placeholders only; do not commit real secrets):
-```env
-PORT=3000
-SITE_URL=https://example.com
-SITE_NAME=UHA News
-SITE_DESCRIPTION=Latest news and updates
-ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxx
-ADSENSE_SLOT_ID=xxxxxxxxxx
-```
-
-## Safe Editing Conventions (for AI)
-- Do not hardcode secrets; keep placeholders and read from `process.env`
-- Preserve JSON-in-TEXT columns; always parse/stringify safely with try/catch on the edges
-- Schema changes must be additive/backward-compatible; retain legacy fields
-- Match existing code style, naming, and HTML/CSS class conventions; avoid broad reformatting
-- Validate inputs for new endpoints/forms; sanitize/escape as needed; keep SSR autoescape on
-- Keep logging minimal and structured; avoid noisy console logs on hot paths
-- Prefer small, composable widgets/macros; avoid coupling CMS code with public SSR widgets
-
-## Common Extension Guides
-Add a new widget:
-1) Create `templates/widgets/MyWidget.njk` with a macro
-2) Import in a page: `{% from "widgets/MyWidget.njk" import MyWidget %}`
-3) Call with required data; add CSS/JS if needed under `public/`
-
-Add a new article field (end-to-end):
-1) DB: Add new TEXT column in `initializeDatabase()` (additive) and any required index
-2) Data service: parse/stringify in getters/setters as needed
-3) CMS: expose field in editor form macro and in `cms-app.js` handling
-4) Frontend: render field in relevant templates/widgets
-
-Add a CMS action:
-1) Route in `server/routes/cms.js` with input validation
-2) Call appropriate data-service method
-3) Update client (if needed) in `public/cms/js/cms-app.js`
-4) Reflect state in `initialState` or return JSON for dynamic updates
-
-## Quick Test Checklist
-- Start dev server and open `/cms`
-- Create or edit an article, verify it appears on `/`
-- Check that slugs/pages render and no template errors occur
-- Verify branding upload updates header/footer assets
-- Confirm JSON fields parse/render correctly (tags/images/outlinks/targettedViews)
-
----
-Use paths mentioned above when referencing files. Keep edits incremental, reversible, and consistent with existing patterns.
-
-
+## 6. Verification Checklist
+- [ ] Server starts: `npm run dev`.
+- [ ] CMS loads: `/cms`.
+- [ ] Public pages render: `/`, `/haber/slug`.
+- [ ] **Turkish chars** in URLs work (e.g., `/kategori/saglik` matches "Sağlık").
+- [ ] `sitemap.xml` generates valid XML.
