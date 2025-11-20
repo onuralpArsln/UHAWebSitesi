@@ -3,32 +3,55 @@
 {% set headerLogo = branding.headerLogo %}
 {% set navId = 'primary-navigation' %}
 <header class="site-header" data-site-header>
-  <div class="container header-inner">
-    <div class="header-upper">
+  <!-- Top Bar: Socials & Date -->
+  <div class="header-top hidden-mobile">
+    <div class="container d-flex justify-content-between align-items-center">
+      <div class="header-date text-sm text-secondary">
+        <span id="header-date"></span>
+        <script>
+          document.getElementById('header-date').textContent = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
+        </script>
+      </div>
+      <div class="header-socials d-flex gap-sm">
+        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+        <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Header: Logo & Actions -->
+  <div class="header-main">
+    <div class="container d-flex justify-content-between align-items-center">
+      <!-- Mobile Menu Toggle -->
+      <button class="nav-toggle d-lg-none" type="button" aria-controls="{{ navId }}" aria-expanded="false" data-nav-toggle>
+        <span class="nav-toggle__icon"></span>
+      </button>
+
+      <!-- Logo -->
       <a class="site-logo" href="{{ asset('/') }}" aria-label="{{ siteName }}">
         {% if headerLogo %}
         <img src="{{ headerLogo }}" alt="{{ siteName }}">
+        {% else %}
+        <span class="site-logo__text">UHA</span>
         {% endif %}
-        <span class="site-logo__text"{% if headerLogo %} aria-hidden="true"{% endif %}>{{ siteName }}</span>
       </a>
 
-      <button
-        class="nav-toggle"
-        type="button"
-        aria-controls="{{ navId }}"
-        aria-expanded="false"
-        data-nav-toggle
-      >
-        <span class="nav-toggle__bar"></span>
-        <span class="nav-toggle__bar"></span>
-        <span class="nav-toggle__bar"></span>
-        <span class="nav-toggle__label">Menü</span>
-      </button>
+      <!-- Search / Actions -->
+      <div class="header-actions d-flex align-items-center gap-md">
+        <button class="search-toggle" aria-label="Search">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+      </div>
     </div>
+  </div>
 
-    <div class="header-lower">
-      <nav class="site-nav-bar" aria-label="Ana menü">
-        <ul class="site-nav-bar__list">
+  <!-- Navigation Bar (Desktop) -->
+  <div class="header-nav hidden-mobile">
+    <div class="container">
+      <nav class="site-nav-bar" aria-label="Main Navigation">
+        <ul class="site-nav-bar__list d-flex justify-content-center gap-lg">
           {% for category in categories %}
           <li class="site-nav-bar__item">
             <a class="site-nav-bar__link" href="{{ category.href or asset('kategori/' ~ (category.slug or category.name | lower | replace(' ', '-'))) }}">{{ category.name }}</a>
@@ -39,20 +62,19 @@
     </div>
   </div>
 
+  <!-- Mobile Navigation Panel -->
   <div class="site-nav-overlay" hidden data-nav-overlay></div>
-
-  <nav id="{{ navId }}" class="site-nav-panel" hidden data-nav-panel aria-label="Mobil menü">
-    <div class="site-nav-panel__header">
-      <span class="site-nav-panel__title">{{ siteName }}</span>
-      <button class="nav-close" type="button" data-nav-close aria-label="Menüyü kapat">
-        <span class="nav-close__bar"></span>
-        <span class="nav-close__bar"></span>
+  <nav id="{{ navId }}" class="site-nav-panel" hidden data-nav-panel aria-label="Mobile Menu">
+    <div class="site-nav-panel__header d-flex justify-content-between align-items-center p-md border-bottom">
+      <span class="site-nav-panel__title font-bold text-lg">{{ siteName }}</span>
+      <button class="nav-close" type="button" data-nav-close aria-label="Close Menu">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
     </div>
-    <ul class="site-nav-panel__list">
+    <ul class="site-nav-panel__list p-md">
       {% for category in categories %}
-      <li class="site-nav-panel__item">
-        <a class="site-nav-panel__link" href="{{ category.href or asset('kategori/' ~ (category.slug or category.name | lower | replace(' ', '-'))) }}">{{ category.name }}</a>
+      <li class="site-nav-panel__item border-bottom">
+        <a class="site-nav-panel__link d-block py-sm text-lg" href="{{ category.href or asset('kategori/' ~ (category.slug or category.name | lower | replace(' ', '-'))) }}">{{ category.name }}</a>
       </li>
       {% endfor %}
     </ul>

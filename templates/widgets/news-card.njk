@@ -1,0 +1,43 @@
+{% macro newsCard(article, variant='default') %}
+{% set image = article.images and article.images[0] %}
+{% set articleUrl = asset('haber/' ~ article.slug) %}
+
+<article class="news-card news-card--{{ variant }}">
+  {% if image %}
+  <a href="{{ articleUrl }}" class="news-card__image-link">
+    <div class="news-card__image">
+      <img
+        src="{{ image.lowRes or image.url }}"
+        alt="{{ image.alt or article.title }}"
+        loading="lazy"
+        data-high-res="{{ image.highRes or '' }}"
+      >
+      {% if article.category %}
+      <span class="news-card__category-badge">{{ article.category }}</span>
+      {% endif %}
+    </div>
+  </a>
+  {% endif %}
+  
+  <div class="news-card__content">
+    <h3 class="news-card__title">
+      <a href="{{ articleUrl }}">{{ article.title }}</a>
+    </h3>
+    
+    {% if article.summary and variant != 'compact' %}
+    <p class="news-card__summary">{{ article.summary }}</p>
+    {% endif %}
+    
+    <div class="news-card__meta">
+      {% if article.publishedAt %}
+      <time class="news-card__date" datetime="{{ article.publishedAt }}">
+        {{ article.publishedAt | formatDate }}
+      </time>
+      {% endif %}
+      {% if article.author %}
+      <span class="news-card__author">{{ article.author }}</span>
+      {% endif %}
+    </div>
+  </div>
+</article>
+{% endmacro %}

@@ -20,9 +20,15 @@
   <meta property="twitter:description" content="{{ meta.description }}">
   <meta property="twitter:image" content="{{ meta.image }}">
   <meta name="theme-color" content="{{ primary_color }}">
-  <link rel="stylesheet" href="{{ asset('css/variables.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/modern-variables.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/modern-layout.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/layout-utilities.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/header.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/news-card.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/footer.css') }}">
   <link rel="stylesheet" href="{{ asset('css/main.css') }}">
   <link rel="stylesheet" href="{{ asset('css/widgets.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/carousel-fix.css') }}">
   <style id="branding-variables">
     :root {
       --primary-color: {{ primary_color }};
@@ -38,6 +44,7 @@
 <body class="{% block body_class %}{% endblock %}">
   {% block body %}{% endblock %}
   {% block scripts %}
+  <script src="{{ asset('js/carousel-cls-fix.js') }}"></script>
   <script src="{{ asset('js/nav.js') }}" defer></script>
   <script src="{{ asset('js/hydration.js') }}" defer></script>
   <script src="{{ asset('js/lazy-load.js') }}" defer></script>

@@ -1,0 +1,33 @@
+/* Carousel Fixed Height Override */
+.carousel-widget {
+  width: 98% !important;
+  height: 400px !important;
+  aspect-ratio: unset !important;
+  min-height: unset !important;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: carousel-loading 1.5s ease-in-out infinite;
+}
+
+.carousel-widget.loaded {
+  animation: none;
+  background: transparent;
+}
+
+@keyframes carousel-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (min-width: 768px) {
+  .carousel-widget {
+    height: 500px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .carousel-widget {
+    width: 70% !important;
+    height: 600px !important;
+  }
+}

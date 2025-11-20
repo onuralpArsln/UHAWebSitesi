@@ -1,0 +1,116 @@
+/* Modern Grid Layout */
+.news-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-lg);
+  margin: var(--spacing-xl) 0;
+}
+
+@media (min-width: 768px) {
+  .news-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .news-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Main Content + Sidebar Layout */
+.content-with-sidebar {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-xl);
+  margin: var(--spacing-xl) 0;
+}
+
+@media (min-width: 1024px) {
+  .content-with-sidebar {
+    grid-template-columns: 1fr 300px;
+  }
+}
+
+.main-content {
+  min-width: 0; /* Prevent grid blowout */
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* Section Styling */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 3px solid var(--color-accent);
+}
+
+.section-title {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin: 0;
+}
+
+.section-title a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--transition-base);
+}
+
+.section-title a:hover {
+  color: var(--color-accent);
+}
+
+.view-all-link {
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color var(--transition-base);
+}
+
+.view-all-link:hover {
+  color: var(--color-accent-hover);
+}
+
+/* Flash News Positioning */
+.flash-news-container {
+  margin: var(--spacing-lg) 0;
+}
+
+/* Utility Classes */
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+
+.p-sm { padding: var(--spacing-sm); }
+.p-md { padding: var(--spacing-md); }
+.p-lg { padding: var(--spacing-lg); }
+
+.py-sm { padding-top: var(--spacing-sm); padding-bottom: var(--spacing-sm); }
+.py-md { padding-top: var(--spacing-md); padding-bottom: var(--spacing-md); }
+
+.text-sm { font-size: var(--font-size-sm); }
+.text-lg { font-size: var(--font-size-lg); }
+.text-xl { font-size: var(--font-size-xl); }
+
+.text-secondary { color: var(--color-text-secondary); }
+
+.font-bold { font-weight: 700; }
+
+.border-bottom { border-bottom: 1px solid var(--color-border); }
+
+/* Responsive Visibility */
+@media (min-width: 1024px) {
+  .d-lg-none {
+    display: none !important;
+  }
+}

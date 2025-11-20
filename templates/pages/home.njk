@@ -2,10 +2,20 @@
 {% from "widgets/carousel.njk" import carousel %}
 {% from "widgets/ad-placeholder.njk" import adPlaceholder %}
 {% from "widgets/site-header.njk" import siteHeader %}
+{% from "widgets/flashNews.njk" import flashNews %}
+{% from "widgets/news-card.njk" import newsCard %}
+{% from "widgets/footer.njk" import siteFooter %}
 
 {% block body %}
 {% set brand = branding or {} %}
 {{ siteHeader(brand, navCategories or []) }}
+
+{# Flash News Ticker #}
+{% if flashNewsItems and flashNewsItems | length %}
+<div class="container">
+  {{ flashNews('homepage-flash', flashNewsItems) }}
+</div>
+{% endif %}
 
 <main class="site-main">
   <section class="hero container">
@@ -18,33 +28,13 @@
   </section>
 
   <section class="featured-articles container">
-    <h3 class="section-title">Öne Çıkan Haberler</h3>
+    <div class="section-header">
+      <h3 class="section-title">Öne Çıkan Haberler</h3>
+    </div>
     {% if featuredArticles and featuredArticles | length %}
-    <div class="articles-grid">
+    <div class="news-grid">
       {% for article in featuredArticles %}
-      {% set image = article.images and article.images[0] %}
-      <article class="article-card">
-        {% if image %}
-        <div class="article-card__media">
-          <img
-            src="{{ image.lowRes or image.url }}"
-            alt="{{ image.alt }}"
-            width="{{ image.width }}"
-            height="{{ image.height }}"
-            loading="lazy"
-            data-high-res="{{ image.highRes or '' }}"
-          >
-        </div>
-        {% endif %}
-        <div class="article-card__body">
-          <h4 class="article-card__title"><a href="{{ asset('haber/' ~ article.slug) }}">{{ article.title }}</a></h4>
-          <p class="article-card__summary">{{ article.summary }}</p>
-          <div class="article-card__meta">
-            <span class="badge badge--category">{{ article.category }}</span>
-            <span class="badge badge--date">{{ article.publishedAt | formatDate }}</span>
-          </div>
-        </div>
-      </article>
+      {{ newsCard(article, 'default') }}
       {% endfor %}
     </div>
     {% else %}
@@ -55,29 +45,13 @@
   {% if categorySections and categorySections | length %}
   {% for section in categorySections %}
   <section class="category-section container">
-    <div class="category-section__header">
+    <div class="section-header">
       <h3 class="section-title"><a href="{{ asset('kategori/' ~ section.slug) }}">{{ section.name }}</a></h3>
+      <a href="{{ asset('kategori/' ~ section.slug) }}" class="view-all-link">Tümünü Gör →</a>
     </div>
-    <div class="articles-list">
+    <div class="news-grid">
       {% for article in section.articles %}
-      {% set image = article.images and article.images[0] %}
-      <article class="article-item">
-        {% if image %}
-        <div class="article-item__media">
-          <img
-            src="{{ image.lowRes or image.url }}"
-            alt="{{ image.alt }}"
-            loading="lazy"
-            data-high-res="{{ image.highRes or '' }}"
-          >
-        </div>
-        {% endif %}
-        <div class="article-item__body">
-          <h4 class="article-item__title"><a href="{{ asset('haber/' ~ article.slug) }}">{{ article.title }}</a></h4>
-          <p class="article-item__summary">{{ article.summary }}</p>
-          <span class="badge badge--date">{{ article.publishedAt | formatDate }}</span>
-        </div>
-      </article>
+      {{ newsCard(article, 'compact') }}
       {% endfor %}
     </div>
   </section>
@@ -93,16 +67,7 @@
   </section>
 </main>
 
-<footer class="site-footer">
-  <div class="container">
-    {% if brand.footerLogo %}
-    <div class="site-footer__logo">
-      <img src="{{ brand.footerLogo }}" alt="{{ brand.siteName or 'UHA News' }}">
-    </div>
-    {% endif %}
-    <p>&copy; {{ current_year }} {{ brand.siteName or 'UHA News' }}. Tüm hakları saklıdır.</p>
-  </div>
-</footer>
+{{ siteFooter(brand, navCategories or []) }}
 {% endblock %}
 
 {% block scripts %}
