@@ -369,7 +369,7 @@ The branding system provides granular control over the site's color palette.
 | **İkincil Renk** | `secondaryColor` | `#2d3748` | Secondary brand color. Used for secondary elements and backgrounds. |
 | **Vurgu Rengi** | `accentColor` | `#3182ce` | Accent color. Used for links, notifications, and call-to-action elements. |
 | **Logo Metin Rengi** | `logoTextColor` | `#3182ce` | Color of the "UHA" text in the header logo. |
-| **İkincil Metin Rengi** | `navTextColor` | `#ffffff` | Text color for navigation links and footer section titles. |
+| **İkincil Metin Rengi** | `navTextColor` | `#ffffff` | Text color for navigation links, footer section titles, footer contact info, description, and links. |
 | **Navigasyon Arkaplan** | `navBackgroundColor` | `#1a365d` | Background color of the main navigation bar. |
 
 ### Logos
