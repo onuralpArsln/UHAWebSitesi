@@ -664,25 +664,53 @@
     generateColorSuggestions(primaryHex) {
       if (!primaryHex) return;
 
+      // Helper function to clamp values between 0 and 100
+      const clamp = (value) => Math.max(0, Math.min(100, value));
+
+      // Get primary color HSL values
       const hsl = ColorUtils.hexToHsl(primaryHex);
+      const Hp = hsl.h;
+      const Sp = hsl.s;
+      const Lp = hsl.l;
+
       const suggestions = {};
 
-      // Secondary: Desaturated, slightly darker/lighter version of primary
-      // or a neutral gray with a tint of primary
-      suggestions.secondary = ColorUtils.hslToHex(hsl.h, 20, 30); // Dark grayish blue if primary is blue
+      // İkincil Renk (Secondary)
+      // H = Hp ± 5, S = Sp - 15, L = Lp + 10
+      const secondaryH = (Hp + 5) % 360; // Using +5 for consistency
+      const secondaryS = clamp(Sp - 15);
+      const secondaryL = clamp(Lp + 10);
+      suggestions.secondary = ColorUtils.hslToHex(secondaryH, secondaryS, secondaryL);
 
-      // Accent: Complementary (180 deg rotation)
-      const accentH = (hsl.h + 180) % 360;
-      suggestions.accent = ColorUtils.hslToHex(accentH, 70, 55);
+      // Vurgu Rengi (Accent)
+      // H = Hp ± 12, S = min(100, Sp + 25), L = Lp + 8
+      const accentH = (Hp + 12) % 360; // Using +12 for consistency
+      const accentS = Math.min(100, Sp + 25);
+      const accentL = clamp(Lp + 8);
+      suggestions.accent = ColorUtils.hslToHex(accentH, accentS, accentL);
 
-      // Logo Text: Matches Primary or Accent. Let's suggest Primary for consistency
-      suggestions.logoText = primaryHex;
+      // Logo Metin Rengi (LogoText)
+      // If Lp < 50: H = Hp, S = Sp * 0.2, L = 85
+      // Else: H = Hp, S = Sp * 0.2, L = 15
+      const logoTextH = Hp;
+      const logoTextS = clamp(Sp * 0.2);
+      const logoTextL = Lp < 50 ? 85 : 15;
+      suggestions.logoText = ColorUtils.hslToHex(logoTextH, logoTextS, logoTextL);
 
-      // Nav Background: Darker shade of primary
-      suggestions.navBackground = ColorUtils.hslToHex(hsl.h, hsl.s, Math.max(10, hsl.l - 20));
+      // Navigasyon Arkaplan Rengi (NavBackground)
+      // H = Hp, S = Sp - 20, L = Lp - 5
+      const navBgH = Hp;
+      const navBgS = clamp(Sp - 20);
+      const navBgL = clamp(Lp - 5);
+      suggestions.navBackground = ColorUtils.hslToHex(navBgH, navBgS, navBgL);
 
-      // Nav Text: White or very light gray
-      suggestions.navText = '#ffffff';
+      // İkincil Metin Rengi (NavText/SecondaryText)
+      // If NavBackground L < 50: H = Hp, S = 5, L = 85
+      // Else: H = Hp, S = 5, L = 20
+      const navTextH = Hp;
+      const navTextS = 5;
+      const navTextL = navBgL < 50 ? 85 : 20;
+      suggestions.navText = ColorUtils.hslToHex(navTextH, navTextS, navTextL);
 
       this.brandingSuggestionButtons.forEach(btn => {
         const key = btn.dataset.suggestFor;
