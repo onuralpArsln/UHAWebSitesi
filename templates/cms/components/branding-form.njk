@@ -37,6 +37,10 @@
             <div class="cms-color-picker">
               <input id="branding-secondary-color" name="secondaryColor" type="color" value="{{ branding.secondaryColor or '#2d3748' }}" data-branding-color="secondary">
               <span class="cms-color-value" data-branding-color-value="secondary">{{ branding.secondaryColor or '#2d3748' }}</span>
+              <button type="button" class="cms-color-suggestion" data-action="suggest-color" data-suggest-for="secondary" title="Önerilen rengi uygula" hidden>
+                <span class="cms-color-suggestion__preview"></span>
+                <span class="cms-color-suggestion__icon">✨</span>
+              </button>
             </div>
             <small>Arka planlar ve ikincil öğeler için.</small>
           </div>
@@ -46,6 +50,10 @@
             <div class="cms-color-picker">
               <input id="branding-accent-color" name="accentColor" type="color" value="{{ branding.accentColor or '#3182ce' }}" data-branding-color="accent">
               <span class="cms-color-value" data-branding-color-value="accent">{{ branding.accentColor or '#3182ce' }}</span>
+              <button type="button" class="cms-color-suggestion" data-action="suggest-color" data-suggest-for="accent" title="Önerilen rengi uygula" hidden>
+                <span class="cms-color-suggestion__preview"></span>
+                <span class="cms-color-suggestion__icon">✨</span>
+              </button>
             </div>
             <small>Linkler, bildirimler ve önemli butonlar için.</small>
           </div>
@@ -55,6 +63,10 @@
             <div class="cms-color-picker">
               <input id="branding-logo-text-color" name="logoTextColor" type="color" value="{{ branding.logoTextColor or '#3182ce' }}" data-branding-color="logoText">
               <span class="cms-color-value" data-branding-color-value="logoText">{{ branding.logoTextColor or '#3182ce' }}</span>
+              <button type="button" class="cms-color-suggestion" data-action="suggest-color" data-suggest-for="logoText" title="Önerilen rengi uygula" hidden>
+                <span class="cms-color-suggestion__preview"></span>
+                <span class="cms-color-suggestion__icon">✨</span>
+              </button>
             </div>
             <small>Logo metni için renk.</small>
           </div>
@@ -64,6 +76,10 @@
             <div class="cms-color-picker">
               <input id="branding-nav-text-color" name="navTextColor" type="color" value="{{ branding.navTextColor or '#ffffff' }}" data-branding-color="navText">
               <span class="cms-color-value" data-branding-color-value="navText">{{ branding.navTextColor or '#ffffff' }}</span>
+              <button type="button" class="cms-color-suggestion" data-action="suggest-color" data-suggest-for="navText" title="Önerilen rengi uygula" hidden>
+                <span class="cms-color-suggestion__preview"></span>
+                <span class="cms-color-suggestion__icon">✨</span>
+              </button>
             </div>
             <small>Navigasyon linkleri ve footer başlıkları için.</small>
           </div>
@@ -73,6 +89,10 @@
             <div class="cms-color-picker">
               <input id="branding-nav-bg-color" name="navBackgroundColor" type="color" value="{{ branding.navBackgroundColor or '#1a365d' }}" data-branding-color="navBackground">
               <span class="cms-color-value" data-branding-color-value="navBackground">{{ branding.navBackgroundColor or '#1a365d' }}</span>
+              <button type="button" class="cms-color-suggestion" data-action="suggest-color" data-suggest-for="navBackground" title="Önerilen rengi uygula" hidden>
+                <span class="cms-color-suggestion__preview"></span>
+                <span class="cms-color-suggestion__icon">✨</span>
+              </button>
             </div>
             <small>Navigasyon çubuğu arkaplan rengi.</small>
           </div>
@@ -94,15 +114,19 @@
       </form>
 
       <div class="cms-branding-preview" data-cms="branding-preview">
-        <div class="branding-preview__header" data-cms="branding-preview-header">
-          {% if branding.headerLogo %}
-          <img src="{{ branding.headerLogo }}" alt="Logo önizleme" data-cms="branding-preview-header-logo">
-          {% else %}
-          <div class="branding-preview__logo-placeholder" data-cms="branding-preview-header-logo">
-            {{ branding.siteName or 'UHA News' }}
+        <div class="branding-preview__header" data-cms="branding-preview-header" style="flex-direction: column; align-items: stretch; gap: 1rem;">
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            {% if branding.headerLogo %}
+            <img src="{{ branding.headerLogo }}" alt="Logo önizleme" data-cms="branding-preview-header-logo">
+            {% endif %}
+            <span class="branding-preview__site-name" data-cms="branding-preview-site-name" style="color: {{ branding.logoTextColor or '#3182ce' }}">{{ branding.siteName or 'UHA News' }}</span>
           </div>
-          {% endif %}
-          <span class="branding-preview__site-name" data-cms="branding-preview-site-name">{{ branding.siteName or 'UHA News' }}</span>
+          
+          <div class="branding-preview__nav" data-cms="branding-preview-nav" style="background-color: {{ branding.navBackgroundColor or '#1a365d' }}; padding: 0.75rem; border-radius: 0.5rem; display: flex; gap: 1.5rem; justify-content: center;">
+            <span data-cms="branding-preview-nav-link" style="color: {{ branding.navTextColor or '#ffffff' }}; font-weight: 600; font-size: 0.9rem;">Gündem</span>
+            <span data-cms="branding-preview-nav-link" style="color: {{ branding.navTextColor or '#ffffff' }}; font-weight: 600; font-size: 0.9rem;">Ekonomi</span>
+            <span data-cms="branding-preview-nav-link" style="color: {{ branding.navTextColor or '#ffffff' }}; font-weight: 600; font-size: 0.9rem;">Spor</span>
+          </div>
         </div>
         <div class="branding-preview__body" data-cms="branding-preview-body">
           <p>Renk önizlemesi</p>

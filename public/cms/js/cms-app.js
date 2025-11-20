@@ -6,6 +6,73 @@
   });
   const MEDIA_BASE_PATH = '/uploads/media/';
 
+  class ColorUtils {
+    static hexToHsl(hex) {
+      let r = 0, g = 0, b = 0;
+      if (hex.length === 4) {
+        r = "0x" + hex[1] + hex[1];
+        g = "0x" + hex[2] + hex[2];
+        b = "0x" + hex[3] + hex[3];
+      } else if (hex.length === 7) {
+        r = "0x" + hex[1] + hex[2];
+        g = "0x" + hex[3] + hex[4];
+        b = "0x" + hex[5] + hex[6];
+      }
+      r /= 255;
+      g /= 255;
+      b /= 255;
+      let cmin = Math.min(r, g, b),
+        cmax = Math.max(r, g, b),
+        delta = cmax - cmin,
+        h = 0,
+        s = 0,
+        l = 0;
+
+      if (delta == 0) h = 0;
+      else if (cmax == r) h = ((g - b) / delta) % 6;
+      else if (cmax == g) h = (b - r) / delta + 2;
+      else h = (r - g) / delta + 4;
+
+      h = Math.round(h * 60);
+      if (h < 0) h += 360;
+
+      l = (cmax + cmin) / 2;
+      s = delta == 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
+      s = +(s * 100).toFixed(1);
+      l = +(l * 100).toFixed(1);
+
+      return { h, s, l };
+    }
+
+    static hslToHex(h, s, l) {
+      s /= 100;
+      l /= 100;
+      let c = (1 - Math.abs(2 * l - 1)) * s,
+        x = c * (1 - Math.abs(((h / 60) % 2) - 1)),
+        m = l - c / 2,
+        r = 0,
+        g = 0,
+        b = 0;
+
+      if (0 <= h && h < 60) { r = c; g = x; b = 0; }
+      else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
+      else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+      else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+      else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+      else if (300 <= h && h < 360) { r = c; g = 0; b = x; }
+
+      r = Math.round((r + m) * 255).toString(16);
+      g = Math.round((g + m) * 255).toString(16);
+      b = Math.round((b + m) * 255).toString(16);
+
+      if (r.length == 1) r = "0" + r;
+      if (g.length == 1) g = "0" + g;
+      if (b.length == 1) b = "0" + b;
+
+      return "#" + r + g + b;
+    }
+  }
+
   class CMSDashboard {
     constructor(initialState) {
       this.state = {
@@ -78,10 +145,15 @@
       this.brandingPreviewFooter = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-footer"]') : null;
       this.brandingPreviewFooterLogo = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-footer-logo"]') : null;
       this.brandingPreviewSiteName = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-site-name"]') : null;
+      this.brandingPreviewNav = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-nav"]') : null;
+      this.brandingPreviewNavLinks = this.brandingPreview ? this.brandingPreview.querySelectorAll('[data-cms="branding-preview-nav-link"]') : [];
       this.brandingColorValueNodes = this.brandingForm ? this.brandingForm.querySelectorAll('[data-branding-color-value]') : [];
       this.brandingColorInputs = this.brandingForm ? this.brandingForm.querySelectorAll('[data-branding-color]') : [];
       this.brandingChipNodes = this.brandingPreview ? this.brandingPreview.querySelectorAll('[data-cms="branding-preview-chip"]') : [];
+      this.brandingChipNodes = this.brandingPreview ? this.brandingPreview.querySelectorAll('[data-cms="branding-preview-chip"]') : [];
       this.brandingFileInputs = this.brandingForm ? this.brandingForm.querySelectorAll('[data-branding-upload]') : [];
+      this.brandingSuggestionButtons = this.brandingForm ? this.brandingForm.querySelectorAll('[data-action="suggest-color"]') : [];
+      this.brandingSiteNameInput = this.brandingForm ? this.brandingForm.querySelector('#branding-site-name') : null;
 
       this.mediaSection = document.querySelector('[data-cms="media-section"]');
       this.mediaListContainer = this.mediaSection ? this.mediaSection.querySelector('[data-cms="media-list"]') : null;
@@ -192,9 +264,25 @@
       this.brandingColorInputs.forEach((input) => {
         input.addEventListener('input', (event) => {
           this.handleBrandingColorInput(event);
+          if (input.dataset.brandingColor === 'primary') {
+            this.generateColorSuggestions(input.value);
+          }
         });
         input.addEventListener('change', (event) => {
           this.handleBrandingColorInput(event);
+          if (input.dataset.brandingColor === 'primary') {
+            this.generateColorSuggestions(input.value);
+          }
+        });
+      });
+
+      this.brandingSuggestionButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const targetKey = btn.dataset.suggestFor;
+          const color = btn.dataset.suggestedColor;
+          if (targetKey && color) {
+            this.applySuggestedColor(targetKey, color);
+          }
         });
       });
 
@@ -203,6 +291,12 @@
           this.handleBrandingFileInput(event);
         });
       });
+
+      if (this.brandingSiteNameInput) {
+        this.brandingSiteNameInput.addEventListener('input', (event) => {
+          this.handleBrandingSiteNameInput(event);
+        });
+      }
 
       if (this.openMediaUploadBtn && this.mediaUploadInput) {
         this.openMediaUploadBtn.addEventListener('click', () => this.mediaUploadInput.click());
@@ -497,8 +591,8 @@
         count !== undefined
           ? count
           : Array.isArray(this.state.categories)
-          ? this.state.categories.length
-          : 0;
+            ? this.state.categories.length
+            : 0;
 
       this.state.stats = {
         ...this.state.stats,
@@ -560,6 +654,59 @@
       if (this.pageSubtitleElement) {
         this.pageSubtitleElement.textContent = current.siteName || 'UHA News';
       }
+
+      // Generate initial suggestions based on primary color
+      if (current.primaryColor) {
+        this.generateColorSuggestions(current.primaryColor);
+      }
+    }
+
+    generateColorSuggestions(primaryHex) {
+      if (!primaryHex) return;
+
+      const hsl = ColorUtils.hexToHsl(primaryHex);
+      const suggestions = {};
+
+      // Secondary: Desaturated, slightly darker/lighter version of primary
+      // or a neutral gray with a tint of primary
+      suggestions.secondary = ColorUtils.hslToHex(hsl.h, 20, 30); // Dark grayish blue if primary is blue
+
+      // Accent: Complementary (180 deg rotation)
+      const accentH = (hsl.h + 180) % 360;
+      suggestions.accent = ColorUtils.hslToHex(accentH, 70, 55);
+
+      // Logo Text: Matches Primary or Accent. Let's suggest Primary for consistency
+      suggestions.logoText = primaryHex;
+
+      // Nav Background: Darker shade of primary
+      suggestions.navBackground = ColorUtils.hslToHex(hsl.h, hsl.s, Math.max(10, hsl.l - 20));
+
+      // Nav Text: White or very light gray
+      suggestions.navText = '#ffffff';
+
+      this.brandingSuggestionButtons.forEach(btn => {
+        const key = btn.dataset.suggestFor;
+        if (suggestions[key]) {
+          btn.hidden = false;
+          btn.dataset.suggestedColor = suggestions[key];
+          const preview = btn.querySelector('.cms-color-suggestion__preview');
+          if (preview) {
+            preview.style.backgroundColor = suggestions[key];
+          }
+        }
+      });
+    }
+
+    applySuggestedColor(key, color) {
+      const input = this.brandingForm.querySelector(`[data-branding-color="${key}"]`);
+      if (input) {
+        input.value = color;
+        // Trigger input event to update preview and values
+        input.dispatchEvent(new Event('input'));
+
+        // Show a small toast or feedback
+        this.showToast('Önerilen renk uygulandı', 'success');
+      }
     }
 
     updateBrandingColorValue(key, value) {
@@ -591,31 +738,46 @@
       }
       if (this.brandingPreviewSiteName) {
         this.brandingPreviewSiteName.textContent = branding.siteName || 'UHA News';
+        this.brandingPreviewSiteName.style.color = branding.logoTextColor || '#3182ce';
       }
 
-      if (this.brandingPreviewHeaderLogo) {
-        if (branding.headerLogo) {
-          if (this.brandingPreviewHeaderLogo.tagName !== 'IMG') {
+      if (this.brandingPreviewNav) {
+        this.brandingPreviewNav.style.backgroundColor = branding.navBackgroundColor || '#1a365d';
+      }
+
+      if (this.brandingPreviewNavLinks) {
+        this.brandingPreviewNavLinks.forEach(link => {
+          link.style.color = branding.navTextColor || '#ffffff';
+        });
+      }
+
+      // Handle header logo - only show img if logo exists, otherwise remove it
+      if (branding.headerLogo) {
+        if (this.brandingPreviewHeaderLogo) {
+          if (this.brandingPreviewHeaderLogo.tagName === 'IMG') {
+            this.brandingPreviewHeaderLogo.src = branding.headerLogo;
+          } else {
             const img = document.createElement('img');
             img.src = branding.headerLogo;
             img.alt = 'Logo önizleme';
             img.dataset.cms = 'branding-preview-header-logo';
             this.brandingPreviewHeaderLogo.replaceWith(img);
             this.brandingPreviewHeaderLogo = img;
-          } else {
-            this.brandingPreviewHeaderLogo.src = branding.headerLogo;
           }
-        } else {
-          if (this.brandingPreviewHeaderLogo.tagName === 'IMG') {
-            const placeholder = document.createElement('div');
-            placeholder.className = 'branding-preview__logo-placeholder';
-            placeholder.dataset.cms = 'branding-preview-header-logo';
-            placeholder.textContent = branding.siteName || 'UHA News';
-            this.brandingPreviewHeaderLogo.replaceWith(placeholder);
-            this.brandingPreviewHeaderLogo = placeholder;
-          } else {
-            this.brandingPreviewHeaderLogo.textContent = branding.siteName || 'UHA News';
-          }
+        } else if (this.brandingPreviewSiteName && this.brandingPreviewSiteName.parentElement) {
+          // Create img element and insert it before the site name span
+          const img = document.createElement('img');
+          img.src = branding.headerLogo;
+          img.alt = 'Logo önizleme';
+          img.dataset.cms = 'branding-preview-header-logo';
+          this.brandingPreviewSiteName.parentElement.insertBefore(img, this.brandingPreviewSiteName);
+          this.brandingPreviewHeaderLogo = img;
+        }
+      } else {
+        // Remove logo if it exists
+        if (this.brandingPreviewHeaderLogo && this.brandingPreviewHeaderLogo.tagName === 'IMG') {
+          this.brandingPreviewHeaderLogo.remove();
+          this.brandingPreviewHeaderLogo = null;
         }
       }
 
@@ -677,15 +839,25 @@
       if (!target) return;
 
       const url = URL.createObjectURL(file);
-      if (target === 'header' && this.brandingPreviewHeaderLogo) {
-        if (this.brandingPreviewHeaderLogo.tagName === 'IMG') {
-          this.brandingPreviewHeaderLogo.src = url;
-        } else {
+      if (target === 'header') {
+        if (this.brandingPreviewHeaderLogo) {
+          if (this.brandingPreviewHeaderLogo.tagName === 'IMG') {
+            this.brandingPreviewHeaderLogo.src = url;
+          } else {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = 'Logo önizleme';
+            img.dataset.cms = 'branding-preview-header-logo';
+            this.brandingPreviewHeaderLogo.replaceWith(img);
+            this.brandingPreviewHeaderLogo = img;
+          }
+        } else if (this.brandingPreviewSiteName && this.brandingPreviewSiteName.parentElement) {
+          // Create img element and insert it before the site name span
           const img = document.createElement('img');
           img.src = url;
           img.alt = 'Logo önizleme';
           img.dataset.cms = 'branding-preview-header-logo';
-          this.brandingPreviewHeaderLogo.replaceWith(img);
+          this.brandingPreviewSiteName.parentElement.insertBefore(img, this.brandingPreviewSiteName);
           this.brandingPreviewHeaderLogo = img;
         }
       }
@@ -696,10 +868,26 @@
           const img = document.createElement('img');
           img.src = url;
           img.alt = 'Footer logo önizleme';
-           img.dataset.cms = 'branding-preview-footer-logo';
+          img.dataset.cms = 'branding-preview-footer-logo';
           this.brandingPreviewFooterLogo.replaceWith(img);
           this.brandingPreviewFooterLogo = img;
         }
+      }
+    }
+
+    handleBrandingSiteNameInput(event) {
+      const input = event.currentTarget;
+      if (!input) return;
+      const siteName = input.value.trim() || 'UHA News';
+      
+      // Update preview site name in real-time
+      if (this.brandingPreviewSiteName) {
+        this.brandingPreviewSiteName.textContent = siteName;
+      }
+      
+      // Update state
+      if (this.state.branding) {
+        this.state.branding.siteName = siteName;
       }
     }
 
@@ -1283,8 +1471,8 @@
         source.size !== undefined
           ? Number(source.size)
           : source.bytes !== undefined
-          ? Number(source.bytes)
-          : null;
+            ? Number(source.bytes)
+            : null;
       normalized.uploadedAt = source.uploadedAt || source.createdAt || null;
 
       return normalized.url ? normalized : null;
@@ -1565,8 +1753,8 @@
 
         let mediaItems = Array.isArray(this.state.media)
           ? this.state.media.filter((item) =>
-              imageExtensions.includes((item.extension || '').toLowerCase())
-            )
+            imageExtensions.includes((item.extension || '').toLowerCase())
+          )
           : [];
 
         if (!mediaItems.length) {
