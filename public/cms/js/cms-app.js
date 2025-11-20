@@ -139,18 +139,26 @@
       this.brandingSection = document.querySelector('[data-cms="branding-section"]');
       this.brandingForm = document.querySelector('[data-cms="branding-form"]');
       this.brandingPreview = document.querySelector('[data-cms="branding-preview"]');
-      this.brandingPreviewHeader = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-header"]') : null;
+      this.brandingPreviewTopBar = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-top-bar"]') : null;
+      this.brandingPreviewDate = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-date"]') : null;
+      this.brandingPreviewHeaderMain = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-header-main"]') : null;
       this.brandingPreviewHeaderLogo = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-header-logo"]') : null;
+      this.brandingPreviewSiteName = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-site-name"]') : null;
+      this.brandingPreviewHeaderBorder = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-header-border"]') : null;
+      this.brandingPreviewNav = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-nav"]') : null;
+      this.brandingPreviewNavLinks = this.brandingPreview ? Array.from(this.brandingPreview.querySelectorAll('[data-cms="branding-preview-nav-link"]')) : [];
       this.brandingPreviewBody = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-body"]') : null;
+      this.brandingPreviewSectionTitle = this.brandingPreview ? this.brandingPreview.querySelector('.branding-preview__section-title') : null;
+      this.brandingPreviewNewsCategories = this.brandingPreview ? Array.from(this.brandingPreview.querySelectorAll('.branding-preview__news-category')) : [];
+      this.brandingPreviewNewsImages = this.brandingPreview ? Array.from(this.brandingPreview.querySelectorAll('.branding-preview__news-image')) : [];
       this.brandingPreviewFooter = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-footer"]') : null;
       this.brandingPreviewFooterLogo = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-footer-logo"]') : null;
+      this.brandingPreviewFooterLinks = this.brandingPreview ? Array.from(this.brandingPreview.querySelectorAll('.branding-preview__footer-links span')) : [];
       this.brandingPreviewSiteName = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-site-name"]') : null;
       this.brandingPreviewNav = this.brandingPreview ? this.brandingPreview.querySelector('[data-cms="branding-preview-nav"]') : null;
       this.brandingPreviewNavLinks = this.brandingPreview ? this.brandingPreview.querySelectorAll('[data-cms="branding-preview-nav-link"]') : [];
       this.brandingColorValueNodes = this.brandingForm ? this.brandingForm.querySelectorAll('[data-branding-color-value]') : [];
       this.brandingColorInputs = this.brandingForm ? this.brandingForm.querySelectorAll('[data-branding-color]') : [];
-      this.brandingChipNodes = this.brandingPreview ? this.brandingPreview.querySelectorAll('[data-cms="branding-preview-chip"]') : [];
-      this.brandingChipNodes = this.brandingPreview ? this.brandingPreview.querySelectorAll('[data-cms="branding-preview-chip"]') : [];
       this.brandingFileInputs = this.brandingForm ? this.brandingForm.querySelectorAll('[data-branding-upload]') : [];
       this.brandingSuggestionButtons = this.brandingForm ? this.brandingForm.querySelectorAll('[data-action="suggest-color"]') : [];
       this.brandingSiteNameInput = this.brandingForm ? this.brandingForm.querySelector('#branding-site-name') : null;
@@ -743,43 +751,75 @@
           node.textContent = value;
         }
       });
-
-      this.brandingChipNodes.forEach((chip) => {
-        if (chip.dataset.chip === key) {
-          chip.textContent = value;
-          chip.style.backgroundColor = value;
-        }
-      });
     }
 
     updateBrandingPreview(branding) {
       if (!branding) return;
 
-      if (this.brandingPreviewHeader) {
-        this.brandingPreviewHeader.style.backgroundColor = branding.primaryColor;
+      const primaryColor = branding.primaryColor || '#1a365d';
+      const secondaryColor = branding.secondaryColor || '#2d3748';
+      const accentColor = branding.accentColor || '#3182ce';
+      const logoTextColor = branding.logoTextColor || '#3182ce';
+      const navTextColor = branding.navTextColor || '#ffffff';
+      const navBackgroundColor = branding.navBackgroundColor || '#1a365d';
+      const siteName = branding.siteName || 'UHA News';
+
+      // Top Bar (Primary Color)
+      if (this.brandingPreviewTopBar) {
+        this.brandingPreviewTopBar.style.backgroundColor = primaryColor;
       }
-      if (this.brandingPreviewFooter) {
-        this.brandingPreviewFooter.style.backgroundColor = branding.secondaryColor;
+      if (this.brandingPreviewDate) {
+        this.brandingPreviewDate.style.color = navTextColor;
       }
-      if (this.brandingPreviewBody) {
-        this.brandingPreviewBody.style.borderTop = `4px solid ${branding.accentColor}`;
+
+      // Main Header
+      if (this.brandingPreviewHeaderMain) {
+        this.brandingPreviewHeaderMain.style.backgroundColor = primaryColor;
       }
       if (this.brandingPreviewSiteName) {
-        this.brandingPreviewSiteName.textContent = branding.siteName || 'UHA News';
-        this.brandingPreviewSiteName.style.color = branding.logoTextColor || '#3182ce';
+        this.brandingPreviewSiteName.textContent = siteName;
+        this.brandingPreviewSiteName.style.color = logoTextColor;
+      }
+      if (this.brandingPreviewHeaderBorder) {
+        this.brandingPreviewHeaderBorder.style.borderBottomColor = accentColor;
       }
 
+      // Navigation Bar
       if (this.brandingPreviewNav) {
-        this.brandingPreviewNav.style.backgroundColor = branding.navBackgroundColor || '#1a365d';
+        this.brandingPreviewNav.style.backgroundColor = navBackgroundColor;
       }
-
-      if (this.brandingPreviewNavLinks) {
+      if (this.brandingPreviewNavLinks && this.brandingPreviewNavLinks.length > 0) {
         this.brandingPreviewNavLinks.forEach(link => {
-          link.style.color = branding.navTextColor || '#ffffff';
+          link.style.color = navTextColor;
         });
       }
 
-      // Handle header logo - only show img if logo exists, otherwise remove it
+      // Content Area
+      if (this.brandingPreviewSectionTitle) {
+        this.brandingPreviewSectionTitle.style.color = primaryColor;
+      }
+      if (this.brandingPreviewNewsCategories && this.brandingPreviewNewsCategories.length > 0) {
+        this.brandingPreviewNewsCategories.forEach(category => {
+          category.style.backgroundColor = accentColor;
+        });
+      }
+      if (this.brandingPreviewNewsImages && this.brandingPreviewNewsImages.length > 0) {
+        this.brandingPreviewNewsImages.forEach(image => {
+          image.style.background = `linear-gradient(135deg, ${accentColor}, ${primaryColor})`;
+        });
+      }
+
+      // Footer (Primary Color)
+      if (this.brandingPreviewFooter) {
+        this.brandingPreviewFooter.style.backgroundColor = primaryColor;
+      }
+      if (this.brandingPreviewFooterLinks && this.brandingPreviewFooterLinks.length > 0) {
+        this.brandingPreviewFooterLinks.forEach(link => {
+          link.style.color = navTextColor;
+        });
+      }
+
+      // Handle header logo - only show img if logo exists, otherwise show site name
       if (branding.headerLogo) {
         if (this.brandingPreviewHeaderLogo) {
           if (this.brandingPreviewHeaderLogo.tagName === 'IMG') {
@@ -788,33 +828,56 @@
             const img = document.createElement('img');
             img.src = branding.headerLogo;
             img.alt = 'Logo önizleme';
+            img.className = 'branding-preview__logo-img';
             img.dataset.cms = 'branding-preview-header-logo';
             this.brandingPreviewHeaderLogo.replaceWith(img);
             this.brandingPreviewHeaderLogo = img;
           }
-        } else if (this.brandingPreviewSiteName && this.brandingPreviewSiteName.parentElement) {
-          // Create img element and insert it before the site name span
-          const img = document.createElement('img');
-          img.src = branding.headerLogo;
-          img.alt = 'Logo önizleme';
-          img.dataset.cms = 'branding-preview-header-logo';
-          this.brandingPreviewSiteName.parentElement.insertBefore(img, this.brandingPreviewSiteName);
-          this.brandingPreviewHeaderLogo = img;
+        } else if (this.brandingPreviewHeaderMain) {
+          const headerContent = this.brandingPreviewHeaderMain.querySelector('.branding-preview__header-content');
+          if (headerContent) {
+            // Remove site name if it exists
+            if (this.brandingPreviewSiteName) {
+              this.brandingPreviewSiteName.remove();
+            }
+            const img = document.createElement('img');
+            img.src = branding.headerLogo;
+            img.alt = 'Logo önizleme';
+            img.className = 'branding-preview__logo-img';
+            img.dataset.cms = 'branding-preview-header-logo';
+            headerContent.appendChild(img);
+            this.brandingPreviewHeaderLogo = img;
+          }
         }
       } else {
-        // Remove logo if it exists
+        // Show site name if logo doesn't exist
         if (this.brandingPreviewHeaderLogo && this.brandingPreviewHeaderLogo.tagName === 'IMG') {
-          this.brandingPreviewHeaderLogo.remove();
-          this.brandingPreviewHeaderLogo = null;
+          const headerContent = this.brandingPreviewHeaderLogo.parentElement;
+          if (headerContent) {
+            this.brandingPreviewHeaderLogo.remove();
+            const siteNameSpan = document.createElement('span');
+            siteNameSpan.className = 'branding-preview__site-name';
+            siteNameSpan.dataset.cms = 'branding-preview-site-name';
+            siteNameSpan.textContent = siteName;
+            siteNameSpan.style.color = logoTextColor;
+            headerContent.appendChild(siteNameSpan);
+            this.brandingPreviewSiteName = siteNameSpan;
+            this.brandingPreviewHeaderLogo = null;
+          }
+        } else if (this.brandingPreviewSiteName) {
+          this.brandingPreviewSiteName.textContent = siteName;
+          this.brandingPreviewSiteName.style.color = logoTextColor;
         }
       }
 
+      // Handle footer logo
       if (this.brandingPreviewFooterLogo) {
         if (branding.footerLogo) {
           if (this.brandingPreviewFooterLogo.tagName !== 'IMG') {
             const img = document.createElement('img');
             img.src = branding.footerLogo;
             img.alt = 'Footer logo önizleme';
+            img.className = 'branding-preview__footer-logo-img';
             img.dataset.cms = 'branding-preview-footer-logo';
             this.brandingPreviewFooterLogo.replaceWith(img);
             this.brandingPreviewFooterLogo = img;
@@ -826,6 +889,7 @@
             const img = document.createElement('img');
             img.src = branding.headerLogo;
             img.alt = 'Footer logo önizleme';
+            img.className = 'branding-preview__footer-logo-img';
             img.dataset.cms = 'branding-preview-footer-logo';
             this.brandingPreviewFooterLogo.replaceWith(img);
             this.brandingPreviewFooterLogo = img;
@@ -835,13 +899,15 @@
         } else {
           if (this.brandingPreviewFooterLogo.tagName === 'IMG') {
             const placeholder = document.createElement('div');
-            placeholder.className = 'branding-preview__logo-placeholder';
+            placeholder.className = 'branding-preview__footer-logo-text';
             placeholder.dataset.cms = 'branding-preview-footer-logo';
-            placeholder.textContent = branding.siteName || 'UHA News';
+            placeholder.textContent = siteName;
+            placeholder.style.color = accentColor;
             this.brandingPreviewFooterLogo.replaceWith(placeholder);
             this.brandingPreviewFooterLogo = placeholder;
           } else {
-            this.brandingPreviewFooterLogo.textContent = branding.siteName || 'UHA News';
+            this.brandingPreviewFooterLogo.textContent = siteName;
+            this.brandingPreviewFooterLogo.style.color = accentColor;
           }
         }
       }
@@ -875,18 +941,26 @@
             const img = document.createElement('img');
             img.src = url;
             img.alt = 'Logo önizleme';
+            img.className = 'branding-preview__logo-img';
             img.dataset.cms = 'branding-preview-header-logo';
             this.brandingPreviewHeaderLogo.replaceWith(img);
             this.brandingPreviewHeaderLogo = img;
           }
-        } else if (this.brandingPreviewSiteName && this.brandingPreviewSiteName.parentElement) {
-          // Create img element and insert it before the site name span
-          const img = document.createElement('img');
-          img.src = url;
-          img.alt = 'Logo önizleme';
-          img.dataset.cms = 'branding-preview-header-logo';
-          this.brandingPreviewSiteName.parentElement.insertBefore(img, this.brandingPreviewSiteName);
-          this.brandingPreviewHeaderLogo = img;
+        } else if (this.brandingPreviewHeaderMain) {
+          const headerContent = this.brandingPreviewHeaderMain.querySelector('.branding-preview__header-content');
+          if (headerContent) {
+            // Remove site name if it exists
+            if (this.brandingPreviewSiteName) {
+              this.brandingPreviewSiteName.remove();
+            }
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = 'Logo önizleme';
+            img.className = 'branding-preview__logo-img';
+            img.dataset.cms = 'branding-preview-header-logo';
+            headerContent.appendChild(img);
+            this.brandingPreviewHeaderLogo = img;
+          }
         }
       }
       if (target === 'footer' && this.brandingPreviewFooterLogo) {
@@ -896,6 +970,7 @@
           const img = document.createElement('img');
           img.src = url;
           img.alt = 'Footer logo önizleme';
+          img.className = 'branding-preview__footer-logo-img';
           img.dataset.cms = 'branding-preview-footer-logo';
           this.brandingPreviewFooterLogo.replaceWith(img);
           this.brandingPreviewFooterLogo = img;

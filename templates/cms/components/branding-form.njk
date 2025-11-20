@@ -114,36 +114,81 @@
       </form>
 
       <div class="cms-branding-preview" data-cms="branding-preview">
-        <div class="branding-preview__header" data-cms="branding-preview-header" style="flex-direction: column; align-items: stretch; gap: 1rem;">
-          <div style="display: flex; align-items: center; gap: 1rem;">
+        <!-- Top Bar (Primary Color) -->
+        <div class="branding-preview__top-bar" data-cms="branding-preview-top-bar" style="background-color: {{ branding.primaryColor or '#1a365d' }};">
+          <div class="branding-preview__top-bar-content">
+            <span class="branding-preview__date" data-cms="branding-preview-date" style="color: {{ branding.navTextColor or '#ffffff' }};">Pazartesi, 1 Ocak 2024</span>
+            <div class="branding-preview__socials">
+              <span style="color: rgba(255, 255, 255, 0.8);">f</span>
+              <span style="color: rgba(255, 255, 255, 0.8);">t</span>
+              <span style="color: rgba(255, 255, 255, 0.8);">i</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Header -->
+        <div class="branding-preview__header-main" data-cms="branding-preview-header-main">
+          <div class="branding-preview__header-content">
             {% if branding.headerLogo %}
-            <img src="{{ branding.headerLogo }}" alt="Logo önizleme" data-cms="branding-preview-header-logo">
+            <img src="{{ branding.headerLogo }}" alt="Logo önizleme" data-cms="branding-preview-header-logo" class="branding-preview__logo-img">
+            {% else %}
+            <span class="branding-preview__site-name" data-cms="branding-preview-site-name" style="color: {{ branding.logoTextColor or '#3182ce' }};">{{ branding.siteName or 'UHA News' }}</span>
             {% endif %}
-            <span class="branding-preview__site-name" data-cms="branding-preview-site-name" style="color: {{ branding.logoTextColor or '#3182ce' }}">{{ branding.siteName or 'UHA News' }}</span>
           </div>
-          
-          <div class="branding-preview__nav" data-cms="branding-preview-nav" style="background-color: {{ branding.navBackgroundColor or '#1a365d' }}; padding: 0.75rem; border-radius: 0.5rem; display: flex; gap: 1.5rem; justify-content: center;">
-            <span data-cms="branding-preview-nav-link" style="color: {{ branding.navTextColor or '#ffffff' }}; font-weight: 600; font-size: 0.9rem;">Gündem</span>
-            <span data-cms="branding-preview-nav-link" style="color: {{ branding.navTextColor or '#ffffff' }}; font-weight: 600; font-size: 0.9rem;">Ekonomi</span>
-            <span data-cms="branding-preview-nav-link" style="color: {{ branding.navTextColor or '#ffffff' }}; font-weight: 600; font-size: 0.9rem;">Spor</span>
+          <div class="branding-preview__header-border" data-cms="branding-preview-header-border" style="border-bottom-color: {{ branding.accentColor or '#3182ce' }};"></div>
+        </div>
+
+        <!-- Navigation Bar (Nav Background Color) -->
+        <div class="branding-preview__nav" data-cms="branding-preview-nav" style="background-color: {{ branding.navBackgroundColor or '#1a365d' }};">
+          <div class="branding-preview__nav-links">
+            <span data-cms="branding-preview-nav-link" style="color: {{ branding.navTextColor or '#ffffff' }};">Gündem</span>
+            <span data-cms="branding-preview-nav-link" style="color: {{ branding.navTextColor or '#ffffff' }};">Ekonomi</span>
+            <span data-cms="branding-preview-nav-link" style="color: {{ branding.navTextColor or '#ffffff' }};">Spor</span>
+            <span data-cms="branding-preview-nav-link" style="color: {{ branding.navTextColor or '#ffffff' }};">Teknoloji</span>
           </div>
         </div>
+
+        <!-- Content Area -->
         <div class="branding-preview__body" data-cms="branding-preview-body">
-          <p>Renk önizlemesi</p>
-          <div class="branding-preview__colors">
-            <span data-cms="branding-preview-chip" data-chip="primary">{{ branding.primaryColor or '#1a365d' }}</span>
-            <span data-cms="branding-preview-chip" data-chip="secondary">{{ branding.secondaryColor or '#2d3748' }}</span>
-            <span data-cms="branding-preview-chip" data-chip="accent">{{ branding.accentColor or '#3182ce' }}</span>
+          <div class="branding-preview__content-section">
+            <div class="branding-preview__section-title" style="color: {{ branding.primaryColor or '#1a365d' }};">Son Dakika</div>
+            <div class="branding-preview__news-grid">
+              <div class="branding-preview__news-card">
+                <div class="branding-preview__news-image" style="background: linear-gradient(135deg, {{ branding.accentColor or '#3182ce' }}, {{ branding.primaryColor or '#1a365d' }});"></div>
+                <div class="branding-preview__news-content">
+                  <div class="branding-preview__news-category" style="background-color: {{ branding.accentColor or '#3182ce' }};">Gündem</div>
+                  <div class="branding-preview__news-title">Örnek Haber Başlığı</div>
+                </div>
+              </div>
+              <div class="branding-preview__news-card">
+                <div class="branding-preview__news-image" style="background: linear-gradient(135deg, {{ branding.accentColor or '#3182ce' }}, {{ branding.primaryColor or '#1a365d' }});"></div>
+                <div class="branding-preview__news-content">
+                  <div class="branding-preview__news-category" style="background-color: {{ branding.accentColor or '#3182ce' }};">Ekonomi</div>
+                  <div class="branding-preview__news-title">Örnek Haber Başlığı</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="branding-preview__footer" data-cms="branding-preview-footer">
-          {% if branding.footerLogo %}
-          <img src="{{ branding.footerLogo }}" alt="Footer logo önizleme" data-cms="branding-preview-footer-logo">
-          {% else %}
-          <div class="branding-preview__logo-placeholder" data-cms="branding-preview-footer-logo">
-            {{ branding.siteName or 'UHA News' }}
+
+        <!-- Footer (Primary Color) -->
+        <div class="branding-preview__footer" data-cms="branding-preview-footer" style="background-color: {{ branding.primaryColor or '#1a365d' }};">
+          <div class="branding-preview__footer-content">
+            <div class="branding-preview__footer-logo-section">
+              {% if branding.footerLogo %}
+              <img src="{{ branding.footerLogo }}" alt="Footer logo önizleme" data-cms="branding-preview-footer-logo" class="branding-preview__footer-logo-img">
+              {% else %}
+              <div class="branding-preview__footer-logo-text" data-cms="branding-preview-footer-logo" style="color: {{ branding.accentColor or '#3182ce' }};">
+                {{ branding.siteName or 'UHA News' }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="branding-preview__footer-links">
+              <span style="color: {{ branding.navTextColor or '#ffffff' }};">Kategoriler</span>
+              <span style="color: {{ branding.navTextColor or '#ffffff' }};">Kurumsal</span>
+              <span style="color: {{ branding.navTextColor or '#ffffff' }};">İletişim</span>
+            </div>
           </div>
-          {% endif %}
         </div>
       </div>
     </div>
