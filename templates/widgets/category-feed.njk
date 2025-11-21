@@ -1,0 +1,15 @@
+{% from "widgets/news-card.njk" import newsCard %}
+
+{% macro categoryFeed(section) %}
+<section class="category-section container" data-widget="category-feed">
+  <div class="section-header">
+    <h3 class="section-title"><a href="{{ asset('kategori/' ~ section.slug) }}">{{ section.name }}</a></h3>
+    <a href="{{ asset('kategori/' ~ section.slug) }}" class="view-all-link">Tümünü Gör →</a>
+  </div>
+  <div class="news-grid">
+    {% for article in section.articles %}
+    {{ newsCard(article, 'compact') }}
+    {% endfor %}
+  </div>
+</section>
+{% endmacro %}

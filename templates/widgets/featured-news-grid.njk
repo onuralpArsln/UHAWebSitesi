@@ -1,0 +1,18 @@
+{% from "widgets/news-card.njk" import newsCard %}
+
+{% macro featuredNewsGrid(articles, title='Öne Çıkan Haberler') %}
+<section class="featured-articles container" data-widget="featured-news-grid">
+  <div class="section-header">
+    <h3 class="section-title">{{ title }}</h3>
+  </div>
+  {% if articles and articles | length %}
+  <div class="news-grid">
+    {% for article in articles %}
+    {{ newsCard(article, 'default') }}
+    {% endfor %}
+  </div>
+  {% else %}
+  <p>Yeni haberler eklenene kadar bu alan boş.</p>
+  {% endif %}
+</section>
+{% endmacro %}

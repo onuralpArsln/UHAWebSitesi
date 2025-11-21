@@ -5,6 +5,9 @@
 {% from "widgets/flashNews.njk" import flashNews %}
 {% from "widgets/news-card.njk" import newsCard %}
 {% from "widgets/footer.njk" import siteFooter %}
+{% from "widgets/hero-title.njk" import heroTitle %}
+{% from "widgets/featured-news-grid.njk" import featuredNewsGrid %}
+{% from "widgets/category-feed.njk" import categoryFeed %}
 
 {% block body %}
 {% set brand = branding or {} %}
@@ -18,9 +21,7 @@
 {% endif %}
 
 <main class="site-main">
-  <section class="hero-title container">
-    <h2 class="hero__title">Son Dakika Haberleri</h2>
-  </section>
+  {{ heroTitle('Son Dakika Haberleri') }}
   
   <section class="hero-carousel">
     {% if featuredArticles and featuredArticles | length %}
@@ -32,34 +33,11 @@
     {% endif %}
   </section>
 
-  <section class="featured-articles container">
-    <div class="section-header">
-      <h3 class="section-title">Öne Çıkan Haberler</h3>
-    </div>
-    {% if featuredArticles and featuredArticles | length %}
-    <div class="news-grid">
-      {% for article in featuredArticles %}
-      {{ newsCard(article, 'default') }}
-      {% endfor %}
-    </div>
-    {% else %}
-    <p>Yeni haberler eklenene kadar bu alan boş.</p>
-    {% endif %}
-  </section>
+  {{ featuredNewsGrid(featuredArticles) }}
 
   {% if categorySections and categorySections | length %}
   {% for section in categorySections %}
-  <section class="category-section container">
-    <div class="section-header">
-      <h3 class="section-title"><a href="{{ asset('kategori/' ~ section.slug) }}">{{ section.name }}</a></h3>
-      <a href="{{ asset('kategori/' ~ section.slug) }}" class="view-all-link">Tümünü Gör →</a>
-    </div>
-    <div class="news-grid">
-      {% for article in section.articles %}
-      {{ newsCard(article, 'compact') }}
-      {% endfor %}
-    </div>
-  </section>
+  {{ categoryFeed(section) }}
   {% endfor %}
   {% else %}
   <section class="category-section container">
