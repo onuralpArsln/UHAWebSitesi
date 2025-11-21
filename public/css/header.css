@@ -90,6 +90,14 @@
   cursor: pointer;
   padding: var(--spacing-sm);
   color: var(--color-text-main);
+  display: block; /* Ensure it's visible by default */
+}
+
+/* Hide on large screens */
+@media (min-width: 1024px) {
+  .nav-toggle {
+    display: none;
+  }
 }
 
 .nav-toggle__icon {

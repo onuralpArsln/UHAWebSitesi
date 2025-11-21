@@ -37,6 +37,9 @@ class DataService {
     // Ensure branding defaults exist
     this.ensureBrandingDefaults();
 
+    // Ensure homepage layout defaults exist
+    this.ensureHomepageLayoutDefaults();
+
     // Migrate mock data if database is empty
     this.migrateMockDataIfNeeded();
   }
@@ -110,6 +113,15 @@ class DataService {
         navBackgroundColor TEXT,
         headerLogo TEXT,
         footerLogo TEXT,
+        updatedAt TEXT
+      )
+    `);
+
+    // Create homepage layout table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS homepage_layout (
+        id TEXT PRIMARY KEY,
+        layout TEXT NOT NULL,
         updatedAt TEXT
       )
     `);
@@ -244,6 +256,69 @@ class DataService {
     `).run(updated);
 
     return this.getBranding();
+  }
+
+  /**
+   * Ensure homepage layout defaults exist
+   */
+  ensureHomepageLayoutDefaults() {
+    const existing = this.db.prepare('SELECT COUNT(*) as count FROM homepage_layout').get();
+    if (!existing || existing.count === 0) {
+      const now = new Date().toISOString();
+      const defaultLayout = [
+        { type: 'hero-title', config: { title: 'Son Dakika Haberleri' } },
+        { type: 'carousel', config: { source: 'featured', id: 'home-hero' } },
+        { type: 'featured-news-grid', config: { title: 'Öne Çıkan Haberler', source: 'featured' } },
+        { type: 'category-feed', config: { category: 'Gündem', slug: 'gundem' } },
+        { type: 'category-feed', config: { category: 'Ekonomi', slug: 'ekonomi' } },
+        { type: 'category-feed', config: { category: 'Spor', slug: 'spor' } },
+        { type: 'ad-placeholder', config: { slot: 'home-mid', label: 'Reklam Alanı', size: '728x90' } }
+      ];
+
+      this.db.prepare(`
+        INSERT INTO homepage_layout (id, layout, updatedAt)
+        VALUES (@id, @layout, @updatedAt)
+      `).run({
+        id: 'homepage',
+        layout: JSON.stringify(defaultLayout),
+        updatedAt: now
+      });
+    }
+  }
+
+  /**
+   * Get homepage layout configuration
+   */
+  getHomepageLayout() {
+    const row = this.db.prepare('SELECT * FROM homepage_layout WHERE id = ?').get('homepage');
+    if (!row) {
+      this.ensureHomepageLayoutDefaults();
+      return this.getHomepageLayout();
+    }
+
+    return {
+      layout: JSON.parse(row.layout),
+      updatedAt: row.updatedAt || new Date().toISOString()
+    };
+  }
+
+  /**
+   * Update homepage layout configuration
+   */
+  updateHomepageLayout(newLayout = []) {
+    const updated = {
+      layout: JSON.stringify(newLayout),
+      updatedAt: new Date().toISOString()
+    };
+
+    this.db.prepare(`
+      UPDATE homepage_layout
+      SET layout = @layout,
+          updatedAt = @updatedAt
+      WHERE id = 'homepage'
+    `).run(updated);
+
+    return this.getHomepageLayout();
   }
 
   /**

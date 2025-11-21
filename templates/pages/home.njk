@@ -1,61 +1,37 @@
 {% extends "layouts/base.njk" %}
-{% from "widgets/carousel.njk" import carousel %}
-{% from "widgets/ad-placeholder.njk" import adPlaceholder %}
-{% from "widgets/site-header.njk" import siteHeader %}
-{% from "widgets/flashNews.njk" import flashNews %}
-{% from "widgets/news-card.njk" import newsCard %}
-{% from "widgets/footer.njk" import siteFooter %}
-{% from "widgets/hero-title.njk" import heroTitle %}
-{% from "widgets/featured-news-grid.njk" import featuredNewsGrid %}
-{% from "widgets/category-feed.njk" import categoryFeed %}
+{% import "widgets/site-header.njk" as header %}
+{% import "widgets/flashNews.njk" as flashNewsWidget %}
+{% import "widgets/footer.njk" as footer %}
+{% import "widgets/widget-renderer.njk" as widgetRenderer %}
 
 {% block body %}
-{% set brand = branding or {} %}
-{{ siteHeader(brand, navCategories or []) }}
-
 {# Flash News Ticker #}
 {% if flashNewsItems and flashNewsItems | length %}
 <div class="container">
-  {{ flashNews('homepage-flash', flashNewsItems) }}
+  {{ flashNewsWidget.flashNews('flash-news', flashNewsItems, {
+    speed: 30,
+    pauseDelay: 3000,
+    duplicateCount: 2
+  }) }}
 </div>
 {% endif %}
 
+{# Site Header #}
+{{ header.siteHeader(branding, navCategories) }}
+
 <main class="site-main">
-  {{ heroTitle('Son Dakika Haberleri') }}
-  
-  
-  <section class="hero-carousel">
-    <div class="container">
-      {% if featuredArticles and featuredArticles | length %}
-      {{ carousel('home-hero', featuredArticles) }}
-      {% else %}
-      <p>Şu anda öne çıkan haber bulunmuyor.</p>
-      {% endif %}
-    </div>
-  </section>
-
-  {{ featuredNewsGrid(featuredArticles) }}
-
-  {% if categorySections and categorySections | length %}
-  {% for section in categorySections %}
-  {{ categoryFeed(section) }}
+  {# Dynamically render widgets based on layout configuration #}
+  {% for widget in layout %}
+    {{ widgetRenderer.render(widget) }}
   {% endfor %}
-  {% else %}
-  <section class="category-section container">
-    <p>Şu anda görüntülenecek kategori haberleri bulunmuyor.</p>
-  </section>
-  {% endif %}
-
-  <section class="container">
-    {{ adPlaceholder('home-mid', 'Reklam Alanı', '728x90') }}
-  </section>
 </main>
 
-{{ siteFooter(brand, navCategories or []) }}
+{# Site Footer #}
+{{ footer.siteFooter(branding, navCategories) }}
 {% endblock %}
 
 {% block scripts %}
-{{ super() }}
-<script src="{{ asset('js/carousel.js') }}" defer></script>
+<script src="/static/js/carousel.js"></script>
+<script src="/static/js/flash-news.js"></script>
+<script src="/static/js/mobile-menu.js"></script>
 {% endblock %}
-

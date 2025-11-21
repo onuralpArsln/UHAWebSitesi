@@ -67,39 +67,63 @@ function buildNavCategories(categories = []) {
  */
 router.get('/', async (req, res) => {
   try {
-    // Fetch featured articles
-    const featuredArticles = dataService.getArticles({
-      limit: 8,
-      sortBy: 'publishedAt',
-      sortOrder: 'desc'
-    });
+    // Fetch homepage layout configuration
+    const { layout } = dataService.getHomepageLayout();
 
-    // Fetch articles by category for category sections
+    // Fetch categories for navigation
     const categories = dataService.getCategories();
     const navCategories = buildNavCategories(categories);
-    const categorySections = [];
 
-    for (const category of categories.slice(0, 3)) {
-      const categoryArticles = dataService.getArticles({
-        category: category.name,
-        limit: 4,
-        sortBy: 'publishedAt',
-        sortOrder: 'desc'
-      });
+    // Process layout and fetch data for each widget
+    const processedLayout = layout.map(widget => {
+      const widgetData = { ...widget, data: {} };
 
-      if (categoryArticles.articles.length > 0) {
-        categorySections.push({
-          name: category.name,
-          slug: urlSlugService.generateSlug(category.name),
-          articles: categoryArticles.articles.map(article => ({
-            ...article,
-            images: optimizeImageData(article.images),
-            slug: urlSlugService.getSlugById(article.id) ||
-              urlSlugService.generateSlug(article.title)
-          }))
-        });
+      switch (widget.type) {
+        case 'carousel':
+        case 'featured-news-grid':
+          // Fetch featured articles
+          if (widget.config.source === 'featured') {
+            const featuredArticles = dataService.getArticles({
+              limit: widget.type === 'carousel' ? 8 : 8,
+              sortBy: 'publishedAt',
+              sortOrder: 'desc'
+            });
+            widgetData.data.articles = featuredArticles.articles.map(article => ({
+              ...article,
+              images: optimizeImageData(article.images),
+              slug: urlSlugService.getSlugById(article.id) ||
+                urlSlugService.generateSlug(article.title)
+            }));
+          }
+          break;
+
+        case 'category-feed':
+          // Fetch articles for specific category
+          if (widget.config.category) {
+            const categoryArticles = dataService.getArticles({
+              category: widget.config.category,
+              limit: 4,
+              sortBy: 'publishedAt',
+              sortOrder: 'desc'
+            });
+            widgetData.data.articles = categoryArticles.articles.map(article => ({
+              ...article,
+              images: optimizeImageData(article.images),
+              slug: urlSlugService.getSlugById(article.id) ||
+                urlSlugService.generateSlug(article.title)
+            }));
+          }
+          break;
+
+        // Other widget types don't need data fetching
+        case 'hero-title':
+        case 'ad-placeholder':
+        default:
+          break;
       }
-    }
+
+      return widgetData;
+    });
 
     // Branding data
     const branding = formatBranding(dataService.getBranding());
@@ -112,14 +136,9 @@ router.get('/', async (req, res) => {
     const pageData = {
       meta,
       branding,
-      featuredArticles: featuredArticles.articles.map(article => ({
-        ...article,
-        images: optimizeImageData(article.images),
-        slug: urlSlugService.getSlugById(article.id) ||
-          urlSlugService.generateSlug(article.title)
-      })),
-      categorySections,
+      layout: processedLayout,
       navCategories,
+      flashNewsItems: [],  // TODO: Add flash news data fetching
       jsonLd: null
     };
 

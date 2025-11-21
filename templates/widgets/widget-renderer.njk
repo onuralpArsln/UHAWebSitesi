@@ -1,0 +1,37 @@
+{% import "widgets/hero-title.njk" as heroTitleWidget %}
+{% import "widgets/carousel.njk" as carouselWidget %}
+{% import "widgets/featured-news-grid.njk" as featuredNewsGridWidget %}
+{% import "widgets/category-feed.njk" as categoryFeedWidget %}
+{% import "widgets/ad-placeholder.njk" as adPlaceholderWidget %}
+
+{# Widget Renderer Macro - Dynamically renders widgets based on type #}
+{% macro render(widget) %}
+  {% if widget.type == 'hero-title' %}
+    {{ heroTitleWidget.heroTitle(widget.config.title) }}
+  
+  {% elif widget.type == 'carousel' %}
+    <section class="hero-carousel">
+      <div class="container">
+        {% if widget.data.articles and widget.data.articles | length %}
+        {{ carouselWidget.carousel(widget.config.id, widget.data.articles) }}
+        {% else %}
+        <p>Şu anda öne çıkan haber bulunmuyor.</p>
+        {% endif %}
+      </div>
+    </section>
+  
+  {% elif widget.type == 'featured-news-grid' %}
+    {{ featuredNewsGridWidget.featuredNewsGrid(widget.data.articles) }}
+  
+  {% elif widget.type == 'category-feed' %}
+    {{ categoryFeedWidget.categoryFeed({
+      name: widget.config.category,
+      slug: widget.config.slug,
+      articles: widget.data.articles
+    }) }}
+  
+  {% elif widget.type == 'ad-placeholder' %}
+    {{ adPlaceholderWidget.adPlaceholder(widget.config.slot, widget.config.label, widget.config.size) }}
+  
+  {% endif %}
+{% endmacro %}
