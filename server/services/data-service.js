@@ -266,6 +266,16 @@ class DataService {
     if (!existing || existing.count === 0) {
       const now = new Date().toISOString();
       const defaultLayout = [
+        {
+          type: 'flash-news',
+          config: {
+            id: 'flash-news',
+            speed: 30,
+            pauseDelay: 3000,
+            duplicateCount: 2,
+            source: 'latest'
+          }
+        },
         { type: 'hero-title', config: { title: 'Son Dakika Haberleri' } },
         { type: 'carousel', config: { source: 'featured', id: 'home-hero' } },
         { type: 'featured-news-grid', config: { title: 'Öne Çıkan Haberler', source: 'featured' } },

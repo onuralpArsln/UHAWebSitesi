@@ -9,6 +9,7 @@
 {% from "cms/components/article-editor.njk" import ArticleEditor %}
 {% from "cms/components/branding-form.njk" import BrandingForm %}
 {% from "cms/components/media-controls.njk" import MediaControls %}
+{% from "cms/components/layout-list.njk" import LayoutList %}
 
 {% set articles = initialState.articles or [] %}
 {% set categories = initialState.categories or [] %}
@@ -37,6 +38,8 @@
   {{ MediaControls() }}
 
   {{ BrandingForm(branding) }}
+
+  {{ LayoutList(initialState.homepageLayout) }}
 
   {{ SettingsForm(initialState.settings or {}) }}
 </main>

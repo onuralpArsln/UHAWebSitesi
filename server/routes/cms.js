@@ -200,6 +200,7 @@ router.get('/', (req, res) => {
   const categories = dataService.getCategories();
   const statusSummary = dataService.getArticleStatusSummary();
   const branding = formatBrandingForClient(dataService.getBranding());
+  const { layout: homepageLayout } = dataService.getHomepageLayout();
 
   const stats = {
     totalArticles: statusSummary.total,
@@ -229,7 +230,8 @@ router.get('/', (req, res) => {
     recentArticles: articleSummaries.slice(0, 5),
     settings,
     targetOptions,
-    branding
+    branding,
+    homepageLayout
   };
 
   const initialStateJson = JSON.stringify(initialState).replace(/</g, '\\u003c');

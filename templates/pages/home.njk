@@ -1,21 +1,9 @@
 {% extends "layouts/base.njk" %}
 {% import "widgets/site-header.njk" as header %}
-{% import "widgets/flashNews.njk" as flashNewsWidget %}
 {% import "widgets/footer.njk" as footer %}
 {% import "widgets/widget-renderer.njk" as widgetRenderer %}
 
 {% block body %}
-{# Flash News Ticker #}
-{% if flashNewsItems and flashNewsItems | length %}
-<div class="container">
-  {{ flashNewsWidget.flashNews('flash-news', flashNewsItems, {
-    speed: 30,
-    pauseDelay: 3000,
-    duplicateCount: 2
-  }) }}
-</div>
-{% endif %}
-
 {# Site Header #}
 {{ header.siteHeader(branding, navCategories) }}
 

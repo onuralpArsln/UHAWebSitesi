@@ -3,6 +3,7 @@
 {% import "widgets/featured-news-grid.njk" as featuredNewsGridWidget %}
 {% import "widgets/category-feed.njk" as categoryFeedWidget %}
 {% import "widgets/ad-placeholder.njk" as adPlaceholderWidget %}
+{% import "widgets/flashNews.njk" as flashNewsWidget %}
 
 {# Widget Renderer Macro - Dynamically renders widgets based on type #}
 {% macro render(widget) %}
@@ -32,6 +33,9 @@
   
   {% elif widget.type == 'ad-placeholder' %}
     {{ adPlaceholderWidget.adPlaceholder(widget.config.slot, widget.config.label, widget.config.size) }}
+  
+  {% elif widget.type == 'flash-news' %}
+    {{ flashNewsWidget.flashNews(widget.config.id, widget.data.articles, widget.config) }}
   
   {% endif %}
 {% endmacro %}

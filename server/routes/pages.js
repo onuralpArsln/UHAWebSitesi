@@ -115,6 +115,20 @@ router.get('/', async (req, res) => {
           }
           break;
 
+        case 'flash-news':
+          // Fetch latest articles for flash news
+          const flashNewsArticles = dataService.getArticles({
+            limit: 10,
+            sortBy: 'publishedAt',
+            sortOrder: 'desc'
+          });
+          widgetData.data.articles = flashNewsArticles.articles.map(article => ({
+            ...article,
+            slug: urlSlugService.getSlugById(article.id) ||
+              urlSlugService.generateSlug(article.title)
+          }));
+          break;
+
         // Other widget types don't need data fetching
         case 'hero-title':
         case 'ad-placeholder':
@@ -138,7 +152,7 @@ router.get('/', async (req, res) => {
       branding,
       layout: processedLayout,
       navCategories,
-      flashNewsItems: [],  // TODO: Add flash news data fetching
+      navCategories,
       jsonLd: null
     };
 

@@ -1,0 +1,47 @@
+{% macro LayoutList(layout = []) %}
+<section id="layout" class="cms-section" data-cms="layout-section" hidden>
+  <div class="cms-section__header">
+    <h2 class="cms-section__title">Sayfa Düzeni</h2>
+    <p class="cms-section__description">Ana sayfa bileşenlerinin sıralaması ve yapılandırması.</p>
+  </div>
+
+  <div class="cms-card">
+    <div class="cms-table-container">
+      <table class="cms-table">
+        <thead>
+          <tr>
+            <th>Sıra</th>
+            <th>Bileşen Tipi</th>
+            <th>Yapılandırma</th>
+            <th>Durum</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if layout and layout.length %}
+            {% for widget in layout %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>
+                <span class="cms-badge cms-badge--primary">{{ widget.type }}</span>
+              </td>
+              <td>
+                <div class="cms-code-block">
+                  <pre>{{ widget.config | dump(2) }}</pre>
+                </div>
+              </td>
+              <td>
+                <span class="cms-status">Aktif</span>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" class="cms-empty-state">Bileşen bulunamadı.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endmacro %}
