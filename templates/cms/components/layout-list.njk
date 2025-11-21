@@ -32,26 +32,100 @@
                 <span class="cms-badge cms-badge--primary">{{ widget.type }}</span>
               </td>
               <td>
-                <div class="widget-config-readable">
+                <div class="widget-config-controls">
                   {% if widget.type == 'carousel' %}
-                    {% if widget.config.autoplay %}
-                      🔄 Otomatik oynat ({{ widget.config.interval / 1000 }}s)
-                    {% else %}
-                      ⏸️ Manuel kontrol
-                    {% endif %}
+                    <label class="config-control">
+                      <input type="checkbox" 
+                             data-config="autoplay" 
+                             data-widget-index="{{ loop.index0 }}"
+                             {% if widget.config.autoplay %}checked{% endif %}>
+                      Otomatik oynat
+                    </label>
+                    <label class="config-control">
+                      <span>Süre:</span>
+                      <input type="number" 
+                             data-config="interval" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ (widget.config.interval / 1000) or 5 }}" 
+                             min="1" 
+                             max="30"
+                             class="config-input-small"> saniye
+                    </label>
+                  
                   {% elif widget.type == 'hero-title' %}
-                    📰 {{ widget.config.title or 'Başlık' }}
+                    <label class="config-control">
+                      <span>Başlık:</span>
+                      <input type="text" 
+                             data-config="title" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.title or '' }}" 
+                             placeholder="Başlık girin"
+                             class="config-input">
+                    </label>
+                  
                   {% elif widget.type == 'featured-news-grid' %}
-                    ⭐ {{ widget.config.limit or 6 }} öne çıkan haber
+                    <label class="config-control">
+                      <span>Haber sayısı:</span>
+                      <input type="number" 
+                             data-config="limit" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.limit or 6 }}" 
+                             min="1" 
+                             max="20"
+                             class="config-input-small">
+                    </label>
+                  
                   {% elif widget.type == 'category-feed' %}
-                    📂 {{ widget.config.categoryName or 'Kategori' }} 
-                    ({{ widget.config.limit or 5 }} haber)
+                    <label class="config-control">
+                      <span>Kategori:</span>
+                      <select data-config="categorySlug" 
+                              data-widget-index="{{ loop.index0 }}"
+                              class="config-select">
+                        {% for cat in initialState.categories %}
+                          <option value="{{ cat.slug }}" 
+                                  {% if cat.slug == widget.config.categorySlug %}selected{% endif %}>
+                            {{ cat.name }}
+                          </option>
+                        {% endfor %}
+                      </select>
+                    </label>
+                    <label class="config-control">
+                      <span>Haber sayısı:</span>
+                      <input type="number" 
+                             data-config="limit" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.limit or 5 }}" 
+                             min="1" 
+                             max="20"
+                             class="config-input-small">
+                    </label>
+                  
                   {% elif widget.type == 'flash-news' %}
-                    ⚡ Son dakika haberleri ({{ widget.config.limit or 10 }} adet)
+                    <label class="config-control">
+                      <span>Haber sayısı:</span>
+                      <input type="number" 
+                             data-config="limit" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.limit or 10 }}" 
+                             min="1" 
+                             max="30"
+                             class="config-input-small">
+                    </label>
+                  
                   {% elif widget.type == 'ad-placeholder' %}
-                    💰 Reklam alanı: {{ widget.config.size or 'Standart' }}
+                    <label class="config-control">
+                      <span>Boyut:</span>
+                      <select data-config="size" 
+                              data-widget-index="{{ loop.index0 }}"
+                              class="config-select">
+                        <option value="standard" {% if widget.config.size == 'standard' %}selected{% endif %}>Standart</option>
+                        <option value="large" {% if widget.config.size == 'large' %}selected{% endif %}>Büyük</option>
+                        <option value="banner" {% if widget.config.size == 'banner' %}selected{% endif %}>Banner</option>
+                      </select>
+                    </label>
+                  
                   {% else %}
-                    ⚙️ Özel yapılandırma
+                    <span class="config-text">Özel yapılandırma</span>
                   {% endif %}
                 </div>
               </td>

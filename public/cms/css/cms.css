@@ -1953,12 +1953,86 @@
 }
 
 /* Widget Configuration Display */
-.widget-config-readable {
+.widget-config-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.config-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   color: #495057;
-  padding: 4px 8px;
-  background: #f8f9fa;
-  border-radius: 4px;
-  display: inline-block;
+  cursor: pointer;
+}
+
+.config-control span {
   font-weight: 500;
+  min-width: 80px;
+}
+
+.config-select {
+  padding: 4px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 13px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  min-width: 120px;
+}
+
+.config-select:hover {
+  border-color: #007bff;
+}
+
+.config-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.config-input,
+.config-input-small {
+  padding: 4px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: border-color 0.2s ease;
+}
+
+.config-input {
+  min-width: 150px;
+}
+
+.config-input-small {
+  width: 60px;
+  text-align: center;
+}
+
+.config-input:hover,
+.config-input-small:hover {
+  border-color: #007bff;
+}
+
+.config-input:focus,
+.config-input-small:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.config-control input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.config-text {
+  font-size: 13px;
+  color: #6c757d;
+  font-style: italic;
 }

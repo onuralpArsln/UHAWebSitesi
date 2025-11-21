@@ -2600,6 +2600,66 @@
       if (this.saveLayoutBtn) {
         this.saveLayoutBtn.addEventListener('click', () => this.saveLayout());
       }
+
+      // Add event listeners for configuration controls
+      this.initializeConfigControls();
+    }
+
+    initializeConfigControls() {
+      if (!this.layoutTable) return;
+
+      // Handle all config inputs, selects, and checkboxes
+      this.layoutTable.addEventListener('change', (e) => {
+        const target = e.target;
+        const configKey = target.dataset.config;
+        const widgetIndex = parseInt(target.dataset.widgetIndex);
+
+        if (configKey !== undefined && widgetIndex !== undefined) {
+          this.updateWidgetConfig(widgetIndex, configKey, target);
+        }
+      });
+
+      // Handle number inputs on input (real-time update)
+      this.layoutTable.addEventListener('input', (e) => {
+        const target = e.target;
+        if (target.type === 'number' || target.type === 'text') {
+          const configKey = target.dataset.config;
+          const widgetIndex = parseInt(target.dataset.widgetIndex);
+
+          if (configKey !== undefined && widgetIndex !== undefined) {
+            this.updateWidgetConfig(widgetIndex, configKey, target);
+          }
+        }
+      });
+    }
+
+    updateWidgetConfig(widgetIndex, configKey, element) {
+      if (!this.state.homepageLayout[widgetIndex]) return;
+
+      let value;
+
+      if (element.type === 'checkbox') {
+        value = element.checked;
+      } else if (element.type === 'number') {
+        value = parseInt(element.value) || 0;
+        // Special handling for interval (convert seconds to milliseconds)
+        if (configKey === 'interval') {
+          value = value * 1000;
+        }
+      } else {
+        value = element.value;
+      }
+
+      // Update the config in state
+      this.state.homepageLayout[widgetIndex].config[configKey] = value;
+
+      // For category-feed, also update categoryName for display
+      if (configKey === 'categorySlug') {
+        const selectedOption = element.options[element.selectedIndex];
+        this.state.homepageLayout[widgetIndex].config.categoryName = selectedOption.text;
+      }
+
+      console.log(`Updated widget ${widgetIndex} config: ${configKey} = ${value}`);
     }
 
     handleDragStart(e) {
