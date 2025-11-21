@@ -27,7 +27,6 @@
 
 @media (min-width: 1024px) {
   .carousel-widget {
-    width: 70% !important;
     height: 600px !important;
   }
 }

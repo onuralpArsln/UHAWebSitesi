@@ -18,12 +18,17 @@
 {% endif %}
 
 <main class="site-main">
-  <section class="hero container">
+  <section class="hero-title container">
     <h2 class="hero__title">Son Dakika Haberleri</h2>
+  </section>
+  
+  <section class="hero-carousel">
     {% if featuredArticles and featuredArticles | length %}
     {{ carousel('home-hero', featuredArticles) }}
     {% else %}
-    <p>Şu anda öne çıkan haber bulunmuyor.</p>
+    <div class="container">
+      <p>Şu anda öne çıkan haber bulunmuyor.</p>
+    </div>
     {% endif %}
   </section>
 

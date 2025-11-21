@@ -58,4 +58,10 @@
   
   /* Transitions */
   --transition-base: 0.3s ease;
+
+  /* Legacy Compatibility (for main.css) */
+  --container-max-width: var(--container-width);
+  --font-family: var(--font-family-main);
+  --text-color: var(--color-text-main);
+  --background-color: var(--color-bg-primary);
 }
