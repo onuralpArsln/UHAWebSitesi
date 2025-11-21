@@ -23,14 +23,15 @@
 <main class="site-main">
   {{ heroTitle('Son Dakika Haberleri') }}
   
+  
   <section class="hero-carousel">
-    {% if featuredArticles and featuredArticles | length %}
-    {{ carousel('home-hero', featuredArticles) }}
-    {% else %}
     <div class="container">
+      {% if featuredArticles and featuredArticles | length %}
+      {{ carousel('home-hero', featuredArticles) }}
+      {% else %}
       <p>Şu anda öne çıkan haber bulunmuyor.</p>
+      {% endif %}
     </div>
-    {% endif %}
   </section>
 
   {{ featuredNewsGrid(featuredArticles) }}

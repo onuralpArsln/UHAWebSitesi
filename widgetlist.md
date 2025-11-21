@@ -28,7 +28,11 @@ A more advanced carousel with configurable dimensions and behavior.
 - `showTabs`: Boolean to show navigation tabs
 - `tabsStyle`: Style of tabs ('numbers' or other)
 
-## 5. Comment Section (`comment-section.njk`)
+## 5. Category Feed (`category-feed.njk`)
+**Macro:** `categoryFeed(section)`
+Renders a section for a specific news category. It includes a header with the category name and a "View All" link, followed by a grid of articles using the `newsCard` widget in compact mode.
+
+## 6. Comment Section (`comment-section.njk`)
 **Macro:** `commentSection(articleId, comments=[], hasMore=false)`
 Renders a full comment system for an article.
 **Features:**
@@ -38,7 +42,11 @@ Renders a full comment system for an article.
 - "Load More" functionality
 - Empty state handling
 
-## 6. Flash News (`flashNews.njk`)
+## 7. Featured News Grid (`featured-news-grid.njk`)
+**Macro:** `featuredNewsGrid(articles, title='Öne Çıkan Haberler')`
+Displays a grid of featured news articles. It includes a section title and a responsive grid layout using the `newsCard` widget.
+
+## 8. Flash News (`flashNews.njk`)
 **Macro:** `flashNews(id, items, config)`
 Displays a breaking news ticker (marquee) at the top of the page.
 **Config Options:**
@@ -46,7 +54,7 @@ Displays a breaking news ticker (marquee) at the top of the page.
 - `pauseDelay`: Delay on pause
 - `duplicateCount`: Number of times to duplicate items for smooth scrolling
 
-## 7. Footer (`footer.njk`)
+## 9. Footer (`footer.njk`)
 **Macro:** `siteFooter(branding={}, categories=[])`
 Renders the global site footer.
 **Sections:**
@@ -56,18 +64,22 @@ Renders the global site footer.
 - Contact Information
 - Copyright & Credits
 
-## 8. News Card (`news-card.njk`)
+## 10. Hero Title (`hero-title.njk`)
+**Macro:** `heroTitle(title)`
+Renders a simple, styled title section, typically used for the "Son Dakika Haberleri" or similar hero headings.
+
+## 11. News Card (`news-card.njk`)
 **Macro:** `newsCard(article, variant='default')`
 A reusable component to display a news article summary.
 **Variants:**
 - `default`: Standard view with image, title, summary, and meta info.
 - `compact`: Hides the summary, useful for denser lists.
 
-## 9. Related News (`related-news.njk`)
+## 12. Related News (`related-news.njk`)
 **Macro:** `relatedNews(articles)`
 Displays a section titled "İlgili Haberler" (Related News) containing a grid/list of `related-article` items. Each item shows a thumbnail, title, summary, and date.
 
-## 10. Site Header (`site-header.njk`)
+## 13. Site Header (`site-header.njk`)
 **Macro:** `siteHeader(branding={}, categories=[])`
 Renders the global site header.
 **Features:**
