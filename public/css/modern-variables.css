@@ -64,4 +64,11 @@
   --font-family: var(--font-family-main);
   --text-color: var(--color-text-main);
   --background-color: var(--color-bg-primary);
+  
+  /* Component Dimensions */
+  --sidebar-width: 300px;
+  --article-card-width: 300px;
+  --article-card-height: 400px;
+  --ad-width-300: 300px;
+  --ad-width-728: 728px;
 }

@@ -1401,9 +1401,9 @@
 
 /* Main Header */
 .branding-preview__header-main {
-  background: #1a365d;
+  background: #fff;
   padding: 0.75rem 1rem;
-  color: #fff;
+  color: var(--cms-primary);
 }
 
 .branding-preview__header-content {
