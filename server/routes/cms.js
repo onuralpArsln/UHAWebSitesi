@@ -43,6 +43,12 @@ const upload = multer({
   }
 });
 
+// Log all requests to CMS routes for debugging
+router.use((req, res, next) => {
+  console.log(`🔷 CMS Request: ${req.method} ${req.path}`);
+  next();
+});
+
 function toArray(value, delimiter = ',') {
   if (Array.isArray(value)) {
     return value;
@@ -712,6 +718,53 @@ router.post('/layouts', async (req, res) => {
   } catch (error) {
     console.error('CMS Save layout error:', error);
     res.status(500).json({ error: 'Failed to save layout' });
+  }
+});
+
+/**
+ * Update homepage layout (MUST be before /layouts/:id)
+ */
+router.put('/layouts/homepage', async (req, res) => {
+  const fs = require('fs');
+  const timestamp = new Date().toISOString();
+
+  console.error('🟢 PUT /layouts/homepage endpoint HIT!\n');
+  try {
+    const { layout } = req.body;
+
+    if (!Array.isArray(layout)) {
+      return res.status(400).json({ error: 'Invalid layout format' });
+    }
+
+    // Print current widget list to terminal
+    const output = [];
+    output.push('\n========================================');
+    output.push('📋 SAYFA DÜZENİ GÜNCELLENDİ');
+    output.push(`⏰ Zaman: ${timestamp}`);
+    output.push('========================================');
+    output.push(`Widget Sayısı: ${layout.length}`);
+    output.push('\nWidget Listesi:');
+    layout.forEach((widget, index) => {
+      output.push(`\n${index + 1}. Widget:`);
+      output.push(`   Tip: ${widget.type}`);
+      output.push(`   Config: ${JSON.stringify(widget.config, null, 2).split('\n').map((line, i) => i === 0 ? line : `   ${line}`).join('\n')}`);
+    });
+    output.push('\n========================================\n');
+
+    const logMessage = output.join('\n');
+
+    // Write to stderr (unbuffered)
+    console.error(logMessage);
+
+    // Also write to a log file
+    fs.appendFileSync('layout-changes.log', logMessage + '\n');
+
+    const updated = dataService.updateHomepageLayout(layout);
+    res.json(updated);
+
+  } catch (error) {
+    console.error('CMS Update homepage layout error:', error);
+    res.status(500).json({ error: 'Failed to update homepage layout' });
   }
 });
 

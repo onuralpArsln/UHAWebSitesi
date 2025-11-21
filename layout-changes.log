@@ -1,0 +1,120 @@
+
+========================================
+📋 SAYFA DÜZENİ GÜNCELLENDİ
+⏰ Zaman: 2025-11-21T14:21:27.012Z
+========================================
+Widget Sayısı: 7
+
+Widget Listesi:
+
+1. Widget:
+   Tip: hero-title
+   Config: {
+     "title": "Son Dakika Haberleri"
+   }
+
+2. Widget:
+   Tip: carousel
+   Config: {
+     "source": "featured",
+     "id": "home-hero"
+   }
+
+3. Widget:
+   Tip: featured-news-grid
+   Config: {
+     "title": "Öne Çıkan Haberler",
+     "source": "featured"
+   }
+
+4. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Gündem",
+     "slug": "gundem"
+   }
+
+5. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Ekonomi",
+     "slug": "ekonomi"
+   }
+
+6. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Spor",
+     "slug": "spor"
+   }
+
+7. Widget:
+   Tip: ad-placeholder
+   Config: {
+     "slot": "home-mid",
+     "label": "Reklam Alanı",
+     "size": "728x90"
+   }
+
+========================================
+
+
+========================================
+📋 SAYFA DÜZENİ GÜNCELLENDİ
+⏰ Zaman: 2025-11-21T14:21:52.314Z
+========================================
+Widget Sayısı: 7
+
+Widget Listesi:
+
+1. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Gündem",
+     "slug": "gundem"
+   }
+
+2. Widget:
+   Tip: carousel
+   Config: {
+     "source": "featured",
+     "id": "home-hero"
+   }
+
+3. Widget:
+   Tip: featured-news-grid
+   Config: {
+     "title": "Öne Çıkan Haberler",
+     "source": "featured"
+   }
+
+4. Widget:
+   Tip: hero-title
+   Config: {
+     "title": "Son Dakika Haberleri"
+   }
+
+5. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Ekonomi",
+     "slug": "ekonomi"
+   }
+
+6. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Spor",
+     "slug": "spor"
+   }
+
+7. Widget:
+   Tip: ad-placeholder
+   Config: {
+     "slot": "home-mid",
+     "label": "Reklam Alanı",
+     "size": "728x90"
+   }
+
+========================================
+

@@ -87,7 +87,10 @@
         mediaTree: initialState.mediaTree || null,
         mediaCurrentFolder: '',
         mediaBreadcrumbs: [],
-        mediaSearchTerm: ''
+        mediaCurrentFolder: '',
+        mediaBreadcrumbs: [],
+        mediaSearchTerm: '',
+        homepageLayout: initialState.homepageLayout || []
       };
 
       this.mediaLoaded = Array.isArray(this.state.media) && this.state.media.length > 0;
@@ -101,6 +104,7 @@
       this.cacheDom();
       this.bindEvents();
       this.initializeArticleMediaManager();
+      this.initializeLayoutManager();
       this.renderInitialState();
     }
 
@@ -982,12 +986,12 @@
       const input = event.currentTarget;
       if (!input) return;
       const siteName = input.value.trim() || 'UHA News';
-      
+
       // Update preview site name in real-time
       if (this.brandingPreviewSiteName) {
         this.brandingPreviewSiteName.textContent = siteName;
       }
-      
+
       // Update state
       if (this.state.branding) {
         this.state.branding.siteName = siteName;
@@ -2560,6 +2564,154 @@
       container.className = 'cms-toast-container';
       document.body.appendChild(container);
       return container;
+    }
+
+    initializeLayoutManager() {
+      this.layoutTable = document.querySelector('[data-cms="layout-table"]');
+      this.saveLayoutBtn = document.querySelector('[data-action="save-layout"]');
+      this.draggedRow = null;
+
+      if (this.layoutTable) {
+        this.layoutTable.addEventListener('dragstart', (e) => this.handleDragStart(e));
+        this.layoutTable.addEventListener('dragover', (e) => this.handleDragOver(e));
+        this.layoutTable.addEventListener('drop', (e) => this.handleDrop(e));
+        this.layoutTable.addEventListener('dragend', (e) => this.handleDragEnd(e));
+      }
+
+      if (this.saveLayoutBtn) {
+        this.saveLayoutBtn.addEventListener('click', () => this.saveLayout());
+      }
+    }
+
+    handleDragStart(e) {
+      const row = e.target.closest('tr');
+      if (!row) return;
+
+      this.draggedRow = row;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', row.innerHTML);
+      row.classList.add('cms-dragging');
+    }
+
+    handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+
+      const row = e.target.closest('tr');
+      if (!row || row === this.draggedRow) return;
+
+      const tbody = this.layoutTable.querySelector('tbody');
+      const bounding = row.getBoundingClientRect();
+      const offset = bounding.y + (bounding.height / 2);
+
+      if (e.clientY - offset > 0) {
+        row.after(this.draggedRow);
+      } else {
+        row.before(this.draggedRow);
+      }
+    }
+
+    handleDrop(e) {
+      e.stopPropagation();
+      this.updateLayoutOrder();
+      return false;
+    }
+
+    handleDragEnd(e) {
+      if (this.draggedRow) {
+        this.draggedRow.classList.remove('cms-dragging');
+        this.draggedRow = null;
+      }
+    }
+
+    updateLayoutOrder() {
+      const rows = this.layoutTable.querySelectorAll('tbody tr');
+      rows.forEach((row, index) => {
+        const orderCell = row.querySelector('.layout-order');
+        if (orderCell) {
+          orderCell.textContent = index + 1;
+        }
+      });
+    }
+
+    async saveLayout() {
+      console.log('🔵 Save Layout button clicked!');
+      try {
+        const rows = this.layoutTable.querySelectorAll('tbody tr');
+        console.log('🔵 Found rows:', rows.length);
+        const newOrder = Array.from(rows).map(row => {
+          const index = parseInt(row.dataset.index);
+          return this.state.homepageLayout[index];
+        });
+
+        console.log('🔵 New order:', newOrder.map(w => w.type));
+
+        // Re-assign indices to match new DOM order for subsequent saves
+        rows.forEach((row, newIndex) => {
+          row.dataset.index = newIndex;
+        });
+
+        // Update state
+        this.state.homepageLayout = newOrder;
+
+        console.log('🔵 Sending PUT request to /cms/layouts/homepage...');
+        const response = await fetch('/cms/layouts/homepage', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ layout: newOrder })
+        });
+
+        console.log('🔵 Response status:', response.status);
+        if (!response.ok) throw new Error('Failed to save layout');
+
+        this.showToast('Sayfa düzeni başarıyla kaydedildi', 'success');
+      } catch (error) {
+        console.error('❌ Save layout error:', error);
+        this.showToast('Sayfa düzeni kaydedilemedi', 'error');
+      }
+    }
+
+    // Helper to show toast notifications (assuming it exists or adding a simple one)
+    showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `cms-toast cms-toast--${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      // Simple styles for toast if not present
+      if (!document.querySelector('#cms-toast-styles')) {
+        const style = document.createElement('style');
+        style.id = 'cms-toast-styles';
+        style.textContent = `
+          .cms-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #333;
+            color: white;
+            border-radius: 4px;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+          }
+          .cms-toast--success { background: #48bb78; }
+          .cms-toast--error { background: #f56565; }
+          @keyframes slideIn {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(100%)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
     }
   }
 

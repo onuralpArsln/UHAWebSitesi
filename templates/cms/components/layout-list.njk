@@ -1,16 +1,19 @@
 {% macro LayoutList(layout = []) %}
 <section id="layout" class="cms-section" data-cms="layout-section" hidden>
-  <div class="cms-section__header">
-    <h2 class="cms-section__title">Sayfa Düzeni</h2>
-    <p class="cms-section__description">Ana sayfa bileşenlerinin sıralaması ve yapılandırması.</p>
+  <div class="cms-section-heading">
+    <div>
+      <h2 class="cms-section__title">Sayfa Düzeni</h2>
+      <p class="cms-section__description">Ana sayfa bileşenlerinin sıralaması ve yapılandırması. Sıralamayı değiştirmek için sürükleyip bırakın.</p>
+    </div>
+    <button class="cms-btn cms-btn-primary" data-action="save-layout" style="transform: translateY(-5px);">Değişiklikleri Kaydet</button>
   </div>
 
   <div class="cms-card">
     <div class="cms-table-container">
-      <table class="cms-table">
+      <table class="cms-table" data-cms="layout-table">
         <thead>
           <tr>
-            <th>Sıra</th>
+            <th width="50">Sıra</th>
             <th>Bileşen Tipi</th>
             <th>Yapılandırma</th>
             <th>Durum</th>
@@ -19,8 +22,8 @@
         <tbody>
           {% if layout and layout.length %}
             {% for widget in layout %}
-            <tr>
-              <td>{{ loop.index }}</td>
+            <tr draggable="true" data-index="{{ loop.index0 }}">
+              <td class="layout-order">{{ loop.index }}</td>
               <td>
                 <span class="cms-badge cms-badge--primary">{{ widget.type }}</span>
               </td>
