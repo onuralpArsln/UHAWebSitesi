@@ -1323,14 +1323,14 @@
   border-radius: 50%;
   cursor: pointer;
   position: relative;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   margin-left: auto;
 }
 
 .cms-color-suggestion:hover {
   transform: scale(1.1);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   border-color: rgba(0, 0, 0, 0.3);
 }
 
@@ -1339,7 +1339,7 @@
   inset: 4.4px;
   border-radius: 50%;
   border: 2px solid #fff;
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
 }
 
 .cms-color-suggestion__icon {
@@ -1354,7 +1354,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
@@ -1617,7 +1617,7 @@
   color: var(--cms-error);
 }
 
-.cms-list + .cms-empty-state {
+.cms-list+.cms-empty-state {
   margin-top: 1.5rem;
 }
 
@@ -1652,55 +1652,69 @@
   .cms-app {
     flex-direction: column;
   }
+
   .cms-sidebar {
     width: 100%;
     flex-direction: column;
     padding: 1.25rem 1.5rem;
     gap: 1.25rem;
   }
+
   .cms-nav {
     flex-direction: row;
     gap: 0.5rem;
     overflow-x: auto;
     padding-bottom: 0.5rem;
   }
+
   .cms-nav .nav-link {
     white-space: nowrap;
   }
+
   .cms-main {
     padding: 1.5rem;
   }
+
   .cms-editor {
     grid-template-columns: 1fr;
   }
+
   .cms-editor__aside {
     order: 2;
   }
+
   .cms-editor__body {
     order: 1;
   }
+
   .cms-branding-layout {
     grid-template-columns: 1fr;
   }
+
   .cms-branding-preview {
     order: -1;
   }
+
   .media-layout {
     grid-template-columns: 1fr;
   }
+
   .media-sidebar__body {
     max-height: none;
   }
+
   .article-media-item {
     grid-template-columns: minmax(120px, 160px) 1fr;
     grid-template-rows: auto auto;
   }
+
   .article-media-item__meta {
     grid-column: 1 / -1;
     flex-direction: row;
     flex-wrap: wrap;
     gap: 0.75rem;
   }
+
   .article-media-item__actions {
     flex-direction: row;
     grid-column: 1 / -1;
@@ -1712,94 +1726,239 @@
   .cms-form__grid {
     grid-template-columns: 1fr;
   }
+
   .cms-checkbox-grid {
     flex-direction: column;
   }
+
   .cms-section-heading {
     flex-direction: column;
     align-items: flex-start;
   }
+
   .cms-section-actions {
     width: 100%;
     justify-content: flex-start;
     flex-wrap: wrap;
   }
+
   .cms-header {
     padding: 1.25rem 1.5rem;
   }
+
   .cms-content {
     padding: 1.5rem;
     border-radius: 1rem;
   }
+
   .cms-editor__toolbar {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
   }
+
   .cms-editor__actions {
     width: 100%;
     justify-content: stretch;
   }
+
   .cms-editor__actions .cms-btn {
     flex: 1;
     justify-content: center;
   }
+
   .cms-table th,
   .cms-table td {
     padding: 0.75rem;
     font-size: 0.85rem;
   }
+
   .cms-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
+
   .cms-header h1 {
     font-size: 1.4rem;
   }
+
   .cms-editor-header {
     flex-direction: column;
     align-items: flex-start;
   }
+
   .cms-editor-actions {
     width: 100%;
     justify-content: flex-start;
     gap: 0.5rem;
     flex-wrap: wrap;
   }
+
   .cms-editor-actions .cms-btn {
     flex: 1 1 45%;
     justify-content: center;
   }
+
   .branding-preview__news-grid {
     grid-template-columns: 1fr;
   }
+
   .branding-preview__footer-content {
     gap: 0.5rem;
   }
+
   .media-toolbar {
     flex-direction: column;
     align-items: stretch;
   }
+
   .media-toolbar__breadcrumbs {
     justify-content: flex-start;
   }
+
   .article-media-item {
     grid-template-columns: 1fr;
     grid-template-rows: repeat(4, auto);
   }
+
   .article-media-item__preview {
     width: 100%;
     max-width: 280px;
     justify-self: center;
   }
+
   .article-media-item__actions {
     flex-direction: row;
     justify-content: flex-start;
     gap: 0.5rem;
   }
+
   .article-media-manager__actions {
     flex-direction: column;
   }
 }
 
+/* ============================================
+   Layout Manager - Drag and Drop Styles
+   ============================================ */
+
+/* Drag Handle */
+.layout-drag-handle {
+  cursor: grab;
+  text-align: center;
+  padding: 8px !important;
+  user-select: none;
+  background: linear-gradient(to right, #f8f9fa 0%, #fff 100%);
+  border-right: 2px solid #e9ecef;
+}
+
+.layout-drag-handle:hover {
+  background: linear-gradient(to right, #e9ecef 0%, #f8f9fa 100%);
+}
+
+.layout-drag-handle:active {
+  cursor: grabbing;
+}
+
+.drag-icon {
+  display: inline-block;
+  font-size: 16px;
+  color: #6c757d;
+  line-height: 1;
+  font-weight: bold;
+  letter-spacing: -2px;
+  transition: color 0.2s ease;
+}
+
+.layout-drag-handle:hover .drag-icon {
+  color: #495057;
+}
+
+/* Row States */
+[data-cms="layout-table"] tbody tr {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+[data-cms="layout-table"] tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* Dragging State */
+[data-cms="layout-table"] tbody tr.cms-dragging {
+  opacity: 0.5;
+  background-color: #e3f2fd;
+  transform: scale(0.98);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+[data-cms="layout-table"] tbody tr.cms-dragging .layout-drag-handle {
+  cursor: grabbing;
+}
+
+/* Drop Zone Indicators */
+[data-cms="layout-table"] tbody tr.drop-above {
+  border-top: 3px solid #007bff;
+  box-shadow: 0 -2px 8px rgba(0, 123, 255, 0.2);
+}
+
+[data-cms="layout-table"] tbody tr.drop-below {
+  border-bottom: 3px solid #007bff;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+}
+
+/* Drag Over State */
+[data-cms="layout-table"] tbody tr.drag-over {
+  background-color: #e7f3ff;
+}
+
+/* Order Number Highlight */
+.layout-order {
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+[data-cms="layout-table"] tbody tr:hover .layout-order {
+  color: #007bff;
+  transform: scale(1.1);
+}
+
+/* Smooth Reordering Animation */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+[data-cms="layout-table"] tbody tr {
+  animation: slideIn 0.3s ease;
+}
+
+/* Disable text selection during drag */
+[data-cms="layout-table"].dragging-active {
+  user-select: none;
+}
+
+[data-cms="layout-table"].dragging-active tbody tr {
+  cursor: grabbing;
+}
+
+/* Widget Configuration Display */
+.widget-config-readable {
+  font-size: 13px;
+  color: #495057;
+  padding: 4px 8px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  display: inline-block;
+  font-weight: 500;
+}

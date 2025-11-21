@@ -2570,12 +2570,31 @@
       this.layoutTable = document.querySelector('[data-cms="layout-table"]');
       this.saveLayoutBtn = document.querySelector('[data-action="save-layout"]');
       this.draggedRow = null;
+      this.currentDropTarget = null;
 
       if (this.layoutTable) {
+        // Make only drag handles draggable
+        const dragHandles = this.layoutTable.querySelectorAll('.layout-drag-handle');
+        dragHandles.forEach(handle => {
+          const row = handle.closest('tr');
+          if (row) {
+            // Set draggable on mousedown on handle
+            handle.addEventListener('mousedown', () => {
+              row.setAttribute('draggable', 'true');
+            });
+
+            // Remove draggable on mouseup
+            handle.addEventListener('mouseup', () => {
+              setTimeout(() => row.removeAttribute('draggable'), 100);
+            });
+          }
+        });
+
         this.layoutTable.addEventListener('dragstart', (e) => this.handleDragStart(e));
         this.layoutTable.addEventListener('dragover', (e) => this.handleDragOver(e));
         this.layoutTable.addEventListener('drop', (e) => this.handleDrop(e));
         this.layoutTable.addEventListener('dragend', (e) => this.handleDragEnd(e));
+        this.layoutTable.addEventListener('dragleave', (e) => this.handleDragLeave(e));
       }
 
       if (this.saveLayoutBtn) {
@@ -2588,40 +2607,116 @@
       if (!row) return;
 
       this.draggedRow = row;
+      this.layoutTable.classList.add('dragging-active');
       e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/html', row.innerHTML);
-      row.classList.add('cms-dragging');
+
+      // Create a custom drag image
+      const dragImage = row.cloneNode(true);
+      dragImage.style.position = 'absolute';
+      dragImage.style.top = '-9999px';
+      dragImage.style.width = (row.offsetWidth * 0.5) + 'px'; // 50% width
+      dragImage.style.height = '40px'; // Reduced height
+      dragImage.style.opacity = '0.7'; // Transparent
+      dragImage.style.backgroundColor = '#e3f2fd';
+      dragImage.style.border = '2px solid #007bff';
+      dragImage.style.borderRadius = '4px';
+      dragImage.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+      dragImage.style.overflow = 'hidden';
+      dragImage.style.display = 'table';
+      dragImage.style.tableLayout = 'fixed';
+      dragImage.style.fontSize = '12px'; // Smaller text
+      dragImage.style.whiteSpace = 'nowrap';
+
+      document.body.appendChild(dragImage);
+
+      // Set the custom drag image (centered under cursor)
+      e.dataTransfer.setDragImage(dragImage, (row.offsetWidth * 0.25), 20);
+
+      // Remove the drag image after a short delay
+      setTimeout(() => {
+        document.body.removeChild(dragImage);
+      }, 0);
+
+      // Add dragging class after a tiny delay for smooth animation
+      setTimeout(() => {
+        row.classList.add('cms-dragging');
+      }, 0);
     }
+
 
     handleDragOver(e) {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
 
       const row = e.target.closest('tr');
-      if (!row || row === this.draggedRow) return;
+      if (!row || row === this.draggedRow || !this.draggedRow) return;
 
-      const tbody = this.layoutTable.querySelector('tbody');
+      // Remove previous drop indicators
+      this.clearDropIndicators();
+
+      // Calculate drop position
       const bounding = row.getBoundingClientRect();
       const offset = bounding.y + (bounding.height / 2);
+      const isAfter = e.clientY - offset > 0;
 
-      if (e.clientY - offset > 0) {
-        row.after(this.draggedRow);
+      // Add visual indicator
+      if (isAfter) {
+        row.classList.add('drop-below');
       } else {
-        row.before(this.draggedRow);
+        row.classList.add('drop-above');
       }
+
+      this.currentDropTarget = row;
     }
 
     handleDrop(e) {
       e.stopPropagation();
+      e.preventDefault();
+
+      if (!this.draggedRow || !this.currentDropTarget) return;
+
+      // Perform the actual reorder
+      const bounding = this.currentDropTarget.getBoundingClientRect();
+      const offset = bounding.y + (bounding.height / 2);
+      const isAfter = e.clientY - offset > 0;
+
+      if (isAfter) {
+        this.currentDropTarget.after(this.draggedRow);
+      } else {
+        this.currentDropTarget.before(this.draggedRow);
+      }
+
       this.updateLayoutOrder();
+      this.clearDropIndicators();
+
       return false;
     }
 
     handleDragEnd(e) {
+      this.layoutTable.classList.remove('dragging-active');
+      this.clearDropIndicators();
+
       if (this.draggedRow) {
         this.draggedRow.classList.remove('cms-dragging');
+        this.draggedRow.removeAttribute('draggable');
         this.draggedRow = null;
       }
+
+      this.currentDropTarget = null;
+    }
+
+    handleDragLeave(e) {
+      const row = e.target.closest('tr');
+      if (row) {
+        row.classList.remove('drop-above', 'drop-below', 'drag-over');
+      }
+    }
+
+    clearDropIndicators() {
+      const rows = this.layoutTable.querySelectorAll('tbody tr');
+      rows.forEach(row => {
+        row.classList.remove('drop-above', 'drop-below', 'drag-over');
+      });
     }
 
     updateLayoutOrder() {

@@ -13,6 +13,7 @@
       <table class="cms-table" data-cms="layout-table">
         <thead>
           <tr>
+            <th width="40"></th>
             <th width="50">Sıra</th>
             <th>Bileşen Tipi</th>
             <th>Yapılandırma</th>
@@ -22,14 +23,36 @@
         <tbody>
           {% if layout and layout.length %}
             {% for widget in layout %}
-            <tr draggable="true" data-index="{{ loop.index0 }}">
+            <tr data-index="{{ loop.index0 }}">
+              <td class="layout-drag-handle" title="Sürükle">
+                <span class="drag-icon">⋮⋮</span>
+              </td>
               <td class="layout-order">{{ loop.index }}</td>
               <td>
                 <span class="cms-badge cms-badge--primary">{{ widget.type }}</span>
               </td>
               <td>
-                <div class="cms-code-block">
-                  <pre>{{ widget.config | dump(2) }}</pre>
+                <div class="widget-config-readable">
+                  {% if widget.type == 'carousel' %}
+                    {% if widget.config.autoplay %}
+                      🔄 Otomatik oynat ({{ widget.config.interval / 1000 }}s)
+                    {% else %}
+                      ⏸️ Manuel kontrol
+                    {% endif %}
+                  {% elif widget.type == 'hero-title' %}
+                    📰 {{ widget.config.title or 'Başlık' }}
+                  {% elif widget.type == 'featured-news-grid' %}
+                    ⭐ {{ widget.config.limit or 6 }} öne çıkan haber
+                  {% elif widget.type == 'category-feed' %}
+                    📂 {{ widget.config.categoryName or 'Kategori' }} 
+                    ({{ widget.config.limit or 5 }} haber)
+                  {% elif widget.type == 'flash-news' %}
+                    ⚡ Son dakika haberleri ({{ widget.config.limit or 10 }} adet)
+                  {% elif widget.type == 'ad-placeholder' %}
+                    💰 Reklam alanı: {{ widget.config.size or 'Standart' }}
+                  {% else %}
+                    ⚙️ Özel yapılandırma
+                  {% endif %}
                 </div>
               </td>
               <td>
@@ -39,7 +62,7 @@
             {% endfor %}
           {% else %}
             <tr>
-              <td colspan="4" class="cms-empty-state">Bileşen bulunamadı.</td>
+              <td colspan="5" class="cms-empty-state">Bileşen bulunamadı.</td>
             </tr>
           {% endif %}
         </tbody>
