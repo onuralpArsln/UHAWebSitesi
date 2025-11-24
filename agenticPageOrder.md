@@ -81,7 +81,8 @@ The UHA News CMS includes a comprehensive page layout management system that all
 ├─────────────────────────────────────────────────────────────────┤
 │  • Server reads layout from database                           │
 │  • Renders widgets in saved order                              │
-│  • Applies saved configurations                                │
+│  • Applies saved configurations (limit, category, etc.)        │
+│  • Fetches data based on config                                │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -232,6 +233,44 @@ this.state.homepageLayout = [
 // Config changes update state immediately
 // Order changes update DOM immediately
 // Both persist to database only on Save
+```
+
+### Frontend Integration (Homepage)
+
+The frontend correctly interprets the saved configurations to render widgets dynamically.
+
+#### Category Feed Integration (`server/routes/pages.js`)
+
+The route handler supports both old and new data formats for category widgets:
+
+```javascript
+// Support both new (categoryName) and old (category) config properties
+const categoryName = widget.config.categoryName || widget.config.category;
+
+if (categoryName) {
+  // Fetch articles for specific category
+  const categoryArticles = dataService.getArticles({
+    category: categoryName,
+    // ...
+  });
+}
+```
+
+#### Featured News Grid Integration
+
+The `featured-news-grid` widget respects the configured news count limit:
+
+```javascript
+if (widget.config.source === 'featured') {
+  // Use configured limit or defaults (8 for carousel, 6 for grid)
+  const defaultLimit = widget.type === 'carousel' ? 8 : 6;
+  const limit = parseInt(widget.config.limit) || defaultLimit;
+  
+  const featuredArticles = dataService.getArticles({
+    limit: limit,
+    // ...
+  });
+}
 ```
 
 ### Category Dropdown System
@@ -734,6 +773,8 @@ The most critical aspect of the category dropdown implementation is handling the
 4. User changes trigger immediate state updates
 5. Save button persists to database
 6. Category changes automatically refresh all dropdowns
+7. Frontend reads saved config (checking both property names)
+8. Homepage renders with correct categories and limits
 
 ### Key Learnings
 

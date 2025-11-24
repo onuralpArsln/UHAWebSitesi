@@ -83,8 +83,12 @@ router.get('/', async (req, res) => {
         case 'featured-news-grid':
           // Fetch featured articles
           if (widget.config.source === 'featured') {
+            // Use configured limit or defaults (8 for carousel, 6 for grid)
+            const defaultLimit = widget.type === 'carousel' ? 8 : 6;
+            const limit = parseInt(widget.config.limit) || defaultLimit;
+
             const featuredArticles = dataService.getArticles({
-              limit: widget.type === 'carousel' ? 8 : 8,
+              limit: limit,
               sortBy: 'publishedAt',
               sortOrder: 'desc'
             });
