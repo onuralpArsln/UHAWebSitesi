@@ -93,7 +93,7 @@ const baseCSPDirectives = {
 // Middleware to dynamically configure security headers based on request protocol
 app.use((req, res, next) => {
   const isHttps = config.isHttps(req);
-  
+
   if (isHttps) {
     // For HTTPS: Use Helmet with full security headers
     helmet({
@@ -122,29 +122,29 @@ app.use((req, res, next) => {
       }
     });
     const cspHeader = cspParts.join('; ');
-    
+
     // Intercept response to set headers at the very last moment
     const originalEnd = res.end;
     const originalWriteHead = res.writeHead;
-    
-    res.writeHead = function(...args) {
+
+    res.writeHead = function (...args) {
       // Remove any existing problematic headers first
       res.removeHeader('Content-Security-Policy');
       res.removeHeader('Cross-Origin-Opener-Policy');
       res.removeHeader('Cross-Origin-Resource-Policy');
       res.removeHeader('Origin-Agent-Cluster');
       res.removeHeader('Strict-Transport-Security');
-      
+
       // Set our clean headers
       res.setHeader('Content-Security-Policy', cspHeader);
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('X-Frame-Options', 'SAMEORIGIN');
       res.setHeader('X-XSS-Protection', '0');
-      
+
       return originalWriteHead.apply(this, args);
     };
-    
-    res.end = function(...args) {
+
+    res.end = function (...args) {
       // Only manipulate headers if they haven't been sent yet
       if (!res.headersSent) {
         // Remove any existing problematic headers first
@@ -153,17 +153,17 @@ app.use((req, res, next) => {
         res.removeHeader('Cross-Origin-Resource-Policy');
         res.removeHeader('Origin-Agent-Cluster');
         res.removeHeader('Strict-Transport-Security');
-        
+
         // Set our clean headers
         res.setHeader('Content-Security-Policy', cspHeader);
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('X-Frame-Options', 'SAMEORIGIN');
         res.setHeader('X-XSS-Protection', '0');
       }
-      
+
       return originalEnd.apply(this, args);
     };
-    
+
     next();
   }
 });

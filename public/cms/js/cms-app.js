@@ -2613,21 +2613,34 @@
     initializeLayoutManager() {
       this.layoutTable = document.querySelector('[data-cms="layout-table"]');
       this.saveLayoutBtn = document.querySelector('[data-action="save-layout"]');
+      this.addWidgetBtn = document.querySelector('[data-action="add-widget"]');
+      this.modalOverlay = document.querySelector('[data-modal="add-widget"]');
+      this.modalCloseBtn = document.querySelector('[data-action="close-modal"]');
+      this.widgetListContainer = document.querySelector('[data-cms="widget-list"]');
+
       this.draggedRow = null;
       this.currentDropTarget = null;
 
+      // Available widgets configuration
+      this.availableWidgets = [
+        { type: 'hero-title', title: 'Manşet Başlığı', desc: 'Büyük puntolu ana başlık alanı.' },
+        { type: 'carousel', title: 'Manşet Slider', desc: 'Öne çıkan haberlerin kayan listesi.' },
+        { type: 'featured-news-grid', title: 'Öne Çıkanlar Izgarası', desc: 'Seçilmiş haberlerin ızgara görünümü.' },
+        { type: 'category-feed', title: 'Kategori Akışı', desc: 'Belirli bir kategoriden son haberler.' },
+        { type: 'flash-news', title: 'Son Dakika Bandı', desc: 'Kayan son dakika haberleri şeridi.' },
+        { type: 'ad-placeholder', title: 'Reklam Alanı', desc: 'Reklam yerleşimi için boş alan.' }
+      ];
+
       if (this.layoutTable) {
+        // ... existing drag handlers ...
         // Make only drag handles draggable
         const dragHandles = this.layoutTable.querySelectorAll('.layout-drag-handle');
         dragHandles.forEach(handle => {
           const row = handle.closest('tr');
           if (row) {
-            // Set draggable on mousedown on handle
             handle.addEventListener('mousedown', () => {
               row.setAttribute('draggable', 'true');
             });
-
-            // Remove draggable on mouseup
             handle.addEventListener('mouseup', () => {
               setTimeout(() => row.removeAttribute('draggable'), 100);
             });
@@ -2645,8 +2658,55 @@
         this.saveLayoutBtn.addEventListener('click', () => this.saveLayout());
       }
 
+      // Modal Event Listeners
+      if (this.addWidgetBtn && this.modalOverlay) {
+        this.addWidgetBtn.addEventListener('click', () => this.openAddWidgetModal());
+
+        if (this.modalCloseBtn) {
+          this.modalCloseBtn.addEventListener('click', () => this.closeAddWidgetModal());
+        }
+
+        // Close on click outside
+        this.modalOverlay.addEventListener('click', (e) => {
+          if (e.target === this.modalOverlay) {
+            this.closeAddWidgetModal();
+          }
+        });
+      }
+
       // Add event listeners for configuration controls
       this.initializeConfigControls();
+    }
+
+    openAddWidgetModal() {
+      if (!this.modalOverlay || !this.widgetListContainer) return;
+
+      // Render widget list if empty
+      if (!this.widgetListContainer.children.length) {
+        this.widgetListContainer.innerHTML = this.availableWidgets.map(widget => `
+          <div class="widget-item" data-widget-type="${widget.type}">
+            <div class="widget-item__title">${widget.title}</div>
+            <div class="widget-item__desc">${widget.desc}</div>
+          </div>
+        `).join('');
+
+        // Add click listeners to items (currently does nothing as requested)
+        this.widgetListContainer.querySelectorAll('.widget-item').forEach(item => {
+          item.addEventListener('click', () => {
+            console.log('Selected widget:', item.dataset.widgetType);
+            // Future implementation: Add widget to layout
+          });
+        });
+      }
+
+      this.modalOverlay.classList.add('is-active');
+      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    closeAddWidgetModal() {
+      if (!this.modalOverlay) return;
+      this.modalOverlay.classList.remove('is-active');
+      document.body.style.overflow = '';
     }
 
     initializeConfigControls() {

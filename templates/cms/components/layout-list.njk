@@ -5,7 +5,10 @@
       <h2 class="cms-section__title">Sayfa Düzeni</h2>
       <p class="cms-section__description">Ana sayfa bileşenlerinin sıralaması ve yapılandırması. Sıralamayı değiştirmek için sürükleyip bırakın.</p>
     </div>
-    <button class="cms-btn cms-btn-primary" data-action="save-layout" style="transform: translateY(-5px);">Değişiklikleri Kaydet</button>
+    <div class="cms-section-actions">
+      <button class="cms-btn cms-btn-secondary" data-action="add-widget">Bileşen Ekle</button>
+      <button class="cms-btn cms-btn-primary" data-action="save-layout">Değişiklikleri Kaydet</button>
+    </div>
   </div>
 
   <div class="cms-card">
@@ -147,6 +150,19 @@
           {% endif %}
         </tbody>
       </table>
+    </div>
+  </div>
+  <div class="cms-modal-overlay" data-modal="add-widget">
+    <div class="cms-modal">
+      <div class="cms-modal__header">
+        <h3 class="cms-modal__title">Bileşen Ekle</h3>
+        <button class="cms-modal__close" data-action="close-modal">×</button>
+      </div>
+      <div class="cms-modal__body">
+        <div class="widget-list" data-cms="widget-list">
+          <!-- Widgets will be populated here by JS -->
+        </div>
+      </div>
     </div>
   </div>
 </section>
