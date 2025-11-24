@@ -99,9 +99,12 @@ router.get('/', async (req, res) => {
 
         case 'category-feed':
           // Fetch articles for specific category
-          if (widget.config.category) {
+          // Support both new (categoryName) and old (category) config properties
+          const categoryName = widget.config.categoryName || widget.config.category;
+
+          if (categoryName) {
             const categoryArticles = dataService.getArticles({
-              category: widget.config.category,
+              category: categoryName,
               limit: 4,
               sortBy: 'publishedAt',
               sortOrder: 'desc'

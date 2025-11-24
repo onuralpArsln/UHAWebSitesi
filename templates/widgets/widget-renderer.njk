@@ -26,8 +26,8 @@
   
   {% elif widget.type == 'category-feed' %}
     {{ categoryFeedWidget.categoryFeed({
-      name: widget.config.category,
-      slug: widget.config.slug,
+      name: widget.config.categoryName or widget.config.category,
+      slug: widget.config.categorySlug or widget.config.slug,
       articles: widget.data.articles
     }) }}
   
