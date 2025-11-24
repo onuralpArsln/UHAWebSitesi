@@ -469,6 +469,10 @@
       if (sectionId === 'media') {
         this.ensureMediaLoaded();
       }
+      if (sectionId === 'layout') {
+        // Update category dropdowns when showing layout section
+        this.updateLayoutCategorySelects();
+      }
     }
 
     renderStats(stats) {
@@ -620,6 +624,46 @@
       this.renderCategories(list);
       this.renderCategoryOptions(list);
       this.updateCategoryStats(list.length);
+      this.updateLayoutCategorySelects();
+    }
+
+    updateLayoutCategorySelects() {
+      console.log('🔵 updateLayoutCategorySelects called, categories:', this.state.categories);
+      if (!this.layoutTable) return;
+
+      const categorySelects = this.layoutTable.querySelectorAll('select[data-config="categorySlug"]');
+      console.log('🔵 Found category selects:', categorySelects.length);
+
+      categorySelects.forEach(select => {
+        const widgetIndex = parseInt(select.dataset.widgetIndex);
+
+        // Get the current value from widget config, not from DOM
+        // Check both categorySlug (new) and slug (old) for compatibility
+        const widget = this.state.homepageLayout[widgetIndex];
+        const currentValue = widget && widget.config ?
+          (widget.config.categorySlug || widget.config.slug) : '';
+
+        console.log(`🔵 Widget ${widgetIndex}: configured category = ${currentValue}`);
+
+        // Rebuild options
+        if (this.state.categories.length > 0) {
+          select.innerHTML = this.state.categories.map(cat =>
+            `<option value="${this.escapeHtml(cat.slug)}"
+                    ${cat.slug === currentValue ? 'selected' : ''}>
+              ${this.escapeHtml(cat.name)}
+            </option>`
+          ).join('');
+
+          // If previously selected category no longer exists, select first available
+          if (currentValue && !this.state.categories.find(c => c.slug === currentValue)) {
+            select.value = this.state.categories[0].slug;
+            this.updateWidgetConfig(widgetIndex, 'categorySlug', select);
+          }
+        } else {
+          // No categories available
+          select.innerHTML = '<option value="">Kategori bulunamadı</option>';
+        }
+      });
     }
 
     populateSettingsForm(settings) {

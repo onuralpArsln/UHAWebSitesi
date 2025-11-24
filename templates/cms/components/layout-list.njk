@@ -81,12 +81,18 @@
                       <select data-config="categorySlug" 
                               data-widget-index="{{ loop.index0 }}"
                               class="config-select">
-                        {% for cat in initialState.categories %}
-                          <option value="{{ cat.slug }}" 
-                                  {% if cat.slug == widget.config.categorySlug %}selected{% endif %}>
-                            {{ cat.name }}
-                          </option>
-                        {% endfor %}
+                        {% if initialState.categories.length > 0 %}
+                          {% for cat in initialState.categories %}
+                            {# Check both categorySlug (new) and slug (old) for compatibility #}
+                            {% set currentSlug = widget.config.categorySlug or widget.config.slug %}
+                            <option value="{{ cat.slug }}" 
+                                    {% if cat.slug == currentSlug %}selected{% endif %}>
+                              {{ cat.name }}
+                            </option>
+                          {% endfor %}
+                        {% else %}
+                          <option value="">Kategori bulunamadı</option>
+                        {% endif %}
                       </select>
                     </label>
                     <label class="config-control">
