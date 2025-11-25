@@ -12,6 +12,8 @@ The UHA News CMS includes a comprehensive page layout management system that all
 - **Real-Time Preview**: See the new order immediately in the CMS
 - **Persistent Changes**: Save button commits changes to the database
 - **Live Updates**: Homepage reflects new order without server restart
+- **Add New Widgets**: Add widgets dynamically via the "Bileşen Ekle" modal
+- **Turkish Localization**: All widget names are displayed in Turkish
 
 ### Developer Tools
 - **Terminal Logging**: Widget list printed to terminal on save
@@ -170,8 +172,34 @@ class CMSDashboard {
       body: JSON.stringify({ layout: newOrder })
     });
   }
+
+  addWidget(type) {
+    // Create new widget with default config
+    const newWidget = { type, config: { ...defaultConfig } };
+    
+    // Update state
+    this.state.homepageLayout.push(newWidget);
+    
+    // Render new row client-side
+    const newRow = this.renderLayoutRow(newWidget, index);
+    tbody.appendChild(newRow);
+  }
 }
 ```
+
+### Widget Addition System
+
+The "Bileşen Ekle" modal allows users to add new widgets to the layout.
+
+**Key Components:**
+1.  **`availableWidgets`**: Array of widget definitions with Turkish titles and default configurations.
+2.  **`renderLayoutRow(widget, index)`**: Client-side method that duplicates the Nunjucks template logic to render a new table row dynamically.
+3.  **`addWidget(type)`**: Handles the state update, DOM manipulation, and UI feedback (toast, scroll).
+
+**Turkish Localization:**
+Widget names are standardized to Turkish in both:
+-   **Server-side**: `layout-list.njk` using a mapping object.
+-   **Client-side**: `cms-app.js` using `availableWidgets` titles.
 
 ### Widget Configuration System
 
@@ -734,7 +762,9 @@ applyCategories(categories) {
 ## Future Enhancements
 
 - [ ] Add widget enable/disable toggle
-- [ ] Support for adding new widgets from CMS
+- [ ] Add widget enable/disable toggle
+- [x] Support for adding new widgets from CMS
+- [ ] Advanced configuration modal for complex widgets
 - [ ] Advanced configuration modal for complex widgets
 - [ ] Undo/redo functionality
 - [ ] Preview mode before saving

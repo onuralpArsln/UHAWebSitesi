@@ -2677,11 +2677,21 @@
           }
         });
 
-        this.layoutTable.addEventListener('dragstart', (e) => this.handleDragStart(e));
-        this.layoutTable.addEventListener('dragover', (e) => this.handleDragOver(e));
-        this.layoutTable.addEventListener('drop', (e) => this.handleDrop(e));
-        this.layoutTable.addEventListener('dragend', (e) => this.handleDragEnd(e));
-        this.layoutTable.addEventListener('dragleave', (e) => this.handleDragLeave(e));
+        // Drag and drop events
+        this.layoutTable.addEventListener('dragstart', this.handleDragStart.bind(this));
+        this.layoutTable.addEventListener('dragover', this.handleDragOver.bind(this));
+        this.layoutTable.addEventListener('drop', this.handleDrop.bind(this));
+        this.layoutTable.addEventListener('dragend', this.handleDragEnd.bind(this));
+        this.layoutTable.addEventListener('dragleave', (e) => this.handleDragLeave(e)); // Keep existing dragleave
+
+        // Remove widget event
+        this.layoutTable.addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-action="remove-widget"]');
+          if (btn) {
+            const index = parseInt(btn.dataset.widgetIndex);
+            this.removeWidget(index);
+          }
+        });
       }
 
       if (this.saveLayoutBtn) {
@@ -3055,7 +3065,12 @@
           </div>
         </td>
         <td>
-          <span class="cms-status">Aktif</span>
+          <div class="status-actions">
+            <span class="cms-status">Aktif</span>
+            <button type="button" class="btn-icon btn-delete" data-action="remove-widget" data-widget-index="${index}" title="Bileşeni Kaldır">
+              🗑️
+            </button>
+          </div>
         </td>
       `;
 
@@ -3104,6 +3119,51 @@
 
       // Scroll to new row
       newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    removeWidget(index) {
+      if (!confirm('Bu bileşeni kaldırmak istediğinizden emin misiniz?')) return;
+
+      // Remove from state
+      this.state.homepageLayout.splice(index, 1);
+
+      // Remove from DOM
+      const row = this.layoutTable.querySelector(`tr[data-index="${index}"]`);
+      if (row) {
+        row.remove();
+      }
+
+      // Re-index remaining rows
+      const rows = this.layoutTable.querySelectorAll('tbody tr');
+      rows.forEach((row, newIndex) => {
+        row.dataset.index = newIndex;
+        row.querySelector('.layout-order').textContent = newIndex + 1;
+
+        // Update config inputs data-widget-index
+        row.querySelectorAll('[data-widget-index]').forEach(el => {
+          el.dataset.widgetIndex = newIndex;
+        });
+      });
+
+      // Show empty state if needed
+      if (this.state.homepageLayout.length === 0) {
+        const tbody = this.layoutTable.querySelector('tbody');
+        tbody.innerHTML = `
+          <tr class="empty-state">
+            <td colspan="5">
+              <div class="empty-message">
+                <span class="empty-icon">🧩</span>
+                <p>Henüz bileşen eklenmemiş</p>
+                <button class="btn btn-sm btn-primary" onclick="document.querySelector('[data-action=\\'add-widget\\']').click()">
+                  Bileşen Ekle
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+
+      this.showToast('Bileşen kaldırıldı', 'success');
     }
 
     async saveLayout() {

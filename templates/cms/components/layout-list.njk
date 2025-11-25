@@ -147,7 +147,12 @@
                 </div>
               </td>
               <td>
-                <span class="cms-status">Aktif</span>
+                <div class="status-actions">
+                  <span class="cms-status">Aktif</span>
+                  <button type="button" class="btn-icon btn-delete" data-action="remove-widget" data-widget-index="{{ loop.index0 }}" title="Bileşeni Kaldır">
+                    🗑️
+                  </button>
+                </div>
               </td>
             </tr>
             {% endfor %}
