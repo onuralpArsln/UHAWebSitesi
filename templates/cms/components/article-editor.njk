@@ -69,8 +69,8 @@
           <div class="cms-checkbox-grid" data-cms="targetted-views">
             {% for target in targetOptions %}
             <label class="cms-checkbox">
-              <input type="checkbox" name="targettedViews" value="{{ target }}">
-              <span>{{ target | capitalize }}</span>
+              <input type="checkbox" name="targettedViews" value="{{ target.value }}">
+              <span>{{ target.label }}</span>
             </label>
             {% endfor %}
           </div>

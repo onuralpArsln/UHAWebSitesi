@@ -223,7 +223,12 @@ router.get('/', (req, res) => {
     adsenseSlotId: config.getFeatures().adsenseSlotId
   };
 
-  const targetOptions = ['carousel', 'manset', 'anasayfa', 'akış'];
+  const targetOptions = [
+    { value: 'carousel', label: 'Manşet Slider' },
+    { value: 'featured-news-grid', label: 'Öne Çıkanlar Izgarası' },
+    { value: 'category-feed', label: 'Kategori Akışı' },
+    { value: 'flash-news', label: 'Son Dakika Bandı' }
+  ];
 
   const articleSummaries = articlesResult.articles
     .map(mapArticleToSummary)
