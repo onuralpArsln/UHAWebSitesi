@@ -5,10 +5,11 @@ const multer = require('multer');
 const DataService = require('../services/data-service');
 const URLSlugService = require('../services/url-slug');
 const config = require('../services/config');
+const { requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
 const dataService = new DataService();
-const urlSlugService = new URLSlugService();
+const urlSlugService = URLSlugService;
 
 const BRANDING_UPLOAD_DIR = path.join(__dirname, '../../public/uploads/branding');
 const BRANDING_WEB_PATH = '/uploads/branding';
@@ -215,6 +216,12 @@ router.get('/', (req, res) => {
     hiddenArticles: statusSummary.hidden
   };
 
+  // Get users (only if admin)
+  let users = [];
+  if (req.session.role === 'admin' || req.session.isMaster) {
+    users = dataService.getAllUsers();
+  }
+
   const settings = {
     siteName: config.getSiteDefaults().name,
     siteDescription: config.getSiteDefaults().description,
@@ -242,7 +249,16 @@ router.get('/', (req, res) => {
     settings,
     targetOptions,
     branding,
-    homepageLayout
+    homepageLayout,
+    users,
+    cmsTabs: config.getCmsTabs(),
+    currentUser: {
+      username: req.session.username,
+      displayName: req.session.displayName,
+      role: req.session.role,
+      permissions: req.session.permissions || [],
+      isMaster: req.session.isMaster
+    }
   };
 
   const initialStateJson = JSON.stringify(initialState).replace(/</g, '\\u003c');
@@ -250,9 +266,12 @@ router.get('/', (req, res) => {
   res.render('cms/pages/dashboard.njk', {
     pageTitle: 'UHA CMS',
     initialState,
-    initialStateJson
+    initialStateJson,
+    cmsTabs: initialState.cmsTabs,
+    user: initialState.currentUser
   });
 });
+
 
 /**
  * Get current branding configuration
@@ -270,7 +289,7 @@ router.get('/branding', (req, res) => {
 /**
  * Update branding configuration (colors + logos)
  */
-router.post('/branding', (req, res, next) => {
+router.post('/branding', requirePermission('manage_settings'), (req, res, next) => {
   const handleUpload = upload.fields([
     { name: 'headerLogo', maxCount: 1 },
     { name: 'footerLogo', maxCount: 1 }
@@ -441,7 +460,11 @@ router.post('/articles', async (req, res) => {
       images: toImageArray(articleData.images),
       body: articleData.body,
       videoUrl: (articleData.videoUrl || articleData.video || '').toString().trim(),
-      writer: articleData.writer ? articleData.writer.toString().trim() : '',
+      body: articleData.body,
+      videoUrl: (articleData.videoUrl || articleData.video || '').toString().trim(),
+      // Enforce writer as the current user's display name or username
+      writer: req.session.displayName || req.session.username,
+      creationDate: articleData.creationDate,
       creationDate: articleData.creationDate,
       source: articleData.source,
       outlinks: toLineArray(articleData.outlinks),
@@ -455,7 +478,8 @@ router.post('/articles', async (req, res) => {
     const newArticle = dataService.createArticle({
       ...normalizedArticle,
       publishedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      created_by: req.session.username
     });
 
     // Store slug mapping
@@ -498,7 +522,11 @@ router.put('/articles/:id', async (req, res) => {
       images: toImageArray(articleData.images),
       body: articleData.body,
       videoUrl: (articleData.videoUrl || articleData.video || '').toString().trim(),
-      writer: articleData.writer ? articleData.writer.toString().trim() : '',
+      images: toImageArray(articleData.images),
+      body: articleData.body,
+      videoUrl: (articleData.videoUrl || articleData.video || '').toString().trim(),
+      // writer is handled below based on permissions
+      creationDate: articleData.creationDate,
       creationDate: articleData.creationDate,
       source: articleData.source,
       outlinks: toLineArray(articleData.outlinks),
@@ -507,6 +535,16 @@ router.put('/articles/:id', async (req, res) => {
       status: normalizeStatus(articleData.status),
       pressAnnouncementId: (articleData.pressAnnouncementId || '').toString().trim()
     };
+
+    // Enforce writer: Only admins can change the writer
+    const isAdmin = req.session.isMaster || req.session.role === 'admin';
+    if (!isAdmin) {
+      // For non-admins, preserve the existing writer
+      normalizedArticle.writer = existingArticle.writer || existingArticle.author || '';
+    } else {
+      // For admins, allow update or fallback to existing
+      normalizedArticle.writer = articleData.writer ? articleData.writer.toString().trim() : (existingArticle.writer || existingArticle.author || '');
+    }
 
     const headerChanged =
       normalizedArticle.header &&
@@ -575,6 +613,23 @@ router.put('/articles/:id/status', async (req, res) => {
 router.delete('/articles/:id', async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Get article to check ownership
+    const article = dataService.getArticleById(id);
+    if (!article) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
+    // Check permissions
+    // Master Admin and Admin can delete anything
+    const canDeleteAny = req.session.isMaster || req.session.role === 'admin';
+
+    if (!canDeleteAny) {
+      // Editors can only delete their own articles
+      if (article.created_by !== req.session.username) {
+        return res.status(403).json({ error: 'Sadece kendi oluşturduğunuz haberleri silebilirsiniz.' });
+      }
+    }
 
     // Delete article from database
     const deleted = dataService.deleteArticle(id);

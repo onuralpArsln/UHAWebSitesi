@@ -1,0 +1,62 @@
+{% macro UserTable(users = []) %}
+<section id="users" class="cms-section" data-cms="users-section" hidden>
+  <div class="cms-content">
+    <div class="cms-section-heading">
+      <h2>Kullanıcılar</h2>
+      <div class="cms-section-actions">
+        <button class="cms-btn cms-btn-secondary" data-action="refresh-users">Listeyi yenile</button>
+        <button class="cms-btn cms-btn-primary" data-action="new-user">Yeni Kullanıcı</button>
+      </div>
+    </div>
+    <p class="cms-section-subtitle">Kullanıcıları ve yetkilerini buradan yönetebilirsiniz.</p>
+
+    <div class="cms-table-wrapper" data-cms="users-table">
+      <table class="cms-table">
+        <thead>
+          <tr>
+            <th>Kullanıcı Adı</th>
+            <th>Ad Soyad</th>
+            <th>Rol</th>
+            <th>Son Giriş</th>
+            <th>Oluşturma</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if users | length %}
+            {% for user in users %}
+            <tr data-user-id="{{ user.id }}">
+              <td><strong>{{ user.username }}</strong></td>
+              <td>{{ user.displayName or '-' }}</td>
+              <td>
+                {% if user.role == 'admin' %}
+                  <span class="cms-badge cms-badge--primary">Yönetici</span>
+                {% else %}
+                  <span class="cms-badge">Editör</span>
+                {% endif %}
+              </td>
+              <td>{{ user.lastLogin | formatDate | default('-') }}</td>
+              <td>{{ user.createdAt | formatDate | default('-') }}</td>
+              <td class="cms-actions">
+                {% if user.id != 'master-admin' %}
+                  <button class="cms-btn cms-btn-secondary" data-action="edit-user" data-user-id="{{ user.id }}">Düzenle</button>
+                  <button class="cms-btn cms-btn-danger" data-action="delete-user" data-user-id="{{ user.id }}">Sil</button>
+                {% else %}
+                  <span class="cms-text-muted">Sistem Yöneticisi</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="6" class="cms-empty-state">
+                Henüz kullanıcı bulunmuyor.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endmacro %}

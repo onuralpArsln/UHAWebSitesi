@@ -1,0 +1,81 @@
+{% macro UserEditor() %}
+<section id="user-editor" class="cms-section" data-cms="user-editor-section" hidden>
+  <div class="cms-content">
+    <div class="cms-section-heading">
+      <h2 data-cms="user-editor-title">Yeni Kullanıcı</h2>
+      <div class="cms-section-actions">
+        <button class="cms-btn cms-btn-secondary" data-action="cancel-user-editor">İptal</button>
+        <button class="cms-btn cms-btn-primary" form="user-form">Kaydet</button>
+      </div>
+    </div>
+
+    <form id="user-form" class="cms-form" data-cms="user-form">
+      <input type="hidden" name="id" value="">
+      
+      <div class="cms-form-grid">
+        <div class="cms-form-group">
+          <label class="cms-label" for="user-username">Kullanıcı Adı</label>
+          <input type="text" id="user-username" name="username" class="cms-input" required>
+        </div>
+
+        <div class="cms-form-group">
+          <label class="cms-label" for="user-password">Şifre</label>
+          <input type="password" id="user-password" name="password" class="cms-input" placeholder="Değiştirmek için doldurun">
+          <p class="cms-help-text">Yeni kullanıcı oluştururken zorunludur.</p>
+        </div>
+
+        <div class="cms-form-group">
+          <label class="cms-label" for="user-display-name">Ad Soyad</label>
+          <input type="text" id="user-display-name" name="displayName" class="cms-input">
+        </div>
+
+        <div class="cms-form-group">
+          <label class="cms-label" for="user-role">Rol</label>
+          <select id="user-role" name="role" class="cms-select">
+            <option value="editor">Editör</option>
+            <option value="admin">Yönetici</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="cms-form-group">
+        <label class="cms-label">Yetkiler</label>
+        <div class="cms-checkbox-group">
+          <label class="cms-checkbox-label">
+            <input type="checkbox" name="permissions" value="manage_users">
+            Kullanıcı Yönetimi
+          </label>
+          <label class="cms-checkbox-label">
+            <input type="checkbox" name="permissions" value="manage_settings">
+            Site Ayarları
+          </label>
+          <label class="cms-checkbox-label">
+            <input type="checkbox" name="permissions" value="publish_articles">
+            Haber Yayınlama
+          </label>
+          <label class="cms-checkbox-label">
+            <input type="checkbox" name="permissions" value="delete_articles">
+            Haber Silme
+          </label>
+          <label class="cms-checkbox-label">
+            <input type="checkbox" name="permissions" value="manage_layout">
+            Sayfa Düzeni
+          </label>
+        </div>
+      </div>
+
+      <div class="cms-form-group">
+        <label class="cms-label">Sekme Görünümü</label>
+        <div class="cms-checkbox-group">
+          {% for tab in cmsTabs %}
+          <label class="cms-checkbox-label">
+            <input type="checkbox" name="permissions" value="{{ tab.permission }}">
+            {{ tab.label }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+{% endmacro %}

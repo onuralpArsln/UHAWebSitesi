@@ -90,7 +90,10 @@
         mediaCurrentFolder: '',
         mediaBreadcrumbs: [],
         mediaSearchTerm: '',
-        homepageLayout: initialState.homepageLayout || []
+        mediaSearchTerm: '',
+        homepageLayout: initialState.homepageLayout || [],
+        users: initialState.users || [],
+        cmsTabs: initialState.cmsTabs || []
       };
 
       this.mediaLoaded = Array.isArray(this.state.media) && this.state.media.length > 0;
@@ -192,6 +195,17 @@
       this.mediaSearchInput = document.querySelector('[data-cms="media-search-input"]');
       this.mediaSearchClear = document.querySelector('[data-action="clear-media-search"]');
       this.createFolderBtn = document.querySelector('[data-action="create-folder"]');
+
+      this.usersSection = document.querySelector('[data-cms="users-section"]');
+      this.usersTable = document.querySelector('[data-cms="users-table"]');
+      this.usersTableBody = this.usersTable ? this.usersTable.querySelector('tbody') : null;
+      this.refreshUsersBtn = document.querySelector('[data-action="refresh-users"]');
+      this.newUserBtn = document.querySelector('[data-action="new-user"]');
+
+      this.userEditorSection = document.querySelector('[data-cms="user-editor-section"]');
+      this.userForm = document.querySelector('[data-cms="user-form"]');
+      this.userEditorTitle = document.querySelector('[data-cms="user-editor-title"]');
+      this.cancelUserEditorBtn = document.querySelector('[data-action="cancel-user-editor"]');
     }
 
     bindEvents() {
@@ -408,6 +422,38 @@
         this.articleMediaList.addEventListener('click', (event) => this.handleArticleMediaListClick(event));
         this.articleMediaList.addEventListener('input', (event) => this.handleArticleMediaListInput(event));
       }
+
+      if (this.refreshUsersBtn) {
+        this.refreshUsersBtn.addEventListener('click', () => this.loadUsers());
+      }
+
+      if (this.newUserBtn) {
+        this.newUserBtn.addEventListener('click', () => this.openUserEditor());
+      }
+
+      if (this.usersTableBody) {
+        this.usersTableBody.addEventListener('click', (event) => {
+          const button = event.target.closest('button[data-action]');
+          if (!button) return;
+          const { action, userId } = button.dataset;
+          if (action === 'edit-user') {
+            this.openUserEditor(userId);
+          } else if (action === 'delete-user') {
+            this.deleteUser(userId);
+          }
+        });
+      }
+
+      if (this.cancelUserEditorBtn) {
+        this.cancelUserEditorBtn.addEventListener('click', () => this.showSection('users'));
+      }
+
+      if (this.userForm) {
+        this.userForm.addEventListener('submit', (event) => {
+          event.preventDefault();
+          this.saveUser();
+        });
+      }
     }
 
     renderInitialState() {
@@ -428,6 +474,36 @@
       } else {
         this.updateMediaSearchInput('');
       }
+      this.renderUsersTable(this.state.users);
+
+      // Apply permission-based UI restrictions
+      const user = this.state.currentUser;
+      if (user) {
+        const hasPermission = (perm) => {
+          return user.isMaster || user.role === 'admin' || (user.permissions && user.permissions.includes(perm));
+        };
+
+        const tabPermissions = {};
+        if (this.state.cmsTabs) {
+          this.state.cmsTabs.forEach(tab => {
+            tabPermissions[`#${tab.id}`] = tab.permission;
+          });
+        }
+
+        Object.entries(tabPermissions).forEach(([selector, permission]) => {
+          if (!hasPermission(permission)) {
+            const link = document.querySelector(`a[href="${selector}"]`);
+            if (link) link.parentElement.style.display = 'none';
+          }
+        });
+
+        // Additional specific checks for actions (double protection)
+        if (!hasPermission('manage_settings')) {
+          // Ensure settings/branding forms are disabled or hidden if they were somehow accessed
+          if (this.brandingForm) this.brandingForm.remove();
+          if (this.settingsForm) this.settingsForm.remove();
+        }
+      }
     }
 
     showSection(sectionId) {
@@ -436,8 +512,10 @@
         articles: 'Haberler',
         categories: 'Kategoriler',
         media: 'Medya Kontrolleri',
+        media: 'Medya Kontrolleri',
         branding: 'Marka',
-        settings: 'Site Ayarları'
+        settings: 'Site Ayarları',
+        users: 'Kullanıcı Yönetimi'
       };
 
       this.navLinks.forEach((link) => {
@@ -457,6 +535,11 @@
       if (this.editorSection) {
         this.editorSection.setAttribute('hidden', '');
         this.editorSection.classList.remove('active');
+      }
+
+      if (this.userEditorSection) {
+        this.userEditorSection.setAttribute('hidden', '');
+        this.userEditorSection.classList.remove('active');
       }
 
       if (this.pageTitleElement) {
@@ -659,6 +742,154 @@
       this.renderCategoryOptions(list);
       this.updateCategoryStats(list.length);
       this.updateLayoutCategorySelects();
+    }
+
+    async loadUsers() {
+      try {
+        const response = await fetch('/api/auth/users');
+        if (!response.ok) throw new Error();
+        const users = await response.json();
+        this.state.users = users;
+        this.renderUsersTable(users);
+      } catch (error) {
+        this.showError('Kullanıcılar yüklenemedi.');
+      }
+    }
+
+    renderUsersTable(users) {
+      if (!this.usersTableBody) return;
+      if (!Array.isArray(users) || users.length === 0) {
+        this.usersTableBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="cms-empty-state">Henüz kullanıcı bulunmuyor.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      this.usersTableBody.innerHTML = users
+        .map((user) => {
+          const roleBadge = user.role === 'admin'
+            ? '<span class="cms-badge cms-badge--primary">Yönetici</span>'
+            : '<span class="cms-badge">Editör</span>';
+
+          const actions = user.id === 'master-admin'
+            ? '<span class="cms-text-muted">Sistem Yöneticisi</span>'
+            : `
+              <button class="cms-btn cms-btn-secondary" data-action="edit-user" data-user-id="${user.id}">Düzenle</button>
+              <button class="cms-btn cms-btn-danger" data-action="delete-user" data-user-id="${user.id}">Sil</button>
+            `;
+
+          return `
+            <tr data-user-id="${user.id}">
+              <td><strong>${this.escapeHtml(user.username)}</strong></td>
+              <td>${this.escapeHtml(user.displayName || '-')}</td>
+              <td>${roleBadge}</td>
+              <td>${this.formatDate(user.lastLogin, '-')}</td>
+              <td>${this.formatDate(user.createdAt, '-')}</td>
+              <td class="cms-actions">${actions}</td>
+            </tr>
+          `;
+        })
+        .join('');
+    }
+
+    openUserEditor(userId = null) {
+      if (!this.userEditorSection || !this.userForm) return;
+
+      this.sections.forEach(s => s.setAttribute('hidden', ''));
+      this.userEditorSection.removeAttribute('hidden');
+      this.userEditorSection.classList.add('active');
+
+      this.userForm.reset();
+      const idInput = this.userForm.querySelector('[name="id"]');
+      const usernameInput = this.userForm.querySelector('[name="username"]');
+      const passwordInput = this.userForm.querySelector('[name="password"]');
+
+      if (userId) {
+        const user = this.state.users.find(u => u.id === userId);
+        if (!user) return;
+
+        this.userEditorTitle.textContent = 'Kullanıcı Düzenle';
+        idInput.value = user.id;
+        usernameInput.value = user.username;
+        usernameInput.disabled = true; // Cannot change username
+        passwordInput.placeholder = 'Değiştirmek için doldurun';
+        passwordInput.required = false;
+
+        this.userForm.querySelector('[name="displayName"]').value = user.displayName || '';
+        this.userForm.querySelector('[name="role"]').value = user.role || 'editor';
+
+        // Permissions
+        const permissions = user.permissions || [];
+        this.userForm.querySelectorAll('[name="permissions"]').forEach(cb => {
+          cb.checked = permissions.includes(cb.value);
+        });
+      } else {
+        this.userEditorTitle.textContent = 'Yeni Kullanıcı';
+        idInput.value = '';
+        usernameInput.value = '';
+        usernameInput.disabled = false;
+        passwordInput.placeholder = '';
+        passwordInput.required = true;
+        this.userForm.querySelector('[name="role"]').value = 'editor';
+        this.userForm.querySelectorAll('[name="permissions"]').forEach(cb => cb.checked = false);
+      }
+    }
+
+    async saveUser() {
+      const formData = new FormData(this.userForm);
+      const data = Object.fromEntries(formData.entries());
+
+      // Handle permissions array
+      const permissions = [];
+      this.userForm.querySelectorAll('[name="permissions"]:checked').forEach(cb => {
+        permissions.push(cb.value);
+      });
+      data.permissions = permissions;
+
+      const isEdit = !!data.id;
+      const url = isEdit ? `/api/auth/users/${data.id}` : '/api/auth/users';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      if (!data.password && isEdit) {
+        delete data.password;
+      }
+
+      try {
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) throw new Error(result.error || 'İşlem başarısız');
+
+        this.showSuccess(isEdit ? 'Kullanıcı güncellendi' : 'Kullanıcı oluşturuldu');
+        this.loadUsers();
+        this.showSection('users');
+      } catch (error) {
+        this.showError(error.message);
+      }
+    }
+
+    async deleteUser(userId) {
+      if (!confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')) return;
+
+      try {
+        const response = await fetch(`/api/auth/users/${userId}`, {
+          method: 'DELETE'
+        });
+
+        if (!response.ok) throw new Error('Silme işlemi başarısız');
+
+        this.showSuccess('Kullanıcı silindi');
+        this.loadUsers();
+      } catch (error) {
+        this.showError(error.message);
+      }
     }
 
     updateLayoutCategorySelects() {

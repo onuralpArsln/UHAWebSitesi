@@ -11,7 +11,7 @@ class ConfigService {
   constructor() {
     // Project root directory (assumes this file is in server/services/)
     this.projectRoot = path.join(__dirname, '../..');
-    
+
     // Auto-detect paths
     this.paths = {
       projectRoot: this.projectRoot,
@@ -45,9 +45,20 @@ class ConfigService {
 
     // Optional features
     this.features = {
-      adsenseClientId: process.env.ADSENSE_CLIENT_ID || '',
       adsenseSlotId: process.env.ADSENSE_SLOT_ID || ''
     };
+
+    // CMS Tabs Configuration
+    this.cmsTabs = [
+      { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', permission: 'view_tab_dashboard' },
+      { id: 'articles', label: 'Haberler', icon: 'article', permission: 'view_tab_articles' },
+      { id: 'categories', label: 'Kategoriler', icon: 'category', permission: 'view_tab_categories' },
+      { id: 'media', label: 'Medya', icon: 'image', permission: 'view_tab_media' },
+      { id: 'branding', label: 'Marka', icon: 'branding_watermark', permission: 'view_tab_branding' },
+      { id: 'layout', label: 'Sayfa Düzeni', icon: 'view_quilt', permission: 'view_tab_layout' },
+      { id: 'settings', label: 'Ayarlar', icon: 'settings', permission: 'view_tab_settings' },
+      { id: 'users', label: 'Kullanıcılar', icon: 'people', permission: 'view_tab_users' }
+    ];
 
     // Cache for request-based configs
     this.requestCache = new Map();
@@ -84,6 +95,13 @@ class ConfigService {
   }
 
   /**
+   * Get CMS Tabs
+   */
+  getCmsTabs() {
+    return [...this.cmsTabs];
+  }
+
+  /**
    * Get all paths
    */
   getPaths() {
@@ -103,7 +121,7 @@ class ConfigService {
     // Check cache first (keyed by host)
     const host = req.get('host') || req.headers.host || 'localhost';
     const cacheKey = `${host}-${req.protocol}`;
-    
+
     if (this.requestCache.has(cacheKey)) {
       return this.requestCache.get(cacheKey);
     }
@@ -128,10 +146,10 @@ class ConfigService {
 
     // Build URL
     const siteUrl = `${protocol}://${hostname}`;
-    
+
     // Cache for this host/protocol combination
     this.requestCache.set(cacheKey, siteUrl);
-    
+
     return siteUrl;
   }
 
@@ -166,11 +184,11 @@ class ConfigService {
    */
   isHttps(req) {
     if (!req) return false;
-    
+
     if (req.secure) return true;
     if (req.headers['x-forwarded-proto'] === 'https') return true;
     if (req.protocol === 'https') return true;
-    
+
     return false;
   }
 

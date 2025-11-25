@@ -7,6 +7,7 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 const { randomUUID } = require('crypto');
+const bcrypt = require('bcrypt');
 
 const MEDIA_UPLOAD_WEB_PATH = '/uploads/media';
 
@@ -74,7 +75,8 @@ class DataService {
         content TEXT,
         author TEXT,
         publishedAt TEXT,
-        keywords TEXT
+        keywords TEXT,
+        created_by TEXT
       )
     `);
 
@@ -97,6 +99,7 @@ class DataService {
       CREATE INDEX IF NOT EXISTS idx_articles_category ON articles(category);
       CREATE INDEX IF NOT EXISTS idx_articles_creationDate ON articles(creationDate);
       CREATE INDEX IF NOT EXISTS idx_articles_targettedViews ON articles(targettedViews);
+      CREATE INDEX IF NOT EXISTS idx_articles_created_by ON articles(created_by);
       CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name);
     `);
 
@@ -123,6 +126,20 @@ class DataService {
         id TEXT PRIMARY KEY,
         layout TEXT NOT NULL,
         updatedAt TEXT
+      )
+    `);
+
+    // Create users table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        display_name TEXT,
+        role TEXT DEFAULT 'editor',
+        permissions TEXT,
+        created_at TEXT,
+        last_login TEXT
       )
     `);
   }
@@ -154,7 +171,8 @@ class DataService {
           { name: 'targettedViews', type: 'TEXT', default: "'[]'" },
           { name: 'videoUrl', type: 'TEXT', default: "''" },
           { name: 'status', type: 'TEXT', default: "'visible'" },
-          { name: 'pressAnnouncementId', type: 'TEXT', default: "''" }
+          { name: 'pressAnnouncementId', type: 'TEXT', default: "''" },
+          { name: 'created_by', type: 'TEXT', default: "COALESCE(created_by, '')" }
         ];
 
         for (const col of newColumns) {
@@ -367,8 +385,8 @@ class DataService {
 
       // Insert articles with new schema
       const insertArticle = this.db.prepare(`
-        INSERT INTO articles (id, header, summaryHead, summary, category, tags, body, images, writer, creationDate, source, outlinks, targettedViews, updatedAt, relatedArticles, title, content, author, publishedAt, keywords)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO articles (id, header, summaryHead, summary, category, tags, body, images, writer, creationDate, source, outlinks, targettedViews, updatedAt, relatedArticles, status, pressAnnouncementId, created_by, title, content, author, publishedAt, keywords)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       const insertArticleTransaction = this.db.transaction((articles) => {
@@ -389,6 +407,9 @@ class DataService {
             JSON.stringify(article.targettedViews || []),
             article.updatedAt || new Date().toISOString(),
             JSON.stringify(article.relatedArticles || []),
+            article.status || 'visible',
+            article.pressAnnouncementId || '',
+            article.created_by || null,
             // Legacy fields
             article.header || article.title || '',
             article.body || article.content || '',
@@ -427,7 +448,8 @@ class DataService {
         targettedViews: ['homepage', 'flash-news', 'carousel'],
         updatedAt: now,
         images: [{ url: 'https://via.placeholder.com/800x600/1a365d/ffffff?text=Deprem+Haberi', highRes: 'https://via.placeholder.com/800x600/1a365d/ffffff?text=Deprem+Haberi' }],
-        relatedArticles: ['2', '3']
+        relatedArticles: ['2', '3'],
+        created_by: 'mock_user_1'
       },
       {
         id: '2',
@@ -443,7 +465,8 @@ class DataService {
         targettedViews: ['homepage', 'featured-news-grid'],
         updatedAt: new Date(Date.now() - 3600000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/c53030/ffffff?text=Meclis+Açılışı', highRes: 'https://via.placeholder.com/800x600/c53030/ffffff?text=Meclis+Açılışı' }],
-        relatedArticles: ['1']
+        relatedArticles: ['1'],
+        created_by: 'mock_user_1'
       },
       {
         id: '3',
@@ -459,7 +482,8 @@ class DataService {
         targettedViews: ['category-feed'],
         updatedAt: new Date(Date.now() - 7200000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/2d3748/ffffff?text=İstanbul+Trafik', highRes: 'https://via.placeholder.com/800x600/2d3748/ffffff?text=İstanbul+Trafik' }],
-        relatedArticles: []
+        relatedArticles: [],
+        created_by: 'mock_user_2'
       },
       {
         id: '4',
@@ -475,7 +499,8 @@ class DataService {
         targettedViews: ['flash-news'],
         updatedAt: new Date(Date.now() - 10800000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/4a5568/ffffff?text=Hava+Durumu', highRes: 'https://via.placeholder.com/800x600/4a5568/ffffff?text=Hava+Durumu' }],
-        relatedArticles: ['1']
+        relatedArticles: ['1'],
+        created_by: 'mock_user_1'
       },
 
       // EKONOMİ (5-8)
@@ -494,7 +519,8 @@ class DataService {
         targettedViews: ['homepage', 'carousel', 'category-feed'],
         updatedAt: new Date(Date.now() - 86400000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/3182ce/ffffff?text=Ekonomi+Haberi', highRes: 'https://via.placeholder.com/800x600/3182ce/ffffff?text=Ekonomi+Haberi' }],
-        relatedArticles: ['6', '7']
+        relatedArticles: ['6', '7'],
+        created_by: 'mock_user_3'
       },
       {
         id: '6',
@@ -510,7 +536,8 @@ class DataService {
         targettedViews: ['featured-news-grid', 'flash-news'],
         updatedAt: new Date(Date.now() - 90000000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/2b6cb0/ffffff?text=Borsa+İstanbul', highRes: 'https://via.placeholder.com/800x600/2b6cb0/ffffff?text=Borsa+İstanbul' }],
-        relatedArticles: ['5']
+        relatedArticles: ['5'],
+        created_by: 'mock_user_3'
       },
       {
         id: '7',
@@ -526,7 +553,8 @@ class DataService {
         targettedViews: ['category-feed'],
         updatedAt: new Date(Date.now() - 95000000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/d69e2e/ffffff?text=Altın+Fiyatları', highRes: 'https://via.placeholder.com/800x600/d69e2e/ffffff?text=Altın+Fiyatları' }],
-        relatedArticles: ['5']
+        relatedArticles: ['5'],
+        created_by: 'mock_user_3'
       },
       {
         id: '8',
@@ -542,7 +570,8 @@ class DataService {
         targettedViews: ['category-feed'],
         updatedAt: new Date(Date.now() - 100000000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/2c5282/ffffff?text=İhracat+Rakamları', highRes: 'https://via.placeholder.com/800x600/2c5282/ffffff?text=İhracat+Rakamları' }],
-        relatedArticles: ['5']
+        relatedArticles: ['5'],
+        created_by: 'mock_user_3'
       },
 
       // SPOR (9-12)
@@ -561,7 +590,8 @@ class DataService {
         targettedViews: ['homepage', 'carousel', 'featured-news-grid'],
         updatedAt: new Date(Date.now() - 172800000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/38a169/ffffff?text=Spor+Haberi', highRes: 'https://via.placeholder.com/800x600/38a169/ffffff?text=Spor+Haberi' }],
-        relatedArticles: ['10', '11']
+        relatedArticles: ['10', '11'],
+        created_by: 'mock_user_4'
       },
       {
         id: '10',
@@ -577,7 +607,8 @@ class DataService {
         targettedViews: ['category-feed', 'flash-news'],
         updatedAt: new Date(Date.now() - 175000000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/2f855a/ffffff?text=Fenerbahçe', highRes: 'https://via.placeholder.com/800x600/2f855a/ffffff?text=Fenerbahçe' }],
-        relatedArticles: ['9']
+        relatedArticles: ['9'],
+        created_by: 'mock_user_4'
       },
       {
         id: '11',
@@ -593,7 +624,8 @@ class DataService {
         targettedViews: ['carousel', 'featured-news-grid'],
         updatedAt: new Date(Date.now() - 180000000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/276749/ffffff?text=Voleybol+Zaferi', highRes: 'https://via.placeholder.com/800x600/276749/ffffff?text=Voleybol+Zaferi' }],
-        relatedArticles: []
+        relatedArticles: [],
+        created_by: 'mock_user_4'
       },
       {
         id: '12',
@@ -609,7 +641,8 @@ class DataService {
         targettedViews: ['category-feed'],
         updatedAt: new Date(Date.now() - 185000000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/22543d/ffffff?text=Formula+1', highRes: 'https://via.placeholder.com/800x600/22543d/ffffff?text=Formula+1' }],
-        relatedArticles: []
+        relatedArticles: [],
+        created_by: 'mock_user_4'
       },
 
       // TEKNOLOJİ (13-15)
@@ -628,7 +661,8 @@ class DataService {
         targettedViews: ['category-feed', 'featured-news-grid'],
         updatedAt: new Date(Date.now() - 259200000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/d69e2e/ffffff?text=Teknoloji+Haberi', highRes: 'https://via.placeholder.com/800x600/d69e2e/ffffff?text=Teknoloji+Haberi' }],
-        relatedArticles: ['14']
+        relatedArticles: ['14'],
+        created_by: 'mock_user_5'
       },
       {
         id: '14',
@@ -644,7 +678,8 @@ class DataService {
         targettedViews: ['category-feed'],
         updatedAt: new Date(Date.now() - 265000000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/b7791f/ffffff?text=Yapay+Zeka', highRes: 'https://via.placeholder.com/800x600/b7791f/ffffff?text=Yapay+Zeka' }],
-        relatedArticles: ['13']
+        relatedArticles: ['13'],
+        created_by: 'mock_user_5'
       },
       {
         id: '15',
@@ -660,7 +695,8 @@ class DataService {
         targettedViews: ['category-feed', 'carousel'],
         updatedAt: new Date(Date.now() - 270000000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/975a16/ffffff?text=Akıllı+Telefon', highRes: 'https://via.placeholder.com/800x600/975a16/ffffff?text=Akıllı+Telefon' }],
-        relatedArticles: []
+        relatedArticles: [],
+        created_by: 'mock_user_5'
       },
 
       // SAĞLIK (16-18)
@@ -679,7 +715,8 @@ class DataService {
         targettedViews: ['category-feed', 'flash-news'],
         updatedAt: new Date(Date.now() - 345600000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/e53e3e/ffffff?text=Sağlık+Haberi', highRes: 'https://via.placeholder.com/800x600/e53e3e/ffffff?text=Sağlık+Haberi' }],
-        relatedArticles: ['17']
+        relatedArticles: ['17'],
+        created_by: 'mock_user_6'
       },
       {
         id: '17',
@@ -695,7 +732,8 @@ class DataService {
         targettedViews: ['category-feed'],
         updatedAt: new Date(Date.now() - 350000000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/c53030/ffffff?text=Egzersiz', highRes: 'https://via.placeholder.com/800x600/c53030/ffffff?text=Egzersiz' }],
-        relatedArticles: ['16']
+        relatedArticles: ['16'],
+        created_by: 'mock_user_6'
       },
       {
         id: '18',
@@ -711,7 +749,8 @@ class DataService {
         targettedViews: ['category-feed'],
         updatedAt: new Date(Date.now() - 355000000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/9b2c2c/ffffff?text=Beslenme', highRes: 'https://via.placeholder.com/800x600/9b2c2c/ffffff?text=Beslenme' }],
-        relatedArticles: []
+        relatedArticles: [],
+        created_by: 'mock_user_6'
       },
 
       // EĞİTİM (19-20)
@@ -730,7 +769,8 @@ class DataService {
         targettedViews: ['category-feed', 'featured-news-grid'],
         updatedAt: new Date(Date.now() - 432000000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/805ad5/ffffff?text=Eğitim+Haberi', highRes: 'https://via.placeholder.com/800x600/805ad5/ffffff?text=Eğitim+Haberi' }],
-        relatedArticles: ['20']
+        relatedArticles: ['20'],
+        created_by: 'mock_user_7'
       },
       {
         id: '20',
@@ -746,7 +786,8 @@ class DataService {
         targettedViews: ['category-feed', 'flash-news'],
         updatedAt: new Date(Date.now() - 440000000).toISOString(),
         images: [{ url: 'https://via.placeholder.com/800x600/6b46c1/ffffff?text=Üniversite', highRes: 'https://via.placeholder.com/800x600/6b46c1/ffffff?text=Üniversite' }],
-        relatedArticles: ['19']
+        relatedArticles: ['19'],
+        created_by: 'mock_user_7'
       }
     ];
   }
@@ -801,6 +842,7 @@ class DataService {
       relatedArticles: row.relatedArticles ? (typeof row.relatedArticles === 'string' ? JSON.parse(row.relatedArticles) : row.relatedArticles) : [],
       status: status === 'hidden' ? 'hidden' : 'visible',
       pressAnnouncementId: row.pressAnnouncementId || '',
+      created_by: row.created_by || null,
       // Legacy fields for backward compatibility
       title: header,
       content: body,
@@ -1179,71 +1221,61 @@ class DataService {
     const id = Date.now().toString();
     const now = new Date().toISOString();
 
-    // Use new fields, fallback to legacy fields for backward compatibility
-    const header = articleData.header || articleData.title || '';
-    const body = articleData.body || articleData.content || '';
-    const writer = articleData.writer || articleData.author || 'UHA News';
-    const creationDate = articleData.creationDate || articleData.publishedAt || now;
-    const tags = articleData.tags || articleData.keywords || [];
+    const {
+      header, summaryHead, summary, category, tags, body, videoUrl, images,
+      writer, creationDate, source, outlinks, targettedViews, relatedArticles,
+      status, pressAnnouncementId, created_by
+    } = articleData;
 
-    const newArticle = {
+    const stmt = this.db.prepare(`
+      INSERT INTO articles (
+        id, header, summaryHead, summary, category, tags, body, videoUrl, images,
+        writer, creationDate, source, outlinks, targettedViews, relatedArticles,
+        status, pressAnnouncementId, created_by,
+        -- Legacy fields for backward compatibility
+        title, content, author, publishedAt, keywords
+      )
+      VALUES (
+        @id, @header, @summaryHead, @summary, @category, @tags, @body, @videoUrl, @images,
+        @writer, @creationDate, @source, @outlinks, @targettedViews, @relatedArticles,
+        @status, @pressAnnouncementId, @created_by,
+        -- Legacy fields for backward compatibility
+        @title, @content, @author, @publishedAt, @keywords
+      )
+    `);
+
+    const articleToInsert = {
       id,
-      header,
-      summaryHead: articleData.summaryHead || '',
-      summary: articleData.summary || '',
-      category: articleData.category || 'Genel',
-      tags: JSON.stringify(tags),
-      body,
-      videoUrl: articleData.videoUrl || articleData.video || '',
-      images: JSON.stringify(articleData.images || []),
-      writer,
-      creationDate,
-      source: articleData.source || '',
-      outlinks: JSON.stringify(articleData.outlinks || []),
-      targettedViews: JSON.stringify(articleData.targettedViews || []),
+      header: header || articleData.title || '',
+      summaryHead: summaryHead || '',
+      summary: summary || '',
+      category: category || 'Genel',
+      tags: JSON.stringify(tags || articleData.keywords || []),
+      body: body || articleData.content || '',
+      videoUrl: videoUrl || articleData.video || '',
+      images: JSON.stringify(images || []),
+      writer: writer || articleData.author || 'UHA News',
+      creationDate: creationDate || articleData.publishedAt || now,
+      source: source || '',
+      outlinks: JSON.stringify(outlinks || []),
+      targettedViews: JSON.stringify(targettedViews || []),
+      relatedArticles: JSON.stringify(relatedArticles || []),
+      status: status || 'visible',
+      pressAnnouncementId: pressAnnouncementId || '',
+      created_by: created_by || null,
       updatedAt: articleData.updatedAt || now,
-      relatedArticles: JSON.stringify(articleData.relatedArticles || []),
-      status: articleData.status || 'visible',
-      pressAnnouncementId: articleData.pressAnnouncementId || '',
-      // Legacy fields for backward compatibility
-      title: header,
-      content: body,
-      author: writer,
-      publishedAt: creationDate,
-      keywords: JSON.stringify(tags)
+      // Legacy fields
+      title: header || articleData.title || '',
+      content: body || articleData.content || '',
+      author: writer || articleData.author || 'UHA News',
+      publishedAt: creationDate || articleData.publishedAt || now,
+      keywords: JSON.stringify(tags || articleData.keywords || [])
     };
 
-    this.db.prepare(`
-      INSERT INTO articles (id, header, summaryHead, summary, category, tags, body, videoUrl, images, writer, creationDate, source, outlinks, targettedViews, updatedAt, relatedArticles, status, pressAnnouncementId, title, content, author, publishedAt, keywords)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      newArticle.id,
-      newArticle.header,
-      newArticle.summaryHead,
-      newArticle.summary,
-      newArticle.category,
-      newArticle.tags,
-      newArticle.body,
-      newArticle.videoUrl,
-      newArticle.images,
-      newArticle.writer,
-      newArticle.creationDate,
-      newArticle.source,
-      newArticle.outlinks,
-      newArticle.targettedViews,
-      newArticle.updatedAt,
-      newArticle.relatedArticles,
-      newArticle.status,
-      newArticle.pressAnnouncementId,
-      newArticle.title,
-      newArticle.content,
-      newArticle.author,
-      newArticle.publishedAt,
-      newArticle.keywords
-    );
+    stmt.run(articleToInsert);
 
     // Update category article count
-    this.updateCategoryArticleCount(newArticle.category);
+    this.updateCategoryArticleCount(articleToInsert.category);
 
     return this.getArticleById(id);
   }
@@ -1376,6 +1408,143 @@ class DataService {
   close() {
     if (this.db) {
       this.db.close();
+    }
+  }
+  /**
+   * Create a new user
+   */
+  createUser(userData) {
+    const { username, password, displayName, role, permissions } = userData;
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const passwordHash = bcrypt.hashSync(password, 10);
+
+    const stmt = this.db.prepare(`
+      INSERT INTO users (id, username, password_hash, display_name, role, permissions, created_at)
+      VALUES (@id, @username, @passwordHash, @displayName, @role, @permissions, @createdAt)
+    `);
+
+    stmt.run({
+      id,
+      username,
+      passwordHash,
+      displayName,
+      role: role || 'editor',
+      permissions: JSON.stringify(permissions || []),
+      createdAt: now
+    });
+
+    return { id, username, displayName, role, permissions };
+  }
+
+  /**
+   * Get user by username
+   */
+  getUserByUsername(username) {
+    const row = this.db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+    if (!row) return null;
+    return this.parseUser(row);
+  }
+
+  /**
+   * Get user by ID
+   */
+  getUserById(id) {
+    const row = this.db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    if (!row) return null;
+    return this.parseUser(row);
+  }
+
+  /**
+   * Get all users
+   */
+  getAllUsers() {
+    const rows = this.db.prepare('SELECT * FROM users ORDER BY created_at DESC').all();
+    return rows.map(row => this.parseUser(row));
+  }
+
+  /**
+   * Update user
+   */
+  updateUser(id, updates) {
+    const current = this.getUserById(id);
+    if (!current) return null;
+
+    const { password, displayName, role, permissions } = updates;
+    let passwordHash = current.password_hash; // Keep existing hash by default
+
+    if (password) {
+      passwordHash = bcrypt.hashSync(password, 10);
+    }
+
+    const stmt = this.db.prepare(`
+      UPDATE users
+      SET password_hash = @passwordHash,
+          display_name = @displayName,
+          role = @role,
+          permissions = @permissions
+      WHERE id = @id
+    `);
+
+    stmt.run({
+      id,
+      passwordHash,
+      displayName: displayName || current.displayName,
+      role: role || current.role,
+      permissions: permissions ? JSON.stringify(permissions) : JSON.stringify(current.permissions)
+    });
+
+    return this.getUserById(id);
+  }
+
+  /**
+   * Delete user
+   */
+  deleteUser(id) {
+    const info = this.db.prepare('DELETE FROM users WHERE id = ?').run(id);
+    return info.changes > 0;
+  }
+
+  /**
+   * Update last login time
+   */
+  updateLastLogin(id) {
+    const now = new Date().toISOString();
+    this.db.prepare('UPDATE users SET last_login = ? WHERE id = ?').run(now, id);
+  }
+
+  /**
+   * Parse user row
+   */
+  parseUser(row) {
+    return {
+      id: row.id,
+      username: row.username,
+      // password_hash is internal, usually not returned unless needed for auth check
+      password_hash: row.password_hash,
+      displayName: row.display_name,
+      role: row.role,
+      permissions: row.permissions ? JSON.parse(row.permissions) : [],
+      createdAt: row.created_at,
+      lastLogin: row.last_login
+    };
+  }
+
+  /**
+   * Migrate schema if needed (Add created_by column)
+   */
+  migrateSchemaIfNeeded() {
+    try {
+      const tableInfo = this.db.pragma('table_info(articles)');
+      const hasCreatedBy = tableInfo.some(col => col.name === 'created_by');
+
+      if (!hasCreatedBy) {
+        console.log('Migrating schema: Adding created_by column to articles table');
+        this.db.exec('ALTER TABLE articles ADD COLUMN created_by TEXT');
+        this.db.exec('CREATE INDEX IF NOT EXISTS idx_articles_created_by ON articles(created_by)');
+      }
+    } catch (error) {
+      console.error('Schema migration error:', error);
     }
   }
 }

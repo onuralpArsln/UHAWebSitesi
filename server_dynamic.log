@@ -1,0 +1,22 @@
+
+> uha-news-website@1.0.0 dev
+> node scripts/kill-port.js && nodemon server/index.js
+
+📌 Checking for processes on port 3000...
+✅ Port 3000 is already free
+
+[33m[nodemon] 3.1.10[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node server/index.js`[39m
+🌐 Server configured to support both HTTP and HTTPS
+   - HTTP requests: HTTPS security headers disabled
+   - HTTPS requests: Full security headers enabled
+📝 Loaded 21 slug mappings from cache
+🚀 UHA News Server running on port 3000
+📰 Environment: production
+🌐 Auto-configuring: Protocol and URLs detected from requests
+   - Base Path: (root)
+   - Frontend: http://localhost:3000/
+   - CMS: http://localhost:3000/cms

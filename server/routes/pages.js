@@ -11,7 +11,7 @@ const {
 
 const router = express.Router();
 const dataService = new DataService();
-const urlSlugService = new URLSlugService();
+const urlSlugService = URLSlugService;
 const sitemapService = new SitemapService(dataService, urlSlugService);
 const BRANDING_WEB_PATH = '/uploads/branding';
 

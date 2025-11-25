@@ -241,5 +241,9 @@ class URLSlugService {
   }
 }
 
-module.exports = URLSlugService;
+
+
+// Export as singleton
+const instance = new URLSlugService();
+module.exports = instance;
 

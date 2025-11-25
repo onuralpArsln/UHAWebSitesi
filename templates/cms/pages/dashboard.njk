@@ -10,12 +10,15 @@
 {% from "cms/components/branding-form.njk" import BrandingForm %}
 {% from "cms/components/media-controls.njk" import MediaControls %}
 {% from "cms/components/layout-list.njk" import LayoutList %}
+{% from "cms/components/user-table.njk" import UserTable %}
+{% from "cms/components/user-editor.njk" import UserEditor %}
 
 {% set articles = initialState.articles or [] %}
 {% set categories = initialState.categories or [] %}
 {% set stats = initialState.stats or {} %}
 {% set targetOptions = initialState.targetOptions or ['carousel', 'manset', 'anasayfa', 'akış'] %}
 {% set branding = initialState.branding or {} %}
+{% set users = initialState.users or [] %}
 
 {% block body %}
 {{ Sidebar('dashboard') }}
@@ -40,6 +43,12 @@
   {{ BrandingForm(branding) }}
 
   {{ LayoutList(initialState.homepageLayout) }}
+
+  {{ LayoutList(initialState.homepageLayout) }}
+
+  {{ UserTable(users) }}
+
+  {{ UserEditor() }}
 
   {{ SettingsForm(initialState.settings or {}) }}
 </main>

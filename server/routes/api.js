@@ -4,7 +4,7 @@ const URLSlugService = require('../services/url-slug');
 
 const router = express.Router();
 const dataService = new DataService();
-const urlSlugService = new URLSlugService();
+const urlSlugService = URLSlugService;
 
 /**
  * Get articles with pagination and filters
@@ -34,8 +34,8 @@ router.get('/articles', async (req, res) => {
       ...articles,
       articles: articles.articles.map(article => ({
         ...article,
-        slug: urlSlugService.getSlugById(article.id) || 
-              urlSlugService.generateSlug(article.title)
+        slug: urlSlugService.getSlugById(article.id) ||
+          urlSlugService.generateSlug(article.title)
       }))
     };
 
@@ -62,8 +62,8 @@ router.get('/articles/:id', async (req, res) => {
     // Add slug to article
     const articleWithSlug = {
       ...article,
-      slug: urlSlugService.getSlugById(article.id) || 
-            urlSlugService.generateSlug(article.title)
+      slug: urlSlugService.getSlugById(article.id) ||
+        urlSlugService.generateSlug(article.title)
     };
 
     res.json(articleWithSlug);
@@ -87,8 +87,8 @@ router.get('/related/:id', async (req, res) => {
     // Add slugs to related articles
     const relatedWithSlugs = relatedArticles.map(article => ({
       ...article,
-      slug: urlSlugService.getSlugById(article.id) || 
-            urlSlugService.generateSlug(article.title)
+      slug: urlSlugService.getSlugById(article.id) ||
+        urlSlugService.generateSlug(article.title)
     }));
 
     res.json({ articles: relatedWithSlugs });
@@ -117,8 +117,8 @@ router.get('/related-news', async (req, res) => {
     // Add slugs to articles
     const articlesWithSlugs = articles.articles.map(article => ({
       ...article,
-      slug: urlSlugService.getSlugById(article.id) || 
-            urlSlugService.generateSlug(article.title)
+      slug: urlSlugService.getSlugById(article.id) ||
+        urlSlugService.generateSlug(article.title)
     }));
 
     res.json({
@@ -245,8 +245,8 @@ router.get('/breaking-news', async (req, res) => {
     // Add slugs to articles
     const breakingWithSlugs = breakingNews.articles.map(article => ({
       ...article,
-      slug: urlSlugService.getSlugById(article.id) || 
-            urlSlugService.generateSlug(article.title)
+      slug: urlSlugService.getSlugById(article.id) ||
+        urlSlugService.generateSlug(article.title)
     }));
 
     res.json({ articles: breakingWithSlugs });
@@ -274,8 +274,8 @@ router.get('/trending', async (req, res) => {
     // Add slugs to articles
     const trendingWithSlugs = trendingArticles.articles.map(article => ({
       ...article,
-      slug: urlSlugService.getSlugById(article.id) || 
-            urlSlugService.generateSlug(article.title)
+      slug: urlSlugService.getSlugById(article.id) ||
+        urlSlugService.generateSlug(article.title)
     }));
 
     res.json({ articles: trendingWithSlugs });

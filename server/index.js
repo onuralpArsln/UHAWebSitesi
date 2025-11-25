@@ -5,6 +5,10 @@ const path = require('path');
 const nunjucks = require('nunjucks');
 // Import Helmet middleware only for HTTPS
 const helmet = require('helmet');
+const session = require('express-session');
+const SqliteStore = require('better-sqlite3-session-store')(session);
+const Database = require('better-sqlite3');
+const { requireAuth } = require('./middleware/auth');
 // Optional: Load .env if it exists (not required - system auto-configures)
 try {
   require('dotenv').config();
@@ -180,6 +184,28 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Session Configuration
+const dbPath = path.join(__dirname, '../data/news.db');
+const db = new Database(dbPath);
+
+app.use(session({
+  store: new SqliteStore({
+    client: db,
+    expired: {
+      clear: true,
+      intervalMs: 900000 // 15min
+    }
+  }),
+  secret: process.env.SESSION_SECRET || 'uha-secret-key-change-in-prod',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: 'auto', // Handle by express-session based on connection security
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24 // 1 day
+  }
+}));
+
 // Note: Express automatically decodes URL-encoded route parameters
 // Turkish characters in URLs are handled by normalizeSlugFromUrl() in url-slug service
 
@@ -236,16 +262,29 @@ cssFiles.forEach(cssFile => {
 });
 
 // Routes
-function mountRoutesBoth(mountPath, router) {
-  app.use(mountPath, router);
+function mountRoutesBoth(mountPath, ...handlers) {
+  app.use(mountPath, ...handlers);
   if (BASE_PATH) {
-    app.use(BASE_PATH + mountPath, router);
+    app.use(BASE_PATH + mountPath, ...handlers);
   }
 }
 
+mountRoutesBoth('/api/auth', require('./routes/auth'));
 mountRoutesBoth('/api', require('./routes/api'));
-mountRoutesBoth('/cms/media', require('./routes/cms-media'));
-mountRoutesBoth('/cms', require('./routes/cms'));
+mountRoutesBoth('/cms/media', requireAuth, require('./routes/cms-media'));
+
+// Public CMS routes (Login)
+const cmsAuthRouter = express.Router();
+cmsAuthRouter.get('/login', (req, res) => {
+  if (req.session && req.session.userId) {
+    return res.redirect('/cms');
+  }
+  res.render('cms/pages/login.njk', { pageTitle: 'Giriş Yap - UHA CMS' });
+});
+mountRoutesBoth('/cms', cmsAuthRouter);
+
+// Protected CMS routes
+mountRoutesBoth('/cms', requireAuth, require('./routes/cms'));
 mountRoutesBoth('/', require('./routes/pages'));
 
 
