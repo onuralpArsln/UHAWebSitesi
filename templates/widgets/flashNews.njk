@@ -21,6 +21,7 @@
     <div class="flash-news__label">
       <span class="flash-news__label-text">SON DAKİKA</span>
     </div>
+    
     <div class="flash-news__ticker" role="marquee" aria-live="polite">
       <div class="flash-news__track">
         {% for item in tickerItems %}
@@ -29,15 +30,22 @@
           href="{{ asset('haber/' ~ item.slug) }}"
           data-created-at="{{ item.creationDate }}"
         >
-          <span class="flash-news__time">
-            {{ item.creationDate | formatTime }}
-          </span>
           <span class="flash-news__title">
             {{ item.summaryHead or item.summary or item.title }}
+          </span>
+          <span class="flash-news__time">
+            <i class="far fa-clock"></i> {{ item.creationDate | formatTime }}
           </span>
         </a>
         {% endfor %}
       </div>
+    </div>
+
+    <div class="flash-news__actions">
+      <a href="/gundem" class="flash-news__view-all">
+        <span class="flash-news__view-all-text">Tüm Haberler</span>
+        <i class="fas fa-arrow-right"></i>
+      </a>
     </div>
   </div>
 </section>

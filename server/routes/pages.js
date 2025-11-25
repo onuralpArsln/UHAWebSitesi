@@ -131,8 +131,9 @@ router.get('/', async (req, res) => {
 
         case 'flash-news':
           // Fetch latest articles for flash news
+          const flashNewsLimit = parseInt(widget.config.limit) || 10;
           const flashNewsArticles = dataService.getArticles({
-            limit: 10,
+            limit: flashNewsLimit,
             sortBy: 'publishedAt',
             sortOrder: 'desc',
             targettedView: 'flash-news',
