@@ -543,7 +543,7 @@
               </td>
               <td>${this.escapeHtml(article.category || '-')}</td>
               <td>${this.escapeHtml(article.writer || '-')}</td>
-              <td><span class="${statusClass}">${article.status === 'hidden' ? 'Gizli' : 'Yayında'}</span></td>
+              <td><span class="${statusClass}" data-action="toggle-status" data-article-id="${article.id}" style="cursor: pointer;" title="Durumu değiştirmek için tıklayın">${article.status === 'hidden' ? 'Gizli' : 'Yayında'}</span></td>
               <td>${this.formatDate(article.creationDate, '-')}</td>
               <td class="cms-actions">
                 <button class="cms-btn cms-btn-secondary" data-action="edit-article" data-article-id="${article.id}">Düzenle</button>
@@ -553,6 +553,40 @@
           `;
         })
         .join('');
+
+      // Add event listeners for status toggle
+      this.articleTableBody.querySelectorAll('[data-action="toggle-status"]').forEach(el => {
+        el.addEventListener('click', (e) => {
+          const articleId = e.currentTarget.dataset.articleId;
+          this.toggleArticleStatus(articleId);
+        });
+      });
+    }
+
+    async toggleArticleStatus(articleId) {
+      const article = this.state.articles.find(a => a.id === articleId);
+      if (!article) return;
+
+      const newStatus = article.status === 'hidden' ? 'visible' : 'hidden';
+
+      try {
+        const response = await fetch(`/cms/articles/${articleId}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+
+        if (!response.ok) throw new Error();
+
+        // Optimistic update
+        article.status = newStatus;
+        this.renderArticlesTable(this.state.articles);
+        this.updateStatsFromPayload({ articles: this.state.articles });
+        this.showSuccess(`Haber durumu güncellendi: ${newStatus === 'hidden' ? 'Gizli' : 'Yayında'}`);
+
+      } catch (error) {
+        this.showError('Durum güncellenemedi.');
+      }
     }
 
     renderCategories(categories) {

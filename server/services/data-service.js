@@ -411,6 +411,7 @@ class DataService {
   generateMockArticles() {
     const now = new Date().toISOString();
     return [
+      // GÜNDEM (1-4)
       {
         id: '1',
         header: 'İzmir\'de 5.2 Büyüklüğünde Deprem Oldu',
@@ -423,29 +424,63 @@ class DataService {
         creationDate: now,
         source: 'AFAD',
         outlinks: ['https://www.afad.gov.tr'],
-        targettedViews: ['homepage', 'breaking-news'],
+        targettedViews: ['homepage', 'flash-news', 'carousel'],
         updatedAt: now,
-        // Legacy fields
-        title: 'İzmir\'de 5.2 Büyüklüğünde Deprem Oldu',
-        content: '<p>İzmir\'de meydana gelen 5.2 büyüklüğündeki deprem, vatandaşları tedirgin etti. Deprem, sabah saatlerinde hissedildi ve çevre illerde de hissedildi.</p><p>AFAD yetkilileri, depremin merkez üssünün İzmir\'in güneyinde olduğunu açıkladı. Şu ana kadar herhangi bir can kaybı veya hasar bildirilmedi.</p>',
-        author: 'UHA Haber',
-        publishedAt: now,
-        keywords: ['deprem', 'izmir', 'afad', 'doğal afet'],
-        images: [
-          {
-            url: 'https://via.placeholder.com/800x600/1a365d/ffffff?text=Deprem+Haberi',
-            lowRes: 'https://via.placeholder.com/400x300/1a365d/ffffff?text=Deprem',
-            highRes: 'https://via.placeholder.com/800x600/1a365d/ffffff?text=Deprem+Haberi',
-            width: 800,
-            height: 600,
-            alt: 'İzmir depremi 5.2 büyüklüğünde',
-            title: 'İzmir Depremi'
-          }
-        ],
+        images: [{ url: 'https://via.placeholder.com/800x600/1a365d/ffffff?text=Deprem+Haberi', highRes: 'https://via.placeholder.com/800x600/1a365d/ffffff?text=Deprem+Haberi' }],
         relatedArticles: ['2', '3']
       },
       {
         id: '2',
+        header: 'Meclis Yeni Yasama Yılına Başladı',
+        summaryHead: 'Siyaset Gündemi',
+        summary: 'TBMM, 28. dönem 3. yasama yılına törenle başladı. Cumhurbaşkanı önemli mesajlar verdi.',
+        category: 'Gündem',
+        tags: ['tbmm', 'meclis', 'siyaset', 'yasama'],
+        body: '<p>Türkiye Büyük Millet Meclisi, yeni yasama yılına düzenlenen törenle başladı. Açılış konuşmasını yapan Cumhurbaşkanı, yeni anayasa vurgusu yaptı.</p>',
+        writer: 'UHA Ankara',
+        creationDate: new Date(Date.now() - 3600000).toISOString(),
+        source: 'TBMM',
+        targettedViews: ['homepage', 'featured-news-grid'],
+        updatedAt: new Date(Date.now() - 3600000).toISOString(),
+        images: [{ url: 'https://via.placeholder.com/800x600/c53030/ffffff?text=Meclis+Açılışı', highRes: 'https://via.placeholder.com/800x600/c53030/ffffff?text=Meclis+Açılışı' }],
+        relatedArticles: ['1']
+      },
+      {
+        id: '3',
+        header: 'İstanbul\'da Trafik Yoğunluğu %85\'e Ulaştı',
+        summaryHead: 'İstanbul Trafik',
+        summary: 'Akşam saatlerinde İstanbul trafiği durma noktasına geldi. Köprü geçişlerinde uzun kuyruklar oluştu.',
+        category: 'Gündem',
+        tags: ['istanbul', 'trafik', 'ulaşım'],
+        body: '<p>İstanbul\'da iş çıkış saatiyle birlikte trafik yoğunluğu %85 seviyelerine ulaştı. Özellikle köprü geçişlerinde ve ana arterlerde sürücüler zor anlar yaşadı.</p>',
+        writer: 'UHA İstanbul',
+        creationDate: new Date(Date.now() - 7200000).toISOString(),
+        source: 'İBB',
+        targettedViews: ['category-feed'],
+        updatedAt: new Date(Date.now() - 7200000).toISOString(),
+        images: [{ url: 'https://via.placeholder.com/800x600/2d3748/ffffff?text=İstanbul+Trafik', highRes: 'https://via.placeholder.com/800x600/2d3748/ffffff?text=İstanbul+Trafik' }],
+        relatedArticles: []
+      },
+      {
+        id: '4',
+        header: 'Meteoroloji\'den Kuvvetli Yağış Uyarısı',
+        summaryHead: 'Hava Durumu',
+        summary: 'Meteoroloji Genel Müdürlüğü, Marmara ve Ege bölgesi için kuvvetli yağış uyarısında bulundu.',
+        category: 'Gündem',
+        tags: ['hava durumu', 'meteoroloji', 'yağmur'],
+        body: '<p>Meteoroloji Genel Müdürlüğü tarafından yapılan son değerlendirmelere göre, yarın Marmara ve Ege bölgesinde kuvvetli sağanak yağış bekleniyor. Vatandaşların sel ve su baskınlarına karşı tedbirli olması istendi.</p>',
+        writer: 'UHA Haber',
+        creationDate: new Date(Date.now() - 10800000).toISOString(),
+        source: 'MGM',
+        targettedViews: ['flash-news'],
+        updatedAt: new Date(Date.now() - 10800000).toISOString(),
+        images: [{ url: 'https://via.placeholder.com/800x600/4a5568/ffffff?text=Hava+Durumu', highRes: 'https://via.placeholder.com/800x600/4a5568/ffffff?text=Hava+Durumu' }],
+        relatedArticles: ['1']
+      },
+
+      // EKONOMİ (5-8)
+      {
+        id: '5',
         header: 'Türkiye Ekonomisinde Büyüme Rakamları Açıklandı',
         summaryHead: 'Ekonomi Haberleri',
         summary: 'TÜİK, 2024 Q3 büyüme rakamlarını açıkladı. Ekonomi yüzde 4.2 büyüdü, piyasa beklentilerini aştı.',
@@ -456,29 +491,63 @@ class DataService {
         creationDate: new Date(Date.now() - 86400000).toISOString(),
         source: 'TÜİK',
         outlinks: ['https://www.tuik.gov.tr'],
-        targettedViews: ['homepage', 'category'],
+        targettedViews: ['homepage', 'carousel', 'category-feed'],
         updatedAt: new Date(Date.now() - 86400000).toISOString(),
-        // Legacy fields
-        title: 'Türkiye Ekonomisinde Büyüme Rakamları Açıklandı',
-        content: '<p>Türkiye İstatistik Kurumu (TÜİK), 2024 yılı üçüncü çeyrek büyüme rakamlarını açıkladı. Ekonomi yüzde 4.2 büyüdü.</p><p>Bu büyüme oranı, piyasa beklentilerini aştı ve TL\'de değerlenme yaşandı.</p>',
-        author: 'UHA Haber',
-        publishedAt: new Date(Date.now() - 86400000).toISOString(),
-        keywords: ['ekonomi', 'büyüme', 'tüik', 'gdp'],
-        images: [
-          {
-            url: 'https://via.placeholder.com/800x600/3182ce/ffffff?text=Ekonomi+Haberi',
-            lowRes: 'https://via.placeholder.com/400x300/3182ce/ffffff?text=Ekonomi',
-            highRes: 'https://via.placeholder.com/800x600/3182ce/ffffff?text=Ekonomi+Haberi',
-            width: 800,
-            height: 600,
-            alt: 'Türkiye ekonomisi büyüme rakamları',
-            title: 'Ekonomi Büyümesi'
-          }
-        ],
-        relatedArticles: ['1', '4']
+        images: [{ url: 'https://via.placeholder.com/800x600/3182ce/ffffff?text=Ekonomi+Haberi', highRes: 'https://via.placeholder.com/800x600/3182ce/ffffff?text=Ekonomi+Haberi' }],
+        relatedArticles: ['6', '7']
       },
       {
-        id: '3',
+        id: '6',
+        header: 'Borsa İstanbul Rekor Tazeledi',
+        summaryHead: 'Piyasalar',
+        summary: 'BIST 100 endeksi günü %2.5 artışla tamamlayarak tüm zamanların en yüksek kapanışını gerçekleştirdi.',
+        category: 'Ekonomi',
+        tags: ['borsa', 'bist100', 'finans', 'yatırım'],
+        body: '<p>Borsa İstanbul\'da BIST 100 endeksi, bankacılık hisseleri öncülüğünde yükselişini sürdürdü. Endeks günü rekor seviyeden tamamladı.</p>',
+        writer: 'UHA Finans',
+        creationDate: new Date(Date.now() - 90000000).toISOString(),
+        source: 'Borsa İstanbul',
+        targettedViews: ['featured-news-grid', 'flash-news'],
+        updatedAt: new Date(Date.now() - 90000000).toISOString(),
+        images: [{ url: 'https://via.placeholder.com/800x600/2b6cb0/ffffff?text=Borsa+İstanbul', highRes: 'https://via.placeholder.com/800x600/2b6cb0/ffffff?text=Borsa+İstanbul' }],
+        relatedArticles: ['5']
+      },
+      {
+        id: '7',
+        header: 'Altın Fiyatlarında Son Durum',
+        summaryHead: 'Altın Piyasası',
+        summary: 'Gram altın güne yükselişle başladı. Çeyrek altın ve cumhuriyet altını fiyatları ne kadar?',
+        category: 'Ekonomi',
+        tags: ['altın', 'döviz', 'yatırım'],
+        body: '<p>Uluslararası piyasalarda ons altının değer kazanmasıyla birlikte iç piyasada gram altın fiyatları da yükselişe geçti.</p>',
+        writer: 'UHA Finans',
+        creationDate: new Date(Date.now() - 95000000).toISOString(),
+        source: 'Piyasalar',
+        targettedViews: ['category-feed'],
+        updatedAt: new Date(Date.now() - 95000000).toISOString(),
+        images: [{ url: 'https://via.placeholder.com/800x600/d69e2e/ffffff?text=Altın+Fiyatları', highRes: 'https://via.placeholder.com/800x600/d69e2e/ffffff?text=Altın+Fiyatları' }],
+        relatedArticles: ['5']
+      },
+      {
+        id: '8',
+        header: 'İhracat Rakamları Yüz Güldürdü',
+        summaryHead: 'Dış Ticaret',
+        summary: 'Ticaret Bakanlığı verilerine göre ihracat geçen yılın aynı ayına göre %10 artış gösterdi.',
+        category: 'Ekonomi',
+        tags: ['ihracat', 'ticaret', 'ekonomi'],
+        body: '<p>Ticaret Bakanı, düzenlediği basın toplantısında dış ticaret verilerini açıkladı. İhracatın artması cari açık üzerinde olumlu etki yaratıyor.</p>',
+        writer: 'UHA Ekonomi',
+        creationDate: new Date(Date.now() - 100000000).toISOString(),
+        source: 'Ticaret Bakanlığı',
+        targettedViews: ['category-feed'],
+        updatedAt: new Date(Date.now() - 100000000).toISOString(),
+        images: [{ url: 'https://via.placeholder.com/800x600/2c5282/ffffff?text=İhracat+Rakamları', highRes: 'https://via.placeholder.com/800x600/2c5282/ffffff?text=İhracat+Rakamları' }],
+        relatedArticles: ['5']
+      },
+
+      // SPOR (9-12)
+      {
+        id: '9',
         header: 'Galatasaray Avrupa Ligi\'nde Büyük Zafer',
         summaryHead: 'Spor Haberleri',
         summary: 'Galatasaray Avrupa Ligi\'nde 3-1 kazandı. Mauro Icardi\'nin golleriyle liderliğe yükseldi.',
@@ -489,29 +558,63 @@ class DataService {
         creationDate: new Date(Date.now() - 172800000).toISOString(),
         source: 'UHA Spor',
         outlinks: [],
-        targettedViews: ['homepage', 'category'],
+        targettedViews: ['homepage', 'carousel', 'featured-news-grid'],
         updatedAt: new Date(Date.now() - 172800000).toISOString(),
-        // Legacy fields
-        title: 'Galatasaray Avrupa Ligi\'nde Büyük Zafer',
-        content: '<p>Galatasaray, Avrupa Ligi\'nde rakiplerini 3-1 mağlup etti. Maçın yıldızı Mauro Icardi oldu.</p><p>Bu zaferle birlikte Galatasaray, gruplarda liderliğe yükseldi.</p>',
-        author: 'UHA Spor',
-        publishedAt: new Date(Date.now() - 172800000).toISOString(),
-        keywords: ['galatasaray', 'avrupa ligi', 'futbol', 'mauro icardi'],
-        images: [
-          {
-            url: 'https://via.placeholder.com/800x600/38a169/ffffff?text=Spor+Haberi',
-            lowRes: 'https://via.placeholder.com/400x300/38a169/ffffff?text=Spor',
-            highRes: 'https://via.placeholder.com/800x600/38a169/ffffff?text=Spor+Haberi',
-            width: 800,
-            height: 600,
-            alt: 'Galatasaray Avrupa Ligi maçı',
-            title: 'Galatasaray Zaferi'
-          }
-        ],
-        relatedArticles: ['1', '5']
+        images: [{ url: 'https://via.placeholder.com/800x600/38a169/ffffff?text=Spor+Haberi', highRes: 'https://via.placeholder.com/800x600/38a169/ffffff?text=Spor+Haberi' }],
+        relatedArticles: ['10', '11']
       },
       {
-        id: '4',
+        id: '10',
+        header: 'Fenerbahçe Derbi Hazırlıklarına Başladı',
+        summaryHead: 'Fenerbahçe',
+        summary: 'Sarı-lacivertliler, hafta sonu oynanacak dev derbi için hazırlıklarını sürdürüyor.',
+        category: 'Spor',
+        tags: ['fenerbahçe', 'futbol', 'derbi', 'süper lig'],
+        body: '<p>Fenerbahçe, teknik direktör yönetiminde Samandıra Tesisleri\'nde antrenman yaptı. Takımda morallerin yüksek olduğu gözlendi.</p>',
+        writer: 'UHA Spor',
+        creationDate: new Date(Date.now() - 175000000).toISOString(),
+        source: 'Fenerbahçe SK',
+        targettedViews: ['category-feed', 'flash-news'],
+        updatedAt: new Date(Date.now() - 175000000).toISOString(),
+        images: [{ url: 'https://via.placeholder.com/800x600/2f855a/ffffff?text=Fenerbahçe', highRes: 'https://via.placeholder.com/800x600/2f855a/ffffff?text=Fenerbahçe' }],
+        relatedArticles: ['9']
+      },
+      {
+        id: '11',
+        header: 'Milli Voleybolcularımızdan Altın Madalya',
+        summaryHead: 'Filenin Sultanları',
+        summary: 'A Milli Kadın Voleybol Takımı, Avrupa Şampiyonası\'nda altın madalya kazandı.',
+        category: 'Spor',
+        tags: ['voleybol', 'milli takım', 'filenin sultanları', 'şampiyon'],
+        body: '<p>Filenin Sultanları, final maçında rakibini 3-2 mağluperek Avrupa Şampiyonu oldu. Tüm Türkiye bu zaferle gururlandı.</p>',
+        writer: 'UHA Spor',
+        creationDate: new Date(Date.now() - 180000000).toISOString(),
+        source: 'TVF',
+        targettedViews: ['carousel', 'featured-news-grid'],
+        updatedAt: new Date(Date.now() - 180000000).toISOString(),
+        images: [{ url: 'https://via.placeholder.com/800x600/276749/ffffff?text=Voleybol+Zaferi', highRes: 'https://via.placeholder.com/800x600/276749/ffffff?text=Voleybol+Zaferi' }],
+        relatedArticles: []
+      },
+      {
+        id: '12',
+        header: 'Formula 1 İstanbul Park\'a Geri Dönüyor mu?',
+        summaryHead: 'Motor Sporları',
+        summary: 'Formula 1 yönetiminin İstanbul Park ile görüşmelere başladığı iddia edildi.',
+        category: 'Spor',
+        tags: ['formula 1', 'f1', 'istanbul park', 'yarış'],
+        body: '<p>Motor sporları dünyasında heyecan yaratan iddia: Formula 1\'in yeniden Türkiye takvimine girmesi için görüşmelerin başladığı konuşuluyor.</p>',
+        writer: 'UHA Spor',
+        creationDate: new Date(Date.now() - 185000000).toISOString(),
+        source: 'Dış Basın',
+        targettedViews: ['category-feed'],
+        updatedAt: new Date(Date.now() - 185000000).toISOString(),
+        images: [{ url: 'https://via.placeholder.com/800x600/22543d/ffffff?text=Formula+1', highRes: 'https://via.placeholder.com/800x600/22543d/ffffff?text=Formula+1' }],
+        relatedArticles: []
+      },
+
+      // TEKNOLOJİ (13-15)
+      {
+        id: '13',
         header: 'Teknoloji Sektöründe Yeni Yatırımlar',
         summaryHead: 'Teknoloji Haberleri',
         summary: 'Yerli teknoloji şirketleri 50 milyon dolar yatırım topladı. Sektör büyümesi hızlanacak.',
@@ -522,29 +625,47 @@ class DataService {
         creationDate: new Date(Date.now() - 259200000).toISOString(),
         source: 'UHA Teknoloji',
         outlinks: [],
-        targettedViews: ['category'],
+        targettedViews: ['category-feed', 'featured-news-grid'],
         updatedAt: new Date(Date.now() - 259200000).toISOString(),
-        // Legacy fields
-        title: 'Teknoloji Sektöründe Yeni Yatırımlar',
-        content: '<p>Yerli teknoloji şirketleri, yeni yatırım turunda 50 milyon dolar topladı. Bu yatırım, sektörün büyümesini hızlandıracak.</p>',
-        author: 'UHA Teknoloji',
-        publishedAt: new Date(Date.now() - 259200000).toISOString(),
-        keywords: ['teknoloji', 'yatırım', 'startup', 'finansman'],
-        images: [
-          {
-            url: 'https://via.placeholder.com/800x600/d69e2e/ffffff?text=Teknoloji+Haberi',
-            lowRes: 'https://via.placeholder.com/400x300/d69e2e/ffffff?text=Teknoloji',
-            highRes: 'https://via.placeholder.com/800x600/d69e2e/ffffff?text=Teknoloji+Haberi',
-            width: 800,
-            height: 600,
-            alt: 'Teknoloji sektörü yatırımları',
-            title: 'Teknoloji Yatırımları'
-          }
-        ],
-        relatedArticles: ['2', '6']
+        images: [{ url: 'https://via.placeholder.com/800x600/d69e2e/ffffff?text=Teknoloji+Haberi', highRes: 'https://via.placeholder.com/800x600/d69e2e/ffffff?text=Teknoloji+Haberi' }],
+        relatedArticles: ['14']
       },
       {
-        id: '5',
+        id: '14',
+        header: 'Yapay Zeka Düzenlemeleri Geliyor',
+        summaryHead: 'Yapay Zeka',
+        summary: 'Avrupa Birliği, yapay zeka kullanımına ilişkin yeni yasal düzenlemeleri kabul etti.',
+        category: 'Teknoloji',
+        tags: ['yapay zeka', 'ai', 'teknoloji', 'yasa'],
+        body: '<p>Yapay zeka teknolojilerinin güvenli ve etik kullanımı için hazırlanan yasa tasarısı, Avrupa Parlamentosu\'nda onaylandı.</p>',
+        writer: 'UHA Teknoloji',
+        creationDate: new Date(Date.now() - 265000000).toISOString(),
+        source: 'AB',
+        targettedViews: ['category-feed'],
+        updatedAt: new Date(Date.now() - 265000000).toISOString(),
+        images: [{ url: 'https://via.placeholder.com/800x600/b7791f/ffffff?text=Yapay+Zeka', highRes: 'https://via.placeholder.com/800x600/b7791f/ffffff?text=Yapay+Zeka' }],
+        relatedArticles: ['13']
+      },
+      {
+        id: '15',
+        header: 'Yeni Nesil Akıllı Telefonlar Tanıtıldı',
+        summaryHead: 'Mobil Teknoloji',
+        summary: 'Teknoloji devi, katlanabilir ekranlı yeni telefon modellerini tanıttı.',
+        category: 'Teknoloji',
+        tags: ['akıllı telefon', 'mobil', 'teknoloji', 'lansman'],
+        body: '<p>Yeni modeller, gelişmiş kamera özellikleri ve uzun pil ömrü ile dikkat çekiyor. Satışlar önümüzdeki ay başlayacak.</p>',
+        writer: 'UHA Teknoloji',
+        creationDate: new Date(Date.now() - 270000000).toISOString(),
+        source: 'Teknoloji Basını',
+        targettedViews: ['category-feed', 'carousel'],
+        updatedAt: new Date(Date.now() - 270000000).toISOString(),
+        images: [{ url: 'https://via.placeholder.com/800x600/975a16/ffffff?text=Akıllı+Telefon', highRes: 'https://via.placeholder.com/800x600/975a16/ffffff?text=Akıllı+Telefon' }],
+        relatedArticles: []
+      },
+
+      // SAĞLIK (16-18)
+      {
+        id: '16',
         header: 'Sağlık Bakanlığı\'ndan Aşı Açıklaması',
         summaryHead: 'Sağlık Haberleri',
         summary: 'Sağlık Bakanlığı grip aşısı kampanyasını başlattı. Risk gruplarına öncelik verilecek.',
@@ -555,29 +676,47 @@ class DataService {
         creationDate: new Date(Date.now() - 345600000).toISOString(),
         source: 'Sağlık Bakanlığı',
         outlinks: ['https://www.saglik.gov.tr'],
-        targettedViews: ['category'],
+        targettedViews: ['category-feed', 'flash-news'],
         updatedAt: new Date(Date.now() - 345600000).toISOString(),
-        // Legacy fields
-        title: 'Sağlık Bakanlığı\'ndan Aşı Açıklaması',
-        content: '<p>Sağlık Bakanlığı, yeni grip aşısı kampanyasını başlattı. Risk gruplarına öncelik verilecek.</p>',
-        author: 'UHA Sağlık',
-        publishedAt: new Date(Date.now() - 345600000).toISOString(),
-        keywords: ['sağlık', 'aşı', 'grip', 'bakanlık'],
-        images: [
-          {
-            url: 'https://via.placeholder.com/800x600/e53e3e/ffffff?text=Sağlık+Haberi',
-            lowRes: 'https://via.placeholder.com/400x300/e53e3e/ffffff?text=Sağlık',
-            highRes: 'https://via.placeholder.com/800x600/e53e3e/ffffff?text=Sağlık+Haberi',
-            width: 800,
-            height: 600,
-            alt: 'Sağlık Bakanlığı aşı kampanyası',
-            title: 'Aşı Kampanyası'
-          }
-        ],
-        relatedArticles: ['3', '7']
+        images: [{ url: 'https://via.placeholder.com/800x600/e53e3e/ffffff?text=Sağlık+Haberi', highRes: 'https://via.placeholder.com/800x600/e53e3e/ffffff?text=Sağlık+Haberi' }],
+        relatedArticles: ['17']
       },
       {
-        id: '6',
+        id: '17',
+        header: 'Düzenli Egzersizin Önemi',
+        summaryHead: 'Sağlıklı Yaşam',
+        summary: 'Uzmanlar, haftada en az 150 dakika orta tempolu yürüyüş öneriyor.',
+        category: 'Sağlık',
+        tags: ['spor', 'sağlık', 'yaşam', 'egzersiz'],
+        body: '<p>Kalp sağlığını korumak ve stresi azaltmak için düzenli egzersiz şart. Uzmanlar, hareketli yaşam tarzının önemine dikkat çekiyor.</p>',
+        writer: 'UHA Sağlık',
+        creationDate: new Date(Date.now() - 350000000).toISOString(),
+        source: 'Uzman Görüşü',
+        targettedViews: ['category-feed'],
+        updatedAt: new Date(Date.now() - 350000000).toISOString(),
+        images: [{ url: 'https://via.placeholder.com/800x600/c53030/ffffff?text=Egzersiz', highRes: 'https://via.placeholder.com/800x600/c53030/ffffff?text=Egzersiz' }],
+        relatedArticles: ['16']
+      },
+      {
+        id: '18',
+        header: 'Beslenmede Dikkat Edilmesi Gerekenler',
+        summaryHead: 'Beslenme',
+        summary: 'Kış aylarında bağışıklık sistemini güçlendirmek için nasıl beslenmeliyiz?',
+        category: 'Sağlık',
+        tags: ['beslenme', 'diyet', 'sağlık', 'vitamin'],
+        body: '<p>C vitamini açısından zengin meyve ve sebzelerin tüketimi, kış hastalıklarından korunmada önemli rol oynuyor.</p>',
+        writer: 'UHA Sağlık',
+        creationDate: new Date(Date.now() - 355000000).toISOString(),
+        source: 'Diyetisyenler Odası',
+        targettedViews: ['category-feed'],
+        updatedAt: new Date(Date.now() - 355000000).toISOString(),
+        images: [{ url: 'https://via.placeholder.com/800x600/9b2c2c/ffffff?text=Beslenme', highRes: 'https://via.placeholder.com/800x600/9b2c2c/ffffff?text=Beslenme' }],
+        relatedArticles: []
+      },
+
+      // EĞİTİM (19-20)
+      {
+        id: '19',
         header: 'Eğitim Sisteminde Yeni Düzenlemeler',
         summaryHead: 'Eğitim Haberleri',
         summary: 'MEB yeni eğitim-öğretim yılı düzenlemelerini açıkladı. Dijital eğitim araçları genişletilecek.',
@@ -588,26 +727,26 @@ class DataService {
         creationDate: new Date(Date.now() - 432000000).toISOString(),
         source: 'MEB',
         outlinks: ['https://www.meb.gov.tr'],
-        targettedViews: ['category'],
+        targettedViews: ['category-feed', 'featured-news-grid'],
         updatedAt: new Date(Date.now() - 432000000).toISOString(),
-        // Legacy fields
-        title: 'Eğitim Sisteminde Yeni Düzenlemeler',
-        content: '<p>Milli Eğitim Bakanlığı, yeni eğitim-öğretim yılı için düzenlemeleri açıkladı. Dijital eğitim araçları genişletilecek.</p>',
-        author: 'UHA Eğitim',
-        publishedAt: new Date(Date.now() - 432000000).toISOString(),
-        keywords: ['eğitim', 'meb', 'dijital', 'öğretim'],
-        images: [
-          {
-            url: 'https://via.placeholder.com/800x600/805ad5/ffffff?text=Eğitim+Haberi',
-            lowRes: 'https://via.placeholder.com/400x300/805ad5/ffffff?text=Eğitim',
-            highRes: 'https://via.placeholder.com/800x600/805ad5/ffffff?text=Eğitim+Haberi',
-            width: 800,
-            height: 600,
-            alt: 'Eğitim sistemi düzenlemeleri',
-            title: 'Eğitim Düzenlemeleri'
-          }
-        ],
-        relatedArticles: ['4', '8']
+        images: [{ url: 'https://via.placeholder.com/800x600/805ad5/ffffff?text=Eğitim+Haberi', highRes: 'https://via.placeholder.com/800x600/805ad5/ffffff?text=Eğitim+Haberi' }],
+        relatedArticles: ['20']
+      },
+      {
+        id: '20',
+        header: 'Üniversite Tercih Sonuçları Açıklandı',
+        summaryHead: 'YKS Sonuçları',
+        summary: 'YKS yerleştirme sonuçları ÖSYM tarafından erişime açıldı. Adaylar heyecanlı.',
+        category: 'Eğitim',
+        tags: ['yks', 'üniversite', 'ösym', 'eğitim'],
+        body: '<p>Milyonlarca öğrencinin beklediği üniversite yerleştirme sonuçları açıklandı. Kayıt işlemleri önümüzdeki hafta başlayacak.</p>',
+        writer: 'UHA Eğitim',
+        creationDate: new Date(Date.now() - 440000000).toISOString(),
+        source: 'ÖSYM',
+        targettedViews: ['category-feed', 'flash-news'],
+        updatedAt: new Date(Date.now() - 440000000).toISOString(),
+        images: [{ url: 'https://via.placeholder.com/800x600/6b46c1/ffffff?text=Üniversite', highRes: 'https://via.placeholder.com/800x600/6b46c1/ffffff?text=Üniversite' }],
+        relatedArticles: ['19']
       }
     ];
   }
@@ -681,12 +820,19 @@ class DataService {
       limit = 20,
       category = null,
       search = null,
+      status = null,
       sortBy = 'publishedAt',
       sortOrder = 'desc'
     } = options;
 
     let query = 'SELECT * FROM articles WHERE 1=1';
     const params = [];
+
+    // Filter by status
+    if (status) {
+      query += ' AND status = ?';
+      params.push(status);
+    }
 
     // Filter by category
     if (category) {
@@ -758,7 +904,7 @@ class DataService {
 
     // Get related articles by IDs
     const placeholders = article.relatedArticles.map(() => '?').join(',');
-    const query = `SELECT * FROM articles WHERE id IN (${placeholders}) LIMIT ?`;
+    const query = `SELECT * FROM articles WHERE id IN (${placeholders}) AND status != 'hidden' LIMIT ?`;
     const rows = this.db.prepare(query).all(...article.relatedArticles, limit);
 
     return rows.map(row => this.parseArticle(row));

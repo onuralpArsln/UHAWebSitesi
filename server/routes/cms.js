@@ -536,6 +536,40 @@ router.put('/articles/:id', async (req, res) => {
 });
 
 /**
+ * Update article status
+ */
+router.put('/articles/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const existingArticle = dataService.getArticleById(id);
+    if (!existingArticle) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
+    const newStatus = status === 'hidden' ? 'hidden' : 'visible';
+
+    // Update only the status
+    const updatedArticle = dataService.updateArticle(id, {
+      ...existingArticle,
+      status: newStatus,
+      updatedAt: new Date().toISOString()
+    });
+
+    if (!updatedArticle) {
+      return res.status(404).json({ error: 'Failed to update status' });
+    }
+
+    res.json({ success: true, status: newStatus });
+
+  } catch (error) {
+    console.error('CMS Update status error:', error);
+    res.status(500).json({ error: 'Failed to update status' });
+  }
+});
+
+/**
  * Delete article
  */
 router.delete('/articles/:id', async (req, res) => {

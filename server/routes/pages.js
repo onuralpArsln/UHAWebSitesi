@@ -94,7 +94,8 @@ router.get('/', async (req, res) => {
               limit: limit,
               sortBy: 'publishedAt',
               sortOrder: 'desc',
-              targettedView: widget.type
+              targettedView: widget.type,
+              status: 'visible'
             });
             widgetData.data.articles = featuredArticles.articles.map(article => ({
               ...article,
@@ -116,7 +117,8 @@ router.get('/', async (req, res) => {
               limit: 4,
               sortBy: 'publishedAt',
               sortOrder: 'desc',
-              targettedView: 'category-feed'
+              targettedView: 'category-feed',
+              status: 'visible'
             });
             widgetData.data.articles = categoryArticles.articles.map(article => ({
               ...article,
@@ -133,7 +135,8 @@ router.get('/', async (req, res) => {
             limit: 10,
             sortBy: 'publishedAt',
             sortOrder: 'desc',
-            targettedView: 'flash-news'
+            targettedView: 'flash-news',
+            status: 'visible'
           });
           widgetData.data.articles = flashNewsArticles.articles.map(article => ({
             ...article,
@@ -332,7 +335,8 @@ router.get('/kategori/:categorySlug', async (req, res) => {
       page: parseInt(page),
       limit: 12,
       sortBy: 'publishedAt',
-      sortOrder: 'desc'
+      sortOrder: 'desc',
+      status: 'visible'
     });
 
     // Prepare pagination
@@ -404,7 +408,8 @@ router.get('/arama', async (req, res) => {
       page: parseInt(page),
       limit: 12,
       sortBy: 'publishedAt',
-      sortOrder: 'desc'
+      sortOrder: 'desc',
+      status: 'visible'
     });
     const categories = dataService.getCategories();
     const navCategories = buildNavCategories(categories);
