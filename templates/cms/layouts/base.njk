@@ -6,7 +6,7 @@
   <title>{{ pageTitle or 'UHA CMS' }}</title>
   <link rel="stylesheet" href="{{ asset('css/variables.css') }}">
   <link rel="stylesheet" href="{{ asset('css/main.css') }}">
-  <link rel="stylesheet" href="{{ asset('cms/css/cms.css') }}?v=1">
+  <link rel="stylesheet" href="{{ asset('cms/css/cms.css') }}?v=2">
   {% block head %}{% endblock %}
 </head>
 <body class="cms-body">
@@ -16,7 +16,7 @@
   <script>
     window.__CMS_INITIAL_STATE__ = {{ initialStateJson | default('{}') | safe }};
   </script>
-  <script src="{{ asset('cms/js/cms-app.js') }}?v=1" defer></script>
+  <script src="{{ asset('cms/js/cms-app.js') }}?v=2" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

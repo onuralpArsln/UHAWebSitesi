@@ -184,12 +184,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Turkish characters in URLs are handled by normalizeSlugFromUrl() in url-slug service
 
 // Static files
-function mountStaticBoth(mountPath, dir) {
+// Static files
+function mountStaticBoth(mountPath, dir, optionsOverride = {}) {
   const options = {
     maxAge: config.isProduction() ? '1d' : 0,
     etag: true,
     index: false, // Don't serve index files
-    dotfiles: 'ignore' // Ignore dotfiles
+    dotfiles: 'ignore', // Ignore dotfiles
+    ...optionsOverride
   };
   // Mount static files - these will be served before any routes
   app.use(mountPath, express.static(dir, options));
@@ -203,7 +205,8 @@ mountStaticBoth('/static', paths.public);
 mountStaticBoth('/css', paths.css);
 mountStaticBoth('/js', paths.js);
 mountStaticBoth('/uploads', paths.uploads);
-mountStaticBoth('/cms', paths.cms);
+// CMS assets should not be cached to ensure updates are seen immediately
+mountStaticBoth('/cms', paths.cms, { maxAge: 0 });
 
 // Direct style.css for external references (e.g., /style.css)
 app.get('/style.css', (req, res) => {
