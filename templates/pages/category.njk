@@ -1,6 +1,6 @@
 {% extends "layouts/base.njk" %}
 {% from "widgets/ad-placeholder.njk" import adPlaceholder %}
-{% from "widgets/site-header.njk" import siteHeader %}
+{% from "widgets/footer.njk" import siteFooter %}
 
 {% block head_extra %}
 <meta name="keywords" content="{{ category.name }}, haber, güncel">
@@ -11,12 +11,6 @@
 {{ siteHeader(brand, navCategories or []) }}
 
 <main class="site-main">
-  <nav class="breadcrumb container" aria-label="İz yolu">
-    <ol class="breadcrumb__list">
-      <li class="breadcrumb__item"><a href="{{ asset('/') }}">Ana Sayfa</a></li>
-      <li class="breadcrumb__item"><span>{{ category.name }}</span></li>
-    </ol>
-  </nav>
 
   <section class="category-hero container">
     <h1 class="category-hero__title">{{ category.name }} Haberleri</h1>
@@ -82,15 +76,6 @@
   </section>
 </main>
 
-<footer class="site-footer">
-  <div class="container">
-    {% if brand.footerLogo %}
-    <div class="site-footer__logo">
-      <img src="{{ brand.footerLogo }}" alt="{{ brand.siteName or 'UHA News' }}">
-    </div>
-    {% endif %}
-    <p>&copy; {{ current_year }} {{ brand.siteName or 'UHA News' }}. Tüm hakları saklıdır.</p>
-  </div>
-</footer>
+{{ siteFooter(brand, navCategories) }}
 {% endblock %}
 
