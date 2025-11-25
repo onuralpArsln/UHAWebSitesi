@@ -5,7 +5,6 @@
 class FlashNewsTicker {
   constructor() {
     this.widgets = [];
-    this.hoverTimers = new WeakMap();
     this.resizeRaf = null;
     this.initialized = false;
   }
@@ -91,37 +90,12 @@ class FlashNewsTicker {
   }
 
   bindHover(widget) {
-    const pauseDelay = parseInt(widget.dataset.pauseDelay, 10) || 200;
-
     const enter = () => {
-      const existing = this.hoverTimers.get(widget);
-      if (existing) {
-        window.clearTimeout(existing.timeoutId);
-      }
-
-      const baseDuration = parseFloat(widget.dataset.baseDuration) || 20;
-
-      widget.classList.add('is-slowing');
-      widget.classList.remove('is-paused');
-      widget.style.setProperty('--flash-news-duration', `${baseDuration * 2}s`);
-
-      const timeoutId = window.setTimeout(() => {
-        widget.classList.add('is-paused');
-      }, pauseDelay);
-
-      this.hoverTimers.set(widget, { timeoutId, baseDuration });
+      widget.classList.add('is-paused');
     };
 
     const exit = () => {
-      const stored = this.hoverTimers.get(widget);
-      if (stored) {
-        window.clearTimeout(stored.timeoutId);
-        widget.style.setProperty('--flash-news-duration', `${stored.baseDuration}s`);
-        this.hoverTimers.delete(widget);
-      }
-
       widget.classList.remove('is-paused');
-      widget.classList.remove('is-slowing');
     };
 
     widget.addEventListener('mouseenter', enter);

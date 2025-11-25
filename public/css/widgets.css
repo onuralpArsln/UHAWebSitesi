@@ -591,9 +591,7 @@
   }
 }
 
-.flash-news-widget.is-slowing .flash-news__track {
-  animation-duration: var(--flash-news-hover-duration);
-}
+
 
 .flash-news-widget.is-paused .flash-news__track {
   animation-play-state: paused;
