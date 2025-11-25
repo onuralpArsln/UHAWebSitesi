@@ -93,7 +93,8 @@ router.get('/', async (req, res) => {
             const featuredArticles = dataService.getArticles({
               limit: limit,
               sortBy: 'publishedAt',
-              sortOrder: 'desc'
+              sortOrder: 'desc',
+              targettedView: widget.type
             });
             widgetData.data.articles = featuredArticles.articles.map(article => ({
               ...article,
@@ -114,7 +115,8 @@ router.get('/', async (req, res) => {
               category: categoryName,
               limit: 4,
               sortBy: 'publishedAt',
-              sortOrder: 'desc'
+              sortOrder: 'desc',
+              targettedView: 'category-feed'
             });
             widgetData.data.articles = categoryArticles.articles.map(article => ({
               ...article,
@@ -130,7 +132,8 @@ router.get('/', async (req, res) => {
           const flashNewsArticles = dataService.getArticles({
             limit: 10,
             sortBy: 'publishedAt',
-            sortOrder: 'desc'
+            sortOrder: 'desc',
+            targettedView: 'flash-news'
           });
           widgetData.data.articles = flashNewsArticles.articles.map(article => ({
             ...article,

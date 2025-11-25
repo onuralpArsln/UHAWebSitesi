@@ -701,6 +701,12 @@ class DataService {
       params.push(searchTerm, searchTerm, searchTerm);
     }
 
+    // Filter by targetted view
+    if (options.targettedView) {
+      query += ' AND targettedViews LIKE ?';
+      params.push(`%"${options.targettedView}"%`);
+    }
+
     // Sort
     const validSortBy = ['publishedAt', 'updatedAt', 'title', 'category'].includes(sortBy)
       ? sortBy

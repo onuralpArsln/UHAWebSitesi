@@ -1097,6 +1097,12 @@
       const statusField = this.articleForm.querySelector('[name="status"]');
       if (statusField && !article) {
         statusField.value = 'visible';
+
+        // Set default targeted view: Category Feed
+        const categoryFeedCheckbox = this.articleForm.querySelector('input[name="targettedViews"][value="category-feed"]');
+        if (categoryFeedCheckbox) {
+          categoryFeedCheckbox.checked = true;
+        }
       }
 
       this.switchToEditorView();
