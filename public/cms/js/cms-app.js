@@ -2686,10 +2686,17 @@
 
         // Remove widget event
         this.layoutTable.addEventListener('click', (e) => {
-          const btn = e.target.closest('[data-action="remove-widget"]');
-          if (btn) {
-            const index = parseInt(btn.dataset.widgetIndex);
+          const removeBtn = e.target.closest('[data-action="remove-widget"]');
+          if (removeBtn) {
+            const index = parseInt(removeBtn.dataset.widgetIndex);
             this.removeWidget(index);
+            return;
+          }
+
+          const statusBtn = e.target.closest('[data-action="toggle-status"]');
+          if (statusBtn) {
+            const index = parseInt(statusBtn.dataset.widgetIndex);
+            this.toggleWidgetStatus(index, statusBtn);
           }
         });
       }
@@ -3050,6 +3057,8 @@
 
       const widgetDef = this.availableWidgets.find(w => w.type === widget.type);
       const widgetTitle = widgetDef ? widgetDef.title : widget.type;
+      const isHidden = widget.config.hidden ? 'is-passive' : '';
+      const statusText = widget.config.hidden ? 'Pasif' : 'Aktif';
 
       tr.innerHTML = `
         <td class="layout-drag-handle" title="Sürükle">
@@ -3066,7 +3075,7 @@
         </td>
         <td>
           <div class="status-actions">
-            <span class="cms-status">Aktif</span>
+            <span class="cms-status ${isHidden}" data-action="toggle-status" data-widget-index="${index}" title="Durumu değiştirmek için tıklayın">${statusText}</span>
             <button type="button" class="btn-icon btn-delete" data-action="remove-widget" data-widget-index="${index}" title="Bileşeni Kaldır">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
@@ -3169,6 +3178,23 @@
       }
 
       this.showToast('Bileşen kaldırıldı', 'success');
+    }
+
+    toggleWidgetStatus(index, element) {
+      const widget = this.state.homepageLayout[index];
+      if (!widget.config) widget.config = {};
+
+      // Toggle hidden state
+      widget.config.hidden = !widget.config.hidden;
+
+      // Update UI
+      if (widget.config.hidden) {
+        element.classList.add('is-passive');
+        element.textContent = 'Pasif';
+      } else {
+        element.classList.remove('is-passive');
+        element.textContent = 'Aktif';
+      }
     }
 
     async saveLayout() {

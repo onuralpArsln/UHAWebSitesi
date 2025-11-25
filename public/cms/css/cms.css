@@ -2153,6 +2153,24 @@
   gap: 0.5rem;
 }
 
+.cms-status {
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.cms-status:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.cms-status.is-passive {
+  background-color: #e2e8f0;
+  color: #94a3b8;
+  opacity: 0.8;
+}
+
 /* Delete Button */
 .btn-delete {
   background-color: #ef4444;

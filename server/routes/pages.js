@@ -75,7 +75,10 @@ router.get('/', async (req, res) => {
     const navCategories = buildNavCategories(categories);
 
     // Process layout and fetch data for each widget
-    const processedLayout = layout.map(widget => {
+    // Filter out hidden widgets
+    const visibleLayout = layout.filter(widget => !widget.config?.hidden);
+
+    const processedLayout = visibleLayout.map(widget => {
       const widgetData = { ...widget, data: {} };
 
       switch (widget.type) {

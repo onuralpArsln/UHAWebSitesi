@@ -148,7 +148,12 @@
               </td>
               <td>
                 <div class="status-actions">
-                  <span class="cms-status">Aktif</span>
+                  <span class="cms-status {% if widget.config.hidden %}is-passive{% endif %}" 
+                        data-action="toggle-status" 
+                        data-widget-index="{{ loop.index0 }}"
+                        title="Durumu değiştirmek için tıklayın">
+                    {{ 'Pasif' if widget.config.hidden else 'Aktif' }}
+                  </span>
                   <button type="button" class="btn-icon btn-delete" data-action="remove-widget" data-widget-index="{{ loop.index0 }}" title="Bileşeni Kaldır">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="3 6 5 6 21 6"></polyline>

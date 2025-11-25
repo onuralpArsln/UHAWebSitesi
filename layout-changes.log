@@ -958,3 +958,168 @@ Widget Listesi:
 
 ========================================
 
+
+========================================
+📋 SAYFA DÜZENİ GÜNCELLENDİ
+⏰ Zaman: 2025-11-25T11:48:07.174Z
+========================================
+Widget Sayısı: 6
+
+Widget Listesi:
+
+1. Widget:
+   Tip: hero-title
+   Config: {
+     "title": "Son Dakika Haberleri",
+     "hidden": true
+   }
+
+2. Widget:
+   Tip: carousel
+   Config: {
+     "source": "featured",
+     "id": "home-hero",
+     "autoplay": false
+   }
+
+3. Widget:
+   Tip: featured-news-grid
+   Config: {
+     "title": "Öne Çıkan Haberler",
+     "source": "featured",
+     "limit": 6
+   }
+
+4. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Gündem",
+     "slug": "gundem"
+   }
+
+5. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Ekonomi",
+     "slug": "ekonomi"
+   }
+
+6. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Spor",
+     "slug": "spor"
+   }
+
+========================================
+
+
+========================================
+📋 SAYFA DÜZENİ GÜNCELLENDİ
+⏰ Zaman: 2025-11-25T11:48:14.568Z
+========================================
+Widget Sayısı: 6
+
+Widget Listesi:
+
+1. Widget:
+   Tip: hero-title
+   Config: {
+     "title": "Son Dakika Haberleri",
+     "hidden": false
+   }
+
+2. Widget:
+   Tip: carousel
+   Config: {
+     "source": "featured",
+     "id": "home-hero",
+     "autoplay": false
+   }
+
+3. Widget:
+   Tip: featured-news-grid
+   Config: {
+     "title": "Öne Çıkan Haberler",
+     "source": "featured",
+     "limit": 6
+   }
+
+4. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Gündem",
+     "slug": "gundem"
+   }
+
+5. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Ekonomi",
+     "slug": "ekonomi"
+   }
+
+6. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Spor",
+     "slug": "spor"
+   }
+
+========================================
+
+
+========================================
+📋 SAYFA DÜZENİ GÜNCELLENDİ
+⏰ Zaman: 2025-11-25T11:48:24.316Z
+========================================
+Widget Sayısı: 6
+
+Widget Listesi:
+
+1. Widget:
+   Tip: hero-title
+   Config: {
+     "title": "Son Dakika Haberleri",
+     "hidden": false
+   }
+
+2. Widget:
+   Tip: carousel
+   Config: {
+     "source": "featured",
+     "id": "home-hero",
+     "autoplay": false
+   }
+
+3. Widget:
+   Tip: featured-news-grid
+   Config: {
+     "title": "Öne Çıkan Haberler",
+     "source": "featured",
+     "limit": 6
+   }
+
+4. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Gündem",
+     "slug": "gundem"
+   }
+
+5. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Ekonomi",
+     "slug": "ekonomi"
+   }
+
+6. Widget:
+   Tip: category-feed
+   Config: {
+     "category": "Spor",
+     "slug": "spor"
+   }
+
+========================================
+
