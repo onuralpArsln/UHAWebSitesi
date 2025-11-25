@@ -2623,12 +2623,42 @@
 
       // Available widgets configuration
       this.availableWidgets = [
-        { type: 'hero-title', title: 'Manşet Başlığı', desc: 'Büyük puntolu ana başlık alanı.' },
-        { type: 'carousel', title: 'Manşet Slider', desc: 'Öne çıkan haberlerin kayan listesi.' },
-        { type: 'featured-news-grid', title: 'Öne Çıkanlar Izgarası', desc: 'Seçilmiş haberlerin ızgara görünümü.' },
-        { type: 'category-feed', title: 'Kategori Akışı', desc: 'Belirli bir kategoriden son haberler.' },
-        { type: 'flash-news', title: 'Son Dakika Bandı', desc: 'Kayan son dakika haberleri şeridi.' },
-        { type: 'ad-placeholder', title: 'Reklam Alanı', desc: 'Reklam yerleşimi için boş alan.' }
+        {
+          type: 'hero-title',
+          title: 'Manşet Başlığı',
+          desc: 'Büyük puntolu ana başlık alanı.',
+          defaultConfig: { title: 'Yeni Başlık' }
+        },
+        {
+          type: 'carousel',
+          title: 'Manşet Slider',
+          desc: 'Öne çıkan haberlerin kayan listesi.',
+          defaultConfig: { autoplay: true, interval: 5000 }
+        },
+        {
+          type: 'featured-news-grid',
+          title: 'Öne Çıkanlar Izgarası',
+          desc: 'Seçilmiş haberlerin ızgara görünümü.',
+          defaultConfig: { limit: 6 }
+        },
+        {
+          type: 'category-feed',
+          title: 'Kategori Akışı',
+          desc: 'Belirli bir kategoriden son haberler.',
+          defaultConfig: { categorySlug: '', limit: 5 }
+        },
+        {
+          type: 'flash-news',
+          title: 'Son Dakika Bandı',
+          desc: 'Kayan son dakika haberleri şeridi.',
+          defaultConfig: { limit: 10 }
+        },
+        {
+          type: 'ad-placeholder',
+          title: 'Reklam Alanı',
+          desc: 'Reklam yerleşimi için boş alan.',
+          defaultConfig: { size: 'standard' }
+        }
       ];
 
       if (this.layoutTable) {
@@ -2693,8 +2723,7 @@
         // Add click listeners to items (currently does nothing as requested)
         this.widgetListContainer.querySelectorAll('.widget-item').forEach(item => {
           item.addEventListener('click', () => {
-            console.log('Selected widget:', item.dataset.widgetType);
-            // Future implementation: Add widget to layout
+            this.addWidget(item.dataset.widgetType);
           });
         });
       }
@@ -2891,6 +2920,187 @@
           orderCell.textContent = index + 1;
         }
       });
+    }
+
+    renderLayoutRow(widget, index) {
+      const tr = document.createElement('tr');
+      tr.dataset.index = index;
+
+      let configHtml = '';
+
+      if (widget.type === 'carousel') {
+        configHtml = `
+          <label class="config-control">
+            <input type="checkbox" 
+                   data-config="autoplay" 
+                   data-widget-index="${index}"
+                   ${widget.config.autoplay ? 'checked' : ''}>
+            Otomatik oynat
+          </label>
+          <label class="config-control">
+            <span>Süre:</span>
+            <input type="number" 
+                   data-config="interval" 
+                   data-widget-index="${index}"
+                   value="${(widget.config.interval / 1000) || 5}" 
+                   min="1" 
+                   max="30"
+                   class="config-input-small"> saniye
+          </label>
+        `;
+      } else if (widget.type === 'hero-title') {
+        configHtml = `
+          <label class="config-control">
+            <span>Başlık:</span>
+            <input type="text" 
+                   data-config="title" 
+                   data-widget-index="${index}"
+                   value="${this.escapeHtml(widget.config.title || '')}" 
+                   placeholder="Başlık girin"
+                   class="config-input">
+          </label>
+        `;
+      } else if (widget.type === 'featured-news-grid') {
+        configHtml = `
+          <label class="config-control">
+            <span>Haber sayısı:</span>
+            <input type="number" 
+                   data-config="limit" 
+                   data-widget-index="${index}"
+                   value="${widget.config.limit || 6}" 
+                   min="1" 
+                   max="20"
+                   class="config-input-small">
+          </label>
+        `;
+      } else if (widget.type === 'category-feed') {
+        const categories = this.state.categories || [];
+        const options = categories.map(cat => {
+          const currentSlug = widget.config.categorySlug || widget.config.slug;
+          const selected = cat.slug === currentSlug ? 'selected' : '';
+          return `<option value="${cat.slug}" ${selected}>${this.escapeHtml(cat.name)}</option>`;
+        }).join('');
+
+        configHtml = `
+          <label class="config-control">
+            <span>Kategori:</span>
+            <select data-config="categorySlug" 
+                    data-widget-index="${index}"
+                    class="config-select">
+              ${options || '<option value="">Kategori bulunamadı</option>'}
+            </select>
+          </label>
+          <label class="config-control">
+            <span>Haber sayısı:</span>
+            <input type="number" 
+                   data-config="limit" 
+                   data-widget-index="${index}"
+                   value="${widget.config.limit || 5}" 
+                   min="1" 
+                   max="20"
+                   class="config-input-small">
+          </label>
+        `;
+      } else if (widget.type === 'flash-news') {
+        configHtml = `
+          <label class="config-control">
+            <span>Haber sayısı:</span>
+            <input type="number" 
+                   data-config="limit" 
+                   data-widget-index="${index}"
+                   value="${widget.config.limit || 10}" 
+                   min="1" 
+                   max="30"
+                   class="config-input-small">
+          </label>
+        `;
+      } else if (widget.type === 'ad-placeholder') {
+        const sizes = [
+          { value: 'standard', label: 'Standart' },
+          { value: 'large', label: 'Büyük' },
+          { value: 'banner', label: 'Banner' }
+        ];
+        const options = sizes.map(s =>
+          `<option value="${s.value}" ${widget.config.size === s.value ? 'selected' : ''}>${s.label}</option>`
+        ).join('');
+
+        configHtml = `
+          <label class="config-control">
+            <span>Boyut:</span>
+            <select data-config="size" 
+                    data-widget-index="${index}"
+                    class="config-select">
+              ${options}
+            </select>
+          </label>
+        `;
+      } else {
+        configHtml = '<span class="config-text">Özel yapılandırma</span>';
+      }
+
+      tr.innerHTML = `
+        <td class="layout-drag-handle" title="Sürükle">
+          <span class="drag-icon">⋮⋮</span>
+        </td>
+        <td class="layout-order">${index + 1}</td>
+        <td>
+          <span class="cms-badge cms-badge--primary">${widget.type}</span>
+        </td>
+        <td>
+          <div class="widget-config-controls">
+            ${configHtml}
+          </div>
+        </td>
+        <td>
+          <span class="cms-status">Aktif</span>
+        </td>
+      `;
+
+      // Add drag handle listeners
+      const handle = tr.querySelector('.layout-drag-handle');
+      if (handle) {
+        handle.addEventListener('mousedown', () => {
+          tr.setAttribute('draggable', 'true');
+        });
+        handle.addEventListener('mouseup', () => {
+          setTimeout(() => tr.removeAttribute('draggable'), 100);
+        });
+      }
+
+      return tr;
+    }
+
+    addWidget(type) {
+      const widgetDef = this.availableWidgets.find(w => w.type === type);
+      if (!widgetDef) return;
+
+      const newWidget = {
+        type: type,
+        config: { ...widgetDef.defaultConfig }
+      };
+
+      // Add to state
+      this.state.homepageLayout.push(newWidget);
+      const newIndex = this.state.homepageLayout.length - 1;
+
+      // Add to DOM
+      const tbody = this.layoutTable.querySelector('tbody');
+
+      // Remove empty state if present
+      const emptyState = tbody.querySelector('.cms-empty-state');
+      if (emptyState) {
+        emptyState.closest('tr').remove();
+      }
+
+      const newRow = this.renderLayoutRow(newWidget, newIndex);
+      tbody.appendChild(newRow);
+
+      this.updateLayoutOrder();
+      this.closeAddWidgetModal();
+      this.showSuccess(`${widgetDef.title} eklendi.`);
+
+      // Scroll to new row
+      newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     async saveLayout() {
