@@ -1,4 +1,5 @@
-const fs = require('fs').promises;
+const fs = require('fs');
+const fsPromises = require('fs').promises;
 const path = require('path');
 const slugify = require('slugify');
 const NodeCache = require('node-cache');
@@ -14,14 +15,19 @@ class URLSlugService {
   /**
    * Load slug cache from file
    */
-  async loadSlugCache() {
+  loadSlugCache() {
     try {
-      const data = await fs.readFile(this.slugCachePath, 'utf8');
-      const cache = JSON.parse(data);
-      this.slugMap = new Map(Object.entries(cache));
-      console.log(`📝 Loaded ${this.slugMap.size} slug mappings from cache`);
+      if (fs.existsSync(this.slugCachePath)) {
+        const data = fs.readFileSync(this.slugCachePath, 'utf8');
+        const cache = JSON.parse(data);
+        this.slugMap = new Map(Object.entries(cache));
+        console.log(`📝 Loaded ${this.slugMap.size} slug mappings from cache`);
+      } else {
+        console.log('📝 No existing slug cache found, starting fresh');
+        this.slugMap = new Map();
+      }
     } catch (error) {
-      console.log('📝 No existing slug cache found, starting fresh');
+      console.log('📝 Error loading slug cache, starting fresh:', error.message);
       this.slugMap = new Map();
     }
   }
@@ -32,10 +38,10 @@ class URLSlugService {
   async saveSlugCache() {
     try {
       const cacheDir = path.dirname(this.slugCachePath);
-      await fs.mkdir(cacheDir, { recursive: true });
-      
+      await fsPromises.mkdir(cacheDir, { recursive: true });
+
       const cache = Object.fromEntries(this.slugMap);
-      await fs.writeFile(this.slugCachePath, JSON.stringify(cache, null, 2));
+      await fsPromises.writeFile(this.slugCachePath, JSON.stringify(cache, null, 2));
       console.log(`💾 Saved ${this.slugMap.size} slug mappings to cache`);
     } catch (error) {
       console.error('❌ Error saving slug cache:', error);
@@ -47,34 +53,34 @@ class URLSlugService {
    */
   generateSlug(title) {
     if (!title) return '';
-    
+
     // Turkish character mapping for better SEO
     const turkishMap = {
       'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
       'Ç': 'C', 'Ğ': 'G', 'İ': 'I', 'Ö': 'O', 'Ş': 'S', 'Ü': 'U'
     };
-    
+
     let slug = title;
-    
+
     // Replace Turkish characters
     Object.entries(turkishMap).forEach(([tr, en]) => {
       slug = slug.replace(new RegExp(tr, 'g'), en);
     });
-    
+
     // Generate slug using slugify
     slug = slugify(slug, {
       lower: true,
       strict: true,
       remove: /[*+~.()'"!:@]/g
     });
-    
+
     // Ensure slug is not too long (max 60 chars for SEO)
     if (slug.length > 60) {
       slug = slug.substring(0, 60);
       // Remove trailing dash if exists
       slug = slug.replace(/-$/, '');
     }
-    
+
     return slug;
   }
 
@@ -86,11 +92,11 @@ class URLSlugService {
    */
   normalizeSlugFromUrl(urlSlug) {
     if (!urlSlug) return '';
-    
+
     try {
       // Decode URL-encoded characters (e.g., %C4%9F becomes ğ)
       let decoded = decodeURIComponent(urlSlug);
-      
+
       // Normalize by generating a slug from the decoded string
       // This ensures Turkish characters are converted to ASCII equivalents
       return this.generateSlug(decoded);
@@ -106,31 +112,31 @@ class URLSlugService {
   async getSlugForArticle(articleId, title) {
     const cacheKey = `slug:${articleId}`;
     let slug = this.cache.get(cacheKey);
-    
+
     if (slug) {
       return slug;
     }
-    
+
     // Check if we have it in our persistent cache
     if (this.slugMap.has(articleId)) {
       slug = this.slugMap.get(articleId);
       this.cache.set(cacheKey, slug);
       return slug;
     }
-    
+
     // Generate new slug
     slug = this.generateSlug(title);
-    
+
     // Ensure uniqueness
     slug = await this.ensureUniqueSlug(slug, articleId);
-    
+
     // Cache it
     this.slugMap.set(articleId, slug);
     this.cache.set(cacheKey, slug);
-    
+
     // Save to persistent cache
     await this.saveSlugCache();
-    
+
     return slug;
   }
 
@@ -140,14 +146,14 @@ class URLSlugService {
   async ensureUniqueSlug(baseSlug, excludeId = null) {
     let slug = baseSlug;
     let counter = 1;
-    
+
     while (true) {
       const existingId = this.getIdBySlug(slug);
-      
+
       if (!existingId || existingId === excludeId) {
         return slug;
       }
-      
+
       slug = `${baseSlug}-${counter}`;
       counter++;
     }
@@ -177,14 +183,14 @@ class URLSlugService {
    */
   async updateSlug(articleId, newTitle) {
     const newSlug = await this.getSlugForArticle(articleId, newTitle);
-    
+
     // Update cache
     this.slugMap.set(articleId, newSlug);
     this.cache.set(`slug:${articleId}`, newSlug);
-    
+
     // Save to persistent cache
     await this.saveSlugCache();
-    
+
     return newSlug;
   }
 
@@ -213,24 +219,24 @@ class URLSlugService {
    */
   async batchUpdateSlugs(articles) {
     let updated = 0;
-    
+
     for (const article of articles) {
       if (article.id && article.title) {
         const existingSlug = this.getSlugById(article.id);
         const newSlug = this.generateSlug(article.title);
-        
+
         if (!existingSlug || existingSlug !== newSlug) {
           await this.getSlugForArticle(article.id, article.title);
           updated++;
         }
       }
     }
-    
+
     if (updated > 0) {
       await this.saveSlugCache();
       console.log(`🔄 Updated ${updated} slug mappings`);
     }
-    
+
     return updated;
   }
 }
