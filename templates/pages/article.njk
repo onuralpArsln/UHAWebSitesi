@@ -17,17 +17,7 @@
 {{ siteHeader(brand, navCategories or []) }}
 
 <main class="site-main">
-  <nav class="breadcrumb container" aria-label="İz yolu">
-    <ol class="breadcrumb__list">
-      <li class="breadcrumb__item"><a href="{{ asset('/') }}">Ana Sayfa</a></li>
-      {% if article.categorySlug %}
-      <li class="breadcrumb__item"><a href="{{ asset('kategori/' ~ article.categorySlug) }}">{{ article.category }}</a></li>
-      {% else %}
-      <li class="breadcrumb__item"><span>{{ article.category }}</span></li>
-      {% endif %}
-      <li class="breadcrumb__item"><span>{{ article.title }}</span></li>
-    </ol>
-  </nav>
+
 
   <article class="article-view container">
     <header class="article-view__header">
