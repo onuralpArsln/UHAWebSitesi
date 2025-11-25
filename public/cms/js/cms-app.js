@@ -3038,13 +3038,16 @@
         configHtml = '<span class="config-text">Özel yapılandırma</span>';
       }
 
+      const widgetDef = this.availableWidgets.find(w => w.type === widget.type);
+      const widgetTitle = widgetDef ? widgetDef.title : widget.type;
+
       tr.innerHTML = `
         <td class="layout-drag-handle" title="Sürükle">
           <span class="drag-icon">⋮⋮</span>
         </td>
         <td class="layout-order">${index + 1}</td>
         <td>
-          <span class="cms-badge cms-badge--primary">${widget.type}</span>
+          <span class="cms-badge cms-badge--primary">${widgetTitle}</span>
         </td>
         <td>
           <div class="widget-config-controls">

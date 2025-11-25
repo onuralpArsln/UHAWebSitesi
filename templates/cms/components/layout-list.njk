@@ -32,7 +32,15 @@
               </td>
               <td class="layout-order">{{ loop.index }}</td>
               <td>
-                <span class="cms-badge cms-badge--primary">{{ widget.type }}</span>
+                {% set widgetTitles = {
+                  'hero-title': 'Manşet Başlığı',
+                  'carousel': 'Manşet Slider',
+                  'featured-news-grid': 'Öne Çıkanlar Izgarası',
+                  'category-feed': 'Kategori Akışı',
+                  'flash-news': 'Son Dakika Bandı',
+                  'ad-placeholder': 'Reklam Alanı'
+                } %}
+                <span class="cms-badge cms-badge--primary">{{ widgetTitles[widget.type] or widget.type }}</span>
               </td>
               <td>
                 <div class="widget-config-controls">
