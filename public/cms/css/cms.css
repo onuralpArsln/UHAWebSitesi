@@ -69,6 +69,17 @@
   color: #fff;
 }
 
+.cms-sidebar-footer {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cms-btn--logout {
+  width: 100%;
+  justify-content: center;
+}
+
 .cms-main {
   flex: 1;
   padding: 2.5rem;

@@ -1,169 +1,592 @@
 feature: Get Articles API (Pagination, Filtering, Sorting)
 source: server/routes/api.js
-test: currently empty
+test: 
+  - Manual: curl http://localhost:3000/api/articles?page=1&limit=10
+  - Test pagination: page=1,2,3 with different limits (5,10,20,50)
+  - Test filtering by category: ?category=Gündem, ?category=Ekonomi
+  - Test search: ?search=deprem, ?search=ekonomi (case-insensitive)
+  - Test sorting: ?sortBy=publishedAt&sortOrder=desc, ?sortBy=publishedAt&sortOrder=asc
+  - Test invalid params: negative page, limit=0, invalid sortBy
+  - Test edge cases: empty results, single result, very large page numbers
+  - Verify response structure: articles array, pagination object with page/limit/total/totalPages
+  - Verify slugs are included in response
+  - Integration: Test with real database, verify hidden articles are excluded
 warning: No specific warning.
 
 feature: Get Single Article API
 source: server/routes/api.js
-test: currently empty
+test: 
+  - Manual: curl http://localhost:3000/api/articles/1
+  - Test valid article ID: returns 200 with article data
+  - Test invalid article ID: returns 404 with error message
+  - Test non-existent ID: returns 404
+  - Verify response includes all article fields (header, body, images, etc.)
+  - Verify slug is included in response
+  - Test with hidden article: should still return (API doesn't filter by status)
+  - Test special characters in ID
+  - Verify JSON structure and data types
 warning: No specific warning.
 
 feature: Get Related Articles API
 source: server/routes/api.js
-test: currently empty
+test: 
+  - Manual: curl http://localhost:3000/api/related/1?limit=4
+  - Test article with related articles: verify correct articles returned
+  - Test article without related articles: returns empty array
+  - Test invalid article ID: returns 404
+  - Test limit parameter: limit=1,2,4,10, verify max limit respected
+  - Verify returned articles are not hidden
+  - Verify slugs included in response
+  - Test article with more related articles than limit
+  - Verify related articles match IDs in article.relatedArticles field
 warning: No specific warning.
 
 feature: Get Related News by Category API
 source: server/routes/api.js
-test: currently empty
+test: 
+  - Manual: curl http://localhost:3000/api/related-news?category=Gündem&offset=0&limit=4
+  - Test with valid category: returns articles from that category
+  - Test without category: returns all articles
+  - Test offset pagination: offset=0,4,8,12
+  - Test limit parameter: limit=1,2,4,10
+  - Test hasMore flag: true when more pages exist, false on last page
+  - Test invalid category: returns empty array or error
+  - Verify articles sorted by publishedAt desc
+  - Verify slugs included in response
+  - Test edge cases: category with no articles, very large offset
 warning: No specific warning.
 
 feature: Get Categories API
 source: server/routes/api.js
-test: currently empty
+test: 
+  - Manual: curl http://localhost:3000/api/categories
+  - Test returns all categories: verify array structure
+  - Verify categories include: id, name, description, slug, articleCount
+  - Test with empty database: returns empty array
+  - Verify categories are sorted by name
+  - Test response time with many categories
+  - Verify JSON structure is valid
 warning: No specific warning.
 
 feature: Submit Comment API (Simulated)
 source: server/routes/api.js
-test: currently empty
+test: 
+  - Manual: curl -X POST http://localhost:3000/api/comments -H "Content-Type: application/json" -d '{"name":"Test","email":"test@test.com","comment":"Great article","articleId":"1"}'
+  - Test valid comment: returns 201 with comment object
+  - Test missing required fields: name, email, comment, articleId - each should return 400
+  - Test invalid email format: returns 400
+  - Test email validation: valid@email.com, invalid@, @invalid.com, no@domain
+  - Test empty strings: should return 400
+  - Verify response includes: id, name, email, content, articleId, createdAt, likes
+  - Test special characters in name/comment
+  - Test very long comment text
+  - Test non-existent articleId: should still succeed (simulated)
+  - Restart server and verify comment is NOT persisted (as expected)
 warning: Comments are not persisted to database, only simulated response.
 
 feature: Get Comments API (Simulated)
 source: server/routes/api.js
-test: currently empty
+test: 
+  - Manual: curl http://localhost:3000/api/comments?articleId=1&offset=0&limit=10
+  - Test with articleId: returns empty array (simulated)
+  - Test without articleId: returns 400 error
+  - Test offset parameter: offset=0,10,20
+  - Test limit parameter: limit=5,10,20
+  - Test hasMore flag: should be false (always empty)
+  - Submit comment first, then get comments: verify comment NOT returned (not persisted)
+  - Restart server and test: still returns empty array
+  - Test invalid articleId format
 warning: Returns empty array, not fetching from database.
 
 feature: Like Comment API (Simulated)
 source: server/routes/api.js
-test: currently empty
+test: 
+  - Manual: curl -X POST http://localhost:3000/api/comments/123/like
+  - Test valid comment ID: returns 200 with success and random likes count
+  - Test invalid comment ID: still returns success (simulated)
+  - Verify likes count is random (1-10): call multiple times, verify different values
+  - Test non-existent comment ID: still returns success
+  - Restart server and test: likes count still random (not persisted)
+  - Verify response structure: {success: true, likes: number}
 warning: Likes are not persisted, returns random number.
 
 feature: Get Breaking News API
 source: server/routes/api.js
-test: currently empty
+test: 
+  - Manual: curl http://localhost:3000/api/breaking-news
+  - Test returns recent articles: verify array structure
+  - Verify articles sorted by publishedAt desc
+  - Verify limit is 5 articles
+  - Verify slugs included in response
+  - Test with empty database: returns empty array
+  - Verify response time is acceptable
+  - Test articles include all required fields
 warning: No specific warning.
 
 feature: Get Trending Articles API
 source: server/routes/api.js
-test: currently empty
+test: 
+  - Manual: curl http://localhost:3000/api/trending?limit=10
+  - Test default limit: returns 10 articles
+  - Test custom limit: limit=5,20,50
+  - Verify articles sorted by publishedAt desc (not actual views)
+  - Verify slugs included in response
+  - Test with empty database: returns empty array
+  - Verify response structure matches other article endpoints
+  - Note: This does NOT use actual view counts, only publishedAt sorting
 warning: Trending logic relies on 'publishedAt' sorting, not actual view counts.
 
 feature: Get/Generate Article Slugs API
 source: server/routes/api.js
-test: currently empty
+test: 
+  - GET /api/slug/:id: curl http://localhost:3000/api/slug/1
+  - Test valid article ID with slug: returns 200 with {id, slug}
+  - Test valid article ID without slug: returns 404
+  - Test invalid article ID: returns 404
+  - POST /api/slug: curl -X POST http://localhost:3000/api/slug -H "Content-Type: application/json" -d '{"id":"1","title":"Test Article"}'
+  - Test valid request: returns 200 with {id, title, slug}
+  - Test missing id: returns 400
+  - Test missing title: returns 400
+  - Test slug generation: Turkish characters, special chars, long titles
+  - Verify slug format: lowercase, hyphens, no special chars
+  - Test duplicate titles: should generate unique slugs
 warning: No specific warning.
 
 feature: Health Check API
 source: server/routes/api.js
-test: currently empty
+test: 
+  - Manual: curl http://localhost:3000/api/health
+  - Test returns 200: verify status is 'ok'
+  - Verify response includes: status, timestamp, uptime, memory, version
+  - Test timestamp format: ISO 8601
+  - Test uptime: should be positive number
+  - Test memory object: should have heapUsed, heapTotal, etc.
+  - Test version: should match package.json version
+  - Test response time: should be very fast (<10ms)
+  - Test during high load: verify still responds quickly
 warning: No specific warning.
 
 feature: Cache Stats & Clear API
 source: server/routes/api.js
-test: currently empty
+test: 
+  - GET /api/cache/stats: curl http://localhost:3000/api/cache/stats
+  - Test returns cache statistics: verify structure {backend: {hits, misses, keys}, slugs: {totalSlugs}}
+  - Verify slugs count matches actual slug count
+  - POST /api/cache/clear: curl -X POST http://localhost:3000/api/cache/clear
+  - Test returns success: {success: true, message: 'Cache cleared successfully'}
+  - Verify console.log is called (check server logs)
+  - Note: Actual cache clearing is placeholder, only logs to console
+  - Test multiple clear calls: should all succeed
 warning: Cache clear is a placeholder implementation (console log only).
 
 feature: User Login (Master Admin & DB Users)
 source: server/routes/auth.js
-test: currently empty
+test: 
+  - Manual: curl -X POST http://localhost:3000/api/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"admin123"}' -c cookies.txt
+  - Test Master Admin login: valid credentials returns 200 with success
+  - Test Master Admin login: invalid password returns 401
+  - Test Master Admin login: invalid username returns 401
+  - Test DB user login: valid credentials returns 200
+  - Test DB user login: invalid password returns 401
+  - Test DB user login: non-existent user returns 401
+  - Test missing username: returns 400
+  - Test missing password: returns 400
+  - Test empty strings: returns 400
+  - Verify session created: check cookies, session data
+  - Test Master Admin from env vars: set MASTER_ADMIN_USER/MASTER_ADMIN_PASS
+  - Test Master Admin fallback: unset env vars, uses hardcoded 'admin'/'admin123'
+  - Verify session includes: userId, username, displayName, role, permissions, isMaster
+  - Test password hashing: DB user passwords should be hashed (bcrypt)
 warning: Master admin credentials fallback to hardcoded values if env vars missing.
 
 feature: User Logout
 source: server/routes/auth.js
-test: currently empty
+test: 
+  - Manual: curl -X POST http://localhost:3000/api/auth/logout -b cookies.txt
+  - Test logout when logged in: returns 200 with success and redirect
+  - Test logout when not logged in: should still return success
+  - Verify session destroyed: check session no longer exists
+  - Verify cookie cleared: connect.sid cookie removed
+  - Test logout then access protected route: should fail
+  - Test logout then login again: should succeed
+  - Verify redirect URL: /cms/login
 warning: No specific warning.
 
 feature: Get Current User Info
 source: server/routes/auth.js
-test: currently empty
+test: 
+  - Manual: curl http://localhost:3000/api/auth/me -b cookies.txt
+  - Test when logged in: returns 200 with user info
+  - Test when not logged in: returns 401 (requireAuth middleware)
+  - Verify response includes: id, username, displayName, role, permissions, allowedTabs, isMaster
+  - Test Master Admin: isMaster should be true
+  - Test DB user: isMaster should be false
+  - Test permissions array: verify structure
+  - Test allowedTabs array: verify structure
+  - Test different user roles: admin, editor
 warning: No specific warning.
 
 feature: User Management (List, Create, Update, Delete)
 source: server/routes/auth.js
-test: currently empty
+test: 
+  - List Users: GET /api/auth/users (requires manage_users permission)
+  - Test as admin: returns 200 with users array
+  - Test as editor without permission: returns 403
+  - Test when not logged in: returns 401
+  - Verify users don't include password_hash (or verify parseUser filters it)
+  - Create User: POST /api/auth/users
+  - Test valid user: returns 201 with user object
+  - Test missing username: returns 400
+  - Test missing password: returns 400
+  - Test duplicate username: returns 409
+  - Test password hashing: verify password_hash is bcrypt hash
+  - Test role assignment: editor, admin
+  - Test permissions array: verify stored correctly
+  - Update User: PUT /api/auth/users/:id
+  - Test valid update: returns 200 with updated user
+  - Test non-existent user: returns 404
+  - Test updating Master Admin: returns 403
+  - Test password update: verify new hash created
+  - Test partial update: only some fields
+  - Delete User: DELETE /api/auth/users/:id
+  - Test valid delete: returns 200 with success
+  - Test non-existent user: returns 404
+  - Test deleting yourself: returns 400
+  - Test deleting Master Admin: should fail (not in DB anyway)
+  - Verify user actually deleted from database
 warning: Admin only access. Passwords stored as hashes.
 
 feature: CMS Dashboard View
 source: server/routes/cms.js
-test: currently empty
+test: 
+  - Manual: Visit http://localhost:3000/cms (requires login)
+  - Test when logged in: returns 200 with HTML
+  - Test when not logged in: redirects to /cms/login
+  - Verify initial state includes: stats, articles, categories, branding, homepageLayout, users (if admin)
+  - Test stats calculation: totalArticles, totalCategories, visibleArticles, hiddenArticles
+  - Verify articles are limited to 50
+  - Verify recentArticles is first 5 articles
+  - Test with empty database: verify no errors
+  - Verify branding data is formatted correctly
+  - Test different user roles: admin sees users, editor doesn't
+  - Verify initialState JSON is properly escaped
+  - Test page renders without errors
 warning: No specific warning.
 
 feature: CMS Branding Settings (Get/Update)
 source: server/routes/cms.js
-test: currently empty
+test: 
+  - GET /cms/branding: curl http://localhost:3000/cms/branding -b cookies.txt
+  - Test returns branding config: verify all fields present
+  - Verify logo paths are normalized (start with /uploads/)
+  - POST /cms/branding: Update colors only
+  - Test valid color update: returns 200 with updated branding
+  - Test invalid color format: should normalize or reject
+  - Test color normalization: 3-char hex to 6-char, uppercase to lowercase
+  - POST /cms/branding: Upload header logo
+  - Test valid image upload: PNG, JPG, WEBP, SVG
+  - Test invalid file type: returns 400
+  - Test file too large (>3MB): returns 400
+  - Test old logo deleted: verify old file removed
+  - Test logo path stored correctly
+  - POST /cms/branding: Upload footer logo
+  - Same tests as header logo
+  - Test both logos at once
+  - Test partial update: only colors, only one logo
+  - Test directory permissions: verify uploads/branding directory exists
+  - Test requirePermission middleware: requires manage_settings
 warning: File upload handling for logos needs to ensure directory permissions.
 
 feature: CMS Article Management (List, Create, Update, Delete, Status)
 source: server/routes/cms.js
-test: currently empty
+test: 
+  - List Articles: GET /cms/articles
+  - Test pagination: page, limit parameters
+  - Test filtering: category, search
+  - Test sorting: sortBy, sortOrder
+  - Verify slugs included in response
+  - Create Article: POST /cms/articles
+  - Test valid article: returns 201
+  - Test missing header: returns 400
+  - Test missing body: returns 400
+  - Test writer enforcement: non-admin uses session displayName/username
+  - Test admin can set writer: verify writer field accepted
+  - Test slug generation: verify slug created and stored
+  - Test all fields: summaryHead, summary, category, tags, images, videoUrl, etc.
+  - Test status: visible, hidden
+  - Test targettedViews array
+  - Update Article: PUT /cms/articles/:id
+  - Test valid update: returns 200
+  - Test non-existent article: returns 404
+  - Test missing header/body: returns 400
+  - Test writer change: admin can change, editor cannot
+  - Test slug update: when header changes, slug updates
+  - Test status update separately: PUT /cms/articles/:id/status
+  - Test status toggle: visible <-> hidden
+  - Test invalid status: defaults to visible
+  - Delete Article: DELETE /cms/articles/:id
+  - Test admin can delete any: returns 200
+  - Test editor can delete own: returns 200
+  - Test editor cannot delete others: returns 403
+  - Test non-existent article: returns 404
+  - Verify article deleted from database
+  - Verify slug deleted when article deleted
 warning: Writer field enforcement logic differs for admins vs editors.
 
 feature: CMS Category Management (List, Create, Update, Delete)
 source: server/routes/cms.js
-test: currently empty
+test: 
+  - List Categories: GET /cms/categories
+  - Test returns all categories: verify array structure
+  - Create Category: POST /cms/categories
+  - Test valid category: returns 201
+  - Test missing name: returns 400
+  - Test empty name: returns 400
+  - Test duplicate name: returns 409 (SQLITE_CONSTRAINT)
+  - Test slug generation: verify slug created from name
+  - Test description: optional field
+  - Update Category: PUT /cms/categories/:id
+  - Test valid update: returns 200
+  - Test non-existent category: returns 404
+  - Test missing name: returns 400
+  - Test duplicate name: returns 409
+  - Test slug update: when name changes, slug updates
+  - Test category name change: verify articles updated
+  - Delete Category: DELETE /cms/categories/:id
+  - Test valid delete: returns 200
+  - Test non-existent category: returns 404
+  - Test category with articles: verify articles.category set to NULL
+  - Verify category deleted from database
+  - Test article count updates: verify articleCount field
 warning: Deleting a category might affect articles assigned to it (no cascade delete check visible).
 
 feature: CMS Layout Management (Get/Save)
 source: server/routes/cms.js
-test: currently empty
+test: 
+  - GET /cms/layouts: curl http://localhost:3000/cms/layouts -b cookies.txt
+  - Test returns layout templates: verify array structure
+  - Test layout includes: id, name, template, widgets
+  - PUT /cms/layouts/homepage: Update homepage layout
+  - Test valid layout array: returns 200
+  - Test invalid format (not array): returns 400
+  - Test empty array: should be allowed
+  - Test widget structure: type, config
+  - Test layout persisted: verify database update
+  - Test layout affects homepage: verify homepage uses new layout
+  - Test widget filtering: hidden widgets excluded from homepage
+  - PUT /cms/layouts/:id: Update other layouts
+  - Test valid update: returns 200
+  - Test non-existent layout: creates new or returns 404
+  - Test layout validation: minimal validation as noted
+  - Test complex widget configs: verify stored correctly
 warning: Layout configuration validation is minimal.
 
 feature: Homepage View (Dynamic Layout with Widgets)
 source: server/routes/pages.js
-test: currently empty
+test: 
+  - Manual: Visit http://localhost:3000/
+  - Test page loads: returns 200 with HTML
+  - Test layout processing: verify widgets rendered
+  - Test carousel widget: fetches featured articles
+  - Test featured-news-grid widget: fetches featured articles
+  - Test category-feed widget: fetches category articles
+  - Test flash-news widget: fetches latest articles
+  - Test hidden widgets: verify excluded from page
+  - Test widget data: verify articles have slugs, optimized images
+  - Test branding applied: verify branding data in template
+  - Test navigation categories: verify navCategories built correctly
+  - Test meta tags: verify SEO meta data
+  - Test with empty layout: should still render
+  - Test with no articles: should handle gracefully
+  - Test widget config: source, limit, categoryName
+  - Test error handling: widget fetch failures
 warning: Complex widget logic in route handler, might be hard to maintain.
 
 feature: Article Detail Page View
 source: server/routes/pages.js
-test: currently empty
+test: 
+  - Manual: Visit http://localhost:3000/haber/article-slug
+  - Test valid slug: returns 200 with article page
+  - Test invalid slug: returns 404
+  - Test article data: verify all fields rendered
+  - Test related articles: verify displayed
+  - Test category link: verify category slug correct
+  - Test navigation: verify navCategories
+  - Test branding: verify applied
+  - Test meta tags: verify SEO data (title, description, image)
+  - Test JSON-LD schema: verify structured data
+  - Test optimized images: verify image data optimized
+  - Test article with no images: should handle gracefully
+  - Test article with video: verify videoUrl rendered
+  - Test Turkish characters in slug: verify URL encoding
 warning: No specific warning.
 
 feature: Category Page View (Pagination)
 source: server/routes/pages.js
-test: currently empty
+test: 
+  - Manual: Visit http://localhost:3000/kategori/category-slug?page=1
+  - Test valid category slug: returns 200
+  - Test invalid category slug: returns 404
+  - Test pagination: page=1,2,3
+  - Test pagination links: prevPage, nextPage, pages array
+  - Test hasPrev/hasNext: correct on first/last page
+  - Test Turkish character normalization: verify slug matching works
+  - Test canonical slug redirect: redirects to canonical if different
+  - Test category with no articles: should still render page
+  - Test articles per page: verify limit=12
+  - Test articles sorted: publishedAt desc
+  - Test only visible articles: hidden articles excluded
+  - Test branding: verify applied
+  - Test meta tags: verify category-specific SEO
+  - Test navigation: verify navCategories
 warning: URL slug normalization logic is complex to handle Turkish characters.
 
 feature: Search Page View
 source: server/routes/pages.js
-test: currently empty
+test: 
+  - Manual: Visit http://localhost:3000/arama?q=search+term&page=1
+  - Test with query: returns 200 with results
+  - Test without query: redirects to homepage
+  - Test search results: verify articles match query
+  - Test pagination: page parameter works
+  - Test empty results: should display "no results" message
+  - Test search in title: verify LIKE query works
+  - Test search in content: verify LIKE query works
+  - Test search in summary: verify LIKE query works
+  - Test case-insensitive: "TEST" matches "test"
+  - Test special characters: verify handled correctly
+  - Test Turkish characters: verify search works
+  - Test very long query: should handle gracefully
+  - Test performance: verify query time acceptable
+  - Test only visible articles: hidden excluded
 warning: Search is likely a simple LIKE query, might be slow with large data.
 
 feature: Sitemap Generation (XML)
 source: server/routes/pages.js
-test: currently empty
+test: 
+  - Manual: curl http://localhost:3000/sitemap.xml
+  - Test returns XML: verify Content-Type is application/xml
+  - Test XML structure: verify valid XML format
+  - Test includes all visible articles: verify URLs present
+  - Test includes categories: verify category URLs
+  - Test URL format: verify correct base path
+  - Test lastmod dates: verify included
+  - Test changefreq: verify included
+  - Test priority: verify included
+  - Test with empty database: should still return valid XML
+  - Test XML encoding: UTF-8
+  - Test large sitemap: verify performance
 warning: No specific warning.
 
 feature: News Sitemap Generation (XML)
 source: server/routes/pages.js
-test: currently empty
+test: 
+  - Manual: curl http://localhost:3000/news-sitemap.xml
+  - Test returns XML: verify Content-Type is application/xml
+  - Test XML structure: verify valid XML format
+  - Test includes recent articles: verify URLs present
+  - Test publication date: verify included
+  - Test news namespace: verify xmlns:news present
+  - Test article titles: verify included
+  - Test article images: verify included if present
+  - Test only visible articles: hidden excluded
+  - Test date format: verify ISO 8601
+  - Test with empty database: should return valid XML
 warning: No specific warning.
 
 feature: Robots.txt Generation
 source: server/routes/pages.js
-test: currently empty
+test: 
+  - Manual: curl http://localhost:3000/robots.txt
+  - Test returns text: verify Content-Type is text/plain
+  - Test includes sitemap URL: verify Sitemap: line present
+  - Test includes User-agent: verify User-agent: * present
+  - Test includes Allow/Disallow: verify rules present
+  - Test format: verify proper robots.txt format
+  - Test with base path: verify URLs include base path
 warning: No specific warning.
 
 feature: RSS Feed Generation
 source: server/routes/pages.js
-test: currently empty
+test: 
+  - Manual: curl http://localhost:3000/rss.xml
+  - Test returns XML: verify Content-Type is application/rss+xml
+  - Test RSS structure: verify valid RSS 2.0 format
+  - Test channel info: title, description, link, language
+  - Test includes articles: verify items present
+  - Test article fields: title, description, link, pubDate, category
+  - Test article links: verify correct slug URLs
+  - Test image enclosures: verify included if present
+  - Test limit: verify only recent articles (limit 10)
+  - Test date format: verify RFC 822 format
+  - Test CDATA: verify titles/descriptions in CDATA
+  - Test with empty database: should return valid RSS
 warning: No specific warning.
 
 feature: Legacy Category URL Redirect
 source: server/routes/pages.js
-test: currently empty
+test: 
+  - Manual: Visit http://localhost:3000/category-name
+  - Test valid category name: redirects to /kategori/category-slug
+  - Test invalid category name: continues to 404
+  - Test known paths: /haber, /kategori, /arama should not redirect
+  - Test static paths: /static, /css, /js should not redirect
+  - Test Turkish characters: verify normalization works
+  - Test redirect code: verify 302 (temporary redirect)
+  - Test base path: verify redirect includes base path
+  - Test edge cases: very long category names, special characters
 warning: Relies on catching all non-static paths, potential for collision.
 
 feature: SQLite Database Service
 source: server/services/data-service.js
-test: currently empty
+test: 
+  - Test database initialization: verify tables created
+  - Test schema: verify all tables and columns exist
+  - Test indexes: verify performance indexes created
+  - Test WAL mode: verify journal_mode = WAL
+  - Test foreign keys: verify enabled
+  - Test article CRUD: create, read, update, delete
+  - Test category CRUD: create, read, update, delete
+  - Test user CRUD: create, read, update, delete
+  - Test branding: get, update
+  - Test homepage layout: get, update
+  - Test query performance: verify acceptable query times
+  - Test concurrent access: verify WAL mode handles concurrency
+  - Test data integrity: verify constraints work
+  - Test transaction support: verify transactions work
+  - Test error handling: invalid queries, constraint violations
 warning: Synchronous database operations (better-sqlite3) might block event loop if queries are slow.
 
 feature: Schema Migration System
 source: server/services/data-service.js
-test: currently empty
+test: 
+  - Test initial migration: verify schema created on first run
+  - Test column addition: verify new columns added
+  - Test data migration: verify existing data migrated correctly
+  - Test migration idempotency: run twice, verify no errors
+  - Test migration rollback: verify can handle failures
+  - Test users schema migration: verify allowed_tabs column added
+  - Test articles schema migration: verify new fields added
+  - Test backward compatibility: verify legacy fields still work
+  - Test migration logging: verify console messages
+  - Test production safety: verify migrations don't break existing data
+  - Test migration on empty database: verify works
+  - Test migration on populated database: verify data preserved
 warning: Auto-migration on startup might be risky in production if not backed up.
 
 feature: Mock Data Generation
 source: server/services/data-service.js
-test: currently empty
+test: 
+  - Test on empty database: verify mock data generated
+  - Test on populated database: verify mock data NOT generated
+  - Test mock articles: verify 20 articles created
+  - Test mock categories: verify 6 categories created
+  - Test article data: verify all fields populated
+  - Test category data: verify all fields populated
+  - Test article distribution: verify articles across categories
+  - Test dates: verify creationDate set correctly
+  - Test relationships: verify relatedArticles work
+  - Test targettedViews: verify articles have targettedViews
+  - Test after restart: verify mock data persists
+  - Test migration logging: verify console messages
 warning: Runs if database is empty, might surprise new deployments.

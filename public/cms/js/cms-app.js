@@ -189,6 +189,10 @@
       this.articleMediaEmpty = this.articleMediaManager ? this.articleMediaManager.querySelector('[data-article-media-empty]') : null;
       this.articleMediaUploadBtn = this.articleMediaManager ? this.articleMediaManager.querySelector('[data-action="article-media-upload"]') : null;
       this.articleMediaSelectBtn = this.articleMediaManager ? this.articleMediaManager.querySelector('[data-action="article-media-select"]') : null;
+      this.videoUploadInput = document.querySelector('#field-video-upload');
+      this.uploadVideoBtn = document.querySelector('[data-action="upload-video"]');
+      this.selectVideoBtn = document.querySelector('[data-action="select-video-media"]');
+      this.videoUrlInput = document.querySelector('#field-videoUrl');
       this.mediaTreeContainer = document.querySelector('[data-cms="media-tree"]');
       this.mediaTreeRoot = document.querySelector('[data-cms="media-tree-root"]');
       this.mediaBreadcrumbs = document.querySelector('[data-cms="media-breadcrumbs"]');
@@ -206,6 +210,8 @@
       this.userForm = document.querySelector('[data-cms="user-form"]');
       this.userEditorTitle = document.querySelector('[data-cms="user-editor-title"]');
       this.cancelUserEditorBtn = document.querySelector('[data-action="cancel-user-editor"]');
+
+      this.logoutBtn = document.querySelector('[data-action="logout"]');
     }
 
     bindEvents() {
@@ -220,6 +226,12 @@
       if (this.viewSiteBtn) {
         this.viewSiteBtn.addEventListener('click', () => {
           window.open('/', '_blank', 'noopener');
+        });
+      }
+
+      if (this.logoutBtn) {
+        this.logoutBtn.addEventListener('click', () => {
+          this.logout();
         });
       }
 
@@ -421,6 +433,18 @@
       if (this.articleMediaList) {
         this.articleMediaList.addEventListener('click', (event) => this.handleArticleMediaListClick(event));
         this.articleMediaList.addEventListener('input', (event) => this.handleArticleMediaListInput(event));
+      }
+
+      if (this.uploadVideoBtn && this.videoUploadInput) {
+        this.uploadVideoBtn.addEventListener('click', () => this.videoUploadInput.click());
+      }
+
+      if (this.videoUploadInput) {
+        this.videoUploadInput.addEventListener('change', (event) => this.handleVideoUpload(event));
+      }
+
+      if (this.selectVideoBtn) {
+        this.selectVideoBtn.addEventListener('click', () => this.openVideoMediaSelectModal());
       }
 
       if (this.refreshUsersBtn) {
@@ -1439,7 +1463,7 @@
 
     async loadArticles() {
       try {
-        const data = await this.fetchJson('/cms/articles');
+        const data = await this.fetchJson(`/cms/articles?t=${Date.now()}`);
         if (!data) return;
         this.state.articles = data.articles || [];
         this.renderArticlesTable(this.state.articles);
@@ -1732,11 +1756,45 @@
       preview.className = 'media-card__preview';
       preview.dataset.mediaPreview = '';
 
-      if (media.url && media.extension && ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes((media.extension || '').toLowerCase())) {
+      const ext = (media.extension || '').toLowerCase();
+      if (media.url && ext && ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) {
         const img = document.createElement('img');
         img.src = media.url;
         img.alt = media.filename || media.path;
         preview.appendChild(img);
+      } else if (media.url && ext && ['mp4', 'webm', 'ogg', 'mov'].includes(ext)) {
+        const video = document.createElement('video');
+        video.src = media.url;
+        video.controls = false; // No controls for thumbnail
+        video.muted = true;
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.objectFit = 'cover';
+
+        // Add play icon overlay
+        const playIcon = document.createElement('div');
+        playIcon.className = 'media-card__play-icon';
+        playIcon.innerHTML = '▶';
+        playIcon.style.position = 'absolute';
+        playIcon.style.top = '50%';
+        playIcon.style.left = '50%';
+        playIcon.style.transform = 'translate(-50%, -50%)';
+        playIcon.style.color = 'white';
+        playIcon.style.fontSize = '24px';
+        playIcon.style.textShadow = '0 2px 4px rgba(0,0,0,0.5)';
+        playIcon.style.pointerEvents = 'none';
+
+        preview.appendChild(video);
+        preview.appendChild(playIcon);
+
+        // Play on hover
+        article.addEventListener('mouseenter', () => {
+          video.play().catch(() => { });
+        });
+        article.addEventListener('mouseleave', () => {
+          video.pause();
+          video.currentTime = 0;
+        });
       } else {
         const span = document.createElement('span');
         span.textContent = (media.extension || 'DOSYA').toUpperCase();
@@ -2102,6 +2160,175 @@
 
       const result = await response.json();
       return this.normalizeArticleImageEntry(result.media);
+    }
+
+    async handleVideoUpload(event) {
+      const input = event.currentTarget;
+      const file = input.files[0];
+      if (!file) return;
+
+      const button = this.uploadVideoBtn;
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Yükleniyor...';
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const params = new URLSearchParams({ folder: 'videos' });
+
+        const response = await fetch(`/cms/media/upload?${params.toString()}`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || 'Video yüklenemedi');
+        }
+
+        const result = await response.json();
+        const media = result.media;
+
+        if (this.videoUrlInput) {
+          this.videoUrlInput.value = media.url;
+          this.showSuccess('Video yüklendi ve URL eklendi.');
+        }
+      } catch (error) {
+        this.showError(error.message);
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+        input.value = '';
+      }
+    }
+
+    async openVideoMediaSelectModal() {
+      try {
+        await this.ensureMediaLoaded();
+
+        const videoExtensions = ['mp4', 'webm', 'ogg', 'mov'];
+        const currentFolder = this.state.mediaCurrentFolder || '';
+        const searchTerm = this.state.mediaSearchTerm || '';
+
+        let mediaItems = Array.isArray(this.state.media)
+          ? this.state.media.filter((item) =>
+            videoExtensions.includes((item.extension || '').toLowerCase())
+          )
+          : [];
+
+        if (!mediaItems.length) {
+          // Try fetching if empty (might be in a different folder view)
+          // For simplicity, we just check current state. If user navigates folders, 
+          // the modal needs to handle it. 
+          // Re-using buildArticleMediaSelectModal but with video filter context is tricky 
+          // because that modal is designed for images (addArticleImage).
+          // We will create a specialized version or adapt the existing one.
+          // For now, let's adapt buildArticleMediaSelectModal to accept a callback.
+        }
+
+        this.buildMediaSelectModal(mediaItems, currentFolder, searchTerm, (selectedMedia) => {
+          if (this.videoUrlInput) {
+            this.videoUrlInput.value = selectedMedia.url;
+            this.showSuccess('Video seçildi.');
+          }
+        }, 'Video Seç');
+
+      } catch (error) {
+        console.error('Video select modal error:', error);
+      }
+    }
+
+    // Refactored to be generic
+    buildMediaSelectModal(mediaItems, folderLabel = '', searchTerm = '', onSelect, title = 'Medya Kütüphanesi') {
+      this.closeArticleMediaSelectModal(); // Close any existing
+
+      const overlay = document.createElement('div');
+      overlay.className = 'article-media-modal';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+
+      const folderText = folderLabel ? folderLabel : 'Tüm Dosyalar';
+      const searchText = searchTerm ? ` • Arama: ${this.escapeHtml(searchTerm)}` : '';
+
+      overlay.innerHTML = `
+        <div class="article-media-modal__backdrop" data-action="close-article-media-modal"></div>
+        <div class="article-media-modal__dialog">
+          <header class="article-media-modal__header">
+            <div class="article-media-modal__title">
+              <h3>${title}</h3>
+              <p class="article-media-modal__meta">
+                Klasör: ${this.escapeHtml(folderText)}${searchText}
+              </p>
+            </div>
+            <button type="button" class="article-media-modal__close" data-action="close-article-media-modal" aria-label="Kapat">×</button>
+          </header>
+          <div class="article-media-modal__grid" data-article-media-modal-grid></div>
+        </div>
+      `;
+
+      const grid = overlay.querySelector('[data-article-media-modal-grid]');
+
+      if (mediaItems.length === 0) {
+        grid.innerHTML = '<div class="cms-empty-state">Bu klasörde uygun medya bulunamadı.</div>';
+      } else {
+        mediaItems.forEach((item) => {
+          const card = document.createElement('article');
+          card.className = 'article-media-modal__item';
+          card.dataset.action = 'media-select-item';
+
+          // Preview logic
+          let previewContent = '';
+          const ext = (item.extension || '').toLowerCase();
+          if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) {
+            previewContent = `<img src="${item.url}" alt="${this.escapeHtml(item.filename || '')}">`;
+          } else if (['mp4', 'webm', 'ogg', 'mov'].includes(ext)) {
+            previewContent = `
+              <div style="position: relative; width: 100%; height: 100%; background: #000; display: flex; align-items: center; justify-content: center;">
+                <video src="${item.url}" style="width: 100%; height: 100%; object-fit: cover;" muted></video>
+                <div style="position: absolute; color: white; font-size: 24px;">▶</div>
+              </div>
+             `;
+          } else {
+            previewContent = `<div class="media-card__preview"><span>${ext.toUpperCase()}</span></div>`;
+          }
+
+          card.innerHTML = `
+            <div class="article-media-modal__preview">
+              ${previewContent}
+            </div>
+            <div class="article-media-modal__body">
+              <h4 title="${this.escapeHtml(item.filename || '')}">${this.escapeHtml(item.filename || '')}</h4>
+              <p>${this.escapeHtml(this.formatFileSize(item.size))}</p>
+              <button type="button" class="cms-btn cms-btn-secondary">Seç</button>
+            </div>
+          `;
+
+          card.addEventListener('click', () => {
+            onSelect(item);
+            this.closeArticleMediaSelectModal();
+          });
+
+          grid.appendChild(card);
+        });
+      }
+
+      overlay.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-action="close-article-media-modal"]');
+        if (button) {
+          this.closeArticleMediaSelectModal();
+        }
+      });
+
+      this.mediaSelectModalEscapeHandler = (event) => {
+        if (event.key === 'Escape') {
+          this.closeArticleMediaSelectModal();
+        }
+      };
+
+      document.addEventListener('keydown', this.mediaSelectModalEscapeHandler);
+      document.body.appendChild(overlay);
+      this.mediaSelectModal = overlay;
     }
 
     handleArticleMediaListClick(event) {
@@ -3504,6 +3731,38 @@
       } catch (error) {
         console.error('❌ Save layout error:', error);
         this.showToast('Sayfa düzeni kaydedilemedi', 'error');
+      }
+    }
+
+    async logout() {
+      if (!confirm('Çıkış yapmak istediğinize emin misiniz?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error('Logout failed');
+        }
+
+        const data = await response.json();
+        
+        // Redirect to login page
+        if (data.redirect) {
+          window.location.href = data.redirect;
+        } else {
+          window.location.href = '/cms/login';
+        }
+      } catch (error) {
+        console.error('Logout error:', error);
+        this.showToast('Çıkış yapılırken bir hata oluştu', 'error');
       }
     }
 

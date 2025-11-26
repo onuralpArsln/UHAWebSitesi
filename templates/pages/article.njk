@@ -46,6 +46,12 @@
 
     {% if article.videoUrl %}
     <div class="article-view__video">
+      {% if article.videoUrl.startsWith('/uploads/') %}
+      <video controls preload="metadata" style="width: 100%; height: auto; border-radius: 8px;">
+        <source src="{{ article.videoUrl }}" type="video/mp4">
+        Tarayıcınız video etiketini desteklemiyor.
+      </video>
+      {% else %}
       <iframe
         src="{{ article.videoUrl }}"
         title="{{ article.title }} video"
@@ -53,6 +59,7 @@
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowfullscreen
       ></iframe>
+      {% endif %}
     </div>
     {% endif %}
 

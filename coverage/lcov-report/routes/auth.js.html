@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">35.36% </span>
+                <span class="strong">34.93% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>29/82</span>
+                <span class='fraction'>29/83</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">43.75% </span>
+                <span class="strong">41.17% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>14/32</span>
+                <span class='fraction'>14/34</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">35.36% </span>
+                <span class="strong">34.93% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>29/82</span>
+                <span class='fraction'>29/83</span>
             </div>
         
             
@@ -248,7 +248,10 @@
 <a name='L183'></a><a href='#L183'>183</a>
 <a name='L184'></a><a href='#L184'>184</a>
 <a name='L185'></a><a href='#L185'>185</a>
-<a name='L186'></a><a href='#L186'>186</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -292,6 +295,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -338,25 +342,26 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -367,6 +372,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -476,6 +482,7 @@ router.post('/login', async (req, res) =&gt; {
 <span class="cstat-no" title="statement not covered" >        req.session.displayName = user.displayName;</span>
 <span class="cstat-no" title="statement not covered" >        req.session.role = user.role;</span>
 <span class="cstat-no" title="statement not covered" >        req.session.permissions = user.permissions;</span>
+<span class="cstat-no" title="statement not covered" >        req.session.allowedTabs = user.allowedTabs || [];</span>
 <span class="cstat-no" title="statement not covered" >        req.session.isMaster = false;</span>
 &nbsp;
         // Update last login
@@ -512,6 +519,7 @@ router.get('/me', requireAuth, <span class="fstat-no" title="function not covere
         displayName: req.session.displayName,
         role: req.session.role,
         permissions: req.session.permissions,
+        allowedTabs: req.session.allowedTabs,
         isMaster: req.session.isMaster
     });
 });
@@ -539,7 +547,7 @@ router.get('/users', requirePermission('manage_users'), <span class="fstat-no" t
  */
 router.post('/users', requirePermission('manage_users'), <span class="fstat-no" title="function not covered" >(r</span>eq, res) =&gt; {
 <span class="cstat-no" title="statement not covered" >    try {</span>
-        const { username, password, displayName, role, permissions } = <span class="cstat-no" title="statement not covered" >req.body;</span>
+        const { username, password, displayName, role, permissions, allowedTabs } = <span class="cstat-no" title="statement not covered" >req.body;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        if (!username || !password) {</span>
 <span class="cstat-no" title="statement not covered" >            return res.status(400).json({ error: 'Kullanıcı adı ve şifre zorunludur.' });</span>
@@ -556,7 +564,8 @@ router.post('/users', requirePermission('manage_users'), <span class="fstat-no" 
             password,
             displayName,
             role,
-            permissions
+            permissions,
+            allowedTabs
         });
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        res.status(201).json(newUser);</span>
@@ -625,7 +634,7 @@ module.exports = router;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-25T22:16:23.108Z
+                at 2025-11-26T19:37:52.140Z
             </div>
         <script src="../prettify.js"></script>
         <script>
