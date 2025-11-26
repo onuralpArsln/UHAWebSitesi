@@ -1,0 +1,169 @@
+feature: Get Articles API (Pagination, Filtering, Sorting)
+source: server/routes/api.js
+test: currently empty
+warning: No specific warning.
+
+feature: Get Single Article API
+source: server/routes/api.js
+test: currently empty
+warning: No specific warning.
+
+feature: Get Related Articles API
+source: server/routes/api.js
+test: currently empty
+warning: No specific warning.
+
+feature: Get Related News by Category API
+source: server/routes/api.js
+test: currently empty
+warning: No specific warning.
+
+feature: Get Categories API
+source: server/routes/api.js
+test: currently empty
+warning: No specific warning.
+
+feature: Submit Comment API (Simulated)
+source: server/routes/api.js
+test: currently empty
+warning: Comments are not persisted to database, only simulated response.
+
+feature: Get Comments API (Simulated)
+source: server/routes/api.js
+test: currently empty
+warning: Returns empty array, not fetching from database.
+
+feature: Like Comment API (Simulated)
+source: server/routes/api.js
+test: currently empty
+warning: Likes are not persisted, returns random number.
+
+feature: Get Breaking News API
+source: server/routes/api.js
+test: currently empty
+warning: No specific warning.
+
+feature: Get Trending Articles API
+source: server/routes/api.js
+test: currently empty
+warning: Trending logic relies on 'publishedAt' sorting, not actual view counts.
+
+feature: Get/Generate Article Slugs API
+source: server/routes/api.js
+test: currently empty
+warning: No specific warning.
+
+feature: Health Check API
+source: server/routes/api.js
+test: currently empty
+warning: No specific warning.
+
+feature: Cache Stats & Clear API
+source: server/routes/api.js
+test: currently empty
+warning: Cache clear is a placeholder implementation (console log only).
+
+feature: User Login (Master Admin & DB Users)
+source: server/routes/auth.js
+test: currently empty
+warning: Master admin credentials fallback to hardcoded values if env vars missing.
+
+feature: User Logout
+source: server/routes/auth.js
+test: currently empty
+warning: No specific warning.
+
+feature: Get Current User Info
+source: server/routes/auth.js
+test: currently empty
+warning: No specific warning.
+
+feature: User Management (List, Create, Update, Delete)
+source: server/routes/auth.js
+test: currently empty
+warning: Admin only access. Passwords stored as hashes.
+
+feature: CMS Dashboard View
+source: server/routes/cms.js
+test: currently empty
+warning: No specific warning.
+
+feature: CMS Branding Settings (Get/Update)
+source: server/routes/cms.js
+test: currently empty
+warning: File upload handling for logos needs to ensure directory permissions.
+
+feature: CMS Article Management (List, Create, Update, Delete, Status)
+source: server/routes/cms.js
+test: currently empty
+warning: Writer field enforcement logic differs for admins vs editors.
+
+feature: CMS Category Management (List, Create, Update, Delete)
+source: server/routes/cms.js
+test: currently empty
+warning: Deleting a category might affect articles assigned to it (no cascade delete check visible).
+
+feature: CMS Layout Management (Get/Save)
+source: server/routes/cms.js
+test: currently empty
+warning: Layout configuration validation is minimal.
+
+feature: Homepage View (Dynamic Layout with Widgets)
+source: server/routes/pages.js
+test: currently empty
+warning: Complex widget logic in route handler, might be hard to maintain.
+
+feature: Article Detail Page View
+source: server/routes/pages.js
+test: currently empty
+warning: No specific warning.
+
+feature: Category Page View (Pagination)
+source: server/routes/pages.js
+test: currently empty
+warning: URL slug normalization logic is complex to handle Turkish characters.
+
+feature: Search Page View
+source: server/routes/pages.js
+test: currently empty
+warning: Search is likely a simple LIKE query, might be slow with large data.
+
+feature: Sitemap Generation (XML)
+source: server/routes/pages.js
+test: currently empty
+warning: No specific warning.
+
+feature: News Sitemap Generation (XML)
+source: server/routes/pages.js
+test: currently empty
+warning: No specific warning.
+
+feature: Robots.txt Generation
+source: server/routes/pages.js
+test: currently empty
+warning: No specific warning.
+
+feature: RSS Feed Generation
+source: server/routes/pages.js
+test: currently empty
+warning: No specific warning.
+
+feature: Legacy Category URL Redirect
+source: server/routes/pages.js
+test: currently empty
+warning: Relies on catching all non-static paths, potential for collision.
+
+feature: SQLite Database Service
+source: server/services/data-service.js
+test: currently empty
+warning: Synchronous database operations (better-sqlite3) might block event loop if queries are slow.
+
+feature: Schema Migration System
+source: server/services/data-service.js
+test: currently empty
+warning: Auto-migration on startup might be risky in production if not backed up.
+
+feature: Mock Data Generation
+source: server/services/data-service.js
+test: currently empty
+warning: Runs if database is empty, might surprise new deployments.
