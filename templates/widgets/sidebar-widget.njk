@@ -1,0 +1,48 @@
+{% macro sidebarWidget(articles, config = {}) %}
+{% if articles and articles | length %}
+{% set widgetType = config.widgetType or 'popular' %}
+{% set titles = {
+  'popular': 'Popüler Haberler',
+  'recent': 'Son Haberler',
+  'category': 'Kategori Akışı'
+} %}
+{% set title = titles[widgetType] or 'Son Haberler' %}
+
+<div class="sidebar-widget" data-widget="sidebar-{{ widgetType }}">
+  <h3 class="sidebar-widget__title">{{ title }}</h3>
+  <div class="sidebar-widget__articles">
+    {% for article in articles %}
+    {% set image = article.images and article.images[0] %}
+    <article class="sidebar-article">
+      {% if image %}
+      <div class="sidebar-article__image">
+        <img
+          src="{{ image.lowRes }}"
+          data-high-res="{{ image.highRes }}"
+          alt="{{ image.alt or article.title }}"
+          width="100"
+          height="70"
+          loading="lazy"
+        >
+      </div>
+      {% endif %}
+      <div class="sidebar-article__content">
+        {% if article.category %}
+        <span class="sidebar-article__category">{{ article.category }}</span>
+        {% endif %}
+        <h4 class="sidebar-article__title">
+          <a href="{{ asset('haber/' ~ article.slug) }}">{{ article.title }}</a>
+        </h4>
+        {% if article.publishedAt %}
+        <time class="sidebar-article__date" datetime="{{ article.publishedAt }}">
+          {{ article.publishedAt | formatDate }}
+        </time>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endmacro %}
+

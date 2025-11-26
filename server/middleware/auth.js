@@ -7,11 +7,15 @@ const requireAuth = (req, res, next) => {
         return next();
     }
 
-    // Check if this is an API-like request (POST/PUT/DELETE to /cms routes or JSON accept)
-    const isApiRequest = req.path.startsWith('/api/') || 
-                        req.xhr || 
-                        req.accepts('json') ||
-                        (req.path.startsWith('/cms/') && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method));
+    // For GET requests to /cms routes, always redirect to login (browser navigation)
+    if (req.method === 'GET' && req.path.startsWith('/cms')) {
+        return res.redirect('/cms/login');
+    }
+
+    // Check if this is an API-like request (non-GET requests or API routes)
+    const isApiRequest = req.path.startsWith('/api/') ||
+        req.xhr ||
+        (req.path.startsWith('/cms/') && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method));
 
     // If it's an API request, return 401
     if (isApiRequest) {
@@ -25,10 +29,10 @@ const requireAuth = (req, res, next) => {
 const requirePermission = (permission) => {
     return (req, res, next) => {
         // Check if this is an API-like request (POST/PUT/DELETE to /cms routes or JSON accept)
-        const isApiRequest = req.path.startsWith('/api/') || 
-                            req.xhr || 
-                            req.accepts('json') ||
-                            (req.path.startsWith('/cms/') && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method));
+        const isApiRequest = req.path.startsWith('/api/') ||
+            req.xhr ||
+            req.accepts('json') ||
+            (req.path.startsWith('/cms/') && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method));
 
         if (!req.session || !req.session.userId) {
             if (isApiRequest) {

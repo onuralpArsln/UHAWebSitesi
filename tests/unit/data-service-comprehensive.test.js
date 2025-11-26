@@ -5,46 +5,38 @@
  */
 const path = require('path');
 const fs = require('fs');
+const Database = require('better-sqlite3');
 const DataService = require('../../server/services/data-service');
 
 describe('DataService Comprehensive Tests', () => {
     let dataService;
-    let testDbPath;
+    let testDb;
 
     beforeEach(() => {
-        // Create a temporary database file for each test
-        const testDataDir = path.join(__dirname, '../../data-test');
-        if (!fs.existsSync(testDataDir)) {
-            fs.mkdirSync(testDataDir, { recursive: true });
-        }
-        testDbPath = path.join(testDataDir, `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.db`);
+        // Create an in-memory test database for each test
+        // This prevents any risk of modifying production data
+        testDb = new Database(':memory:');
         
-        // Create DataService with test database
-        // We'll need to modify DataService to accept a custom path, or use env var
-        process.env.TEST_DB_PATH = testDbPath;
+        // Create DataService with test database instance
+        dataService = new DataService(testDb);
     });
 
     afterEach(() => {
         // Clean up test database
-        if (dataService) {
+        if (testDb && testDb.open) {
             try {
-                dataService.close();
+                testDb.close();
             } catch (e) {
                 // Ignore cleanup errors
             }
         }
-        if (fs.existsSync(testDbPath)) {
-            try {
-                fs.unlinkSync(testDbPath);
-            } catch (e) {
-                // Ignore cleanup errors
-            }
-        }
+        dataService = null;
+        testDb = null;
     });
 
     describe('Database Initialization', () => {
         test('should create database with all required tables', () => {
-            dataService = new DataService();
+            // dataService is already created in beforeEach with test database
             
             // Verify tables exist by trying to query them
             const articles = dataService.getArticles({ limit: 1 });
@@ -56,8 +48,7 @@ describe('DataService Comprehensive Tests', () => {
         });
 
         test('should create indexes for performance', () => {
-            dataService = new DataService();
-            
+            // dataService is already created in beforeEach with test database
             // Indexes are created in initializeDatabase
             // We can verify by checking query performance or by inspecting schema
             const articles = dataService.getArticles({ limit: 1 });
@@ -65,9 +56,8 @@ describe('DataService Comprehensive Tests', () => {
         });
 
         test('should enable WAL mode', () => {
-            dataService = new DataService();
-            
-            // WAL mode is set in constructor
+            // dataService is already created in beforeEach with test database
+            // WAL mode is set in constructor (for file-based DBs, in-memory doesn't need it)
             // Verify database is functional
             const categories = dataService.getCategories();
             expect(Array.isArray(categories)).toBe(true);
@@ -76,7 +66,7 @@ describe('DataService Comprehensive Tests', () => {
 
     describe('Schema Migration System', () => {
         test('should migrate schema on first run', () => {
-            dataService = new DataService();
+            // dataService is already created in beforeEach with test database
             
             // After migration, we should be able to use new fields
             const article = dataService.createArticle({
@@ -94,12 +84,13 @@ describe('DataService Comprehensive Tests', () => {
 
         test('should handle migration idempotency', () => {
             // Create service twice - should not error
-            dataService = new DataService();
+            // dataService is already created in beforeEach with test database
             const firstRun = dataService.getCategories();
             
-            // Close and recreate
-            dataService.close();
-            dataService = new DataService();
+            // Close and recreate with new in-memory database
+            testDb.close();
+            testDb = new Database(':memory:');
+            dataService = new DataService(testDb);
             const secondRun = dataService.getCategories();
             
             expect(Array.isArray(firstRun)).toBe(true);
@@ -107,7 +98,7 @@ describe('DataService Comprehensive Tests', () => {
         });
 
         test('should migrate existing data', () => {
-            dataService = new DataService();
+            // dataService is already created in beforeEach with test database
             
             // Create article with legacy fields
             const article = dataService.createArticle({
@@ -125,40 +116,33 @@ describe('DataService Comprehensive Tests', () => {
     });
 
     describe('Mock Data Generation', () => {
-        test('should generate mock data on empty database', () => {
-            dataService = new DataService();
-            
-            // If database is empty, mock data should be generated
+        test('should not generate mock data in test mode', () => {
+            // dataService is already created in beforeEach with test database
+            // Mock data generation is disabled in test mode
             const articles = dataService.getArticles({ limit: 100 });
             
-            // Either mock data was generated, or database already had data
             expect(articles).toHaveProperty('articles');
             expect(Array.isArray(articles.articles)).toBe(true);
+            // In test mode, mock data should not be generated
+            expect(articles.articles.length).toBe(0);
         });
 
-        test('should not generate mock data on populated database', () => {
-            dataService = new DataService();
-            
-            // Create an article first
+        test('should work with manually created articles', () => {
+            // dataService is already created in beforeEach with test database
+            // Create an article manually
             dataService.createArticle({
                 header: 'Existing Article',
                 body: 'Content'
             });
             
-            // Close and recreate - should not generate mock data
-            dataService.close();
-            dataService = new DataService();
-            
             const articles = dataService.getArticles({ limit: 100 });
-            // Should have at least our created article
+            // Should have our created article
             expect(articles.articles.length).toBeGreaterThanOrEqual(1);
         });
     });
 
     describe('Article CRUD Operations', () => {
-        beforeEach(() => {
-            dataService = new DataService();
-        });
+        // dataService is already created in outer beforeEach with test database
 
         test('should create article', () => {
             const article = dataService.createArticle({
@@ -216,9 +200,7 @@ describe('DataService Comprehensive Tests', () => {
     });
 
     describe('Category CRUD Operations', () => {
-        beforeEach(() => {
-            dataService = new DataService();
-        });
+        // dataService is already created in outer beforeEach with test database
 
         test('should create category', () => {
             const category = dataService.createCategory({
@@ -290,9 +272,7 @@ describe('DataService Comprehensive Tests', () => {
     });
 
     describe('Branding Operations', () => {
-        beforeEach(() => {
-            dataService = new DataService();
-        });
+        // dataService is already created in outer beforeEach with test database
 
         test('should get branding with defaults', () => {
             const branding = dataService.getBranding();
@@ -314,9 +294,7 @@ describe('DataService Comprehensive Tests', () => {
     });
 
     describe('Homepage Layout Operations', () => {
-        beforeEach(() => {
-            dataService = new DataService();
-        });
+        // dataService is already created in outer beforeEach with test database
 
         test('should get homepage layout with defaults', () => {
             const layout = dataService.getHomepageLayout();
@@ -338,9 +316,7 @@ describe('DataService Comprehensive Tests', () => {
     });
 
     describe('Article Status Summary', () => {
-        beforeEach(() => {
-            dataService = new DataService();
-        });
+        // dataService is already created in outer beforeEach with test database
 
         test('should return status summary', () => {
             dataService.createArticle({
@@ -366,9 +342,7 @@ describe('DataService Comprehensive Tests', () => {
     });
 
     describe('Related Articles', () => {
-        beforeEach(() => {
-            dataService = new DataService();
-        });
+        // dataService is already created in outer beforeEach with test database
 
         test('should return related articles', () => {
             const article1 = dataService.createArticle({

@@ -1,0 +1,60 @@
+{% import "widgets/article-header.njk" as articleHeaderWidget %}
+{% import "widgets/article-meta.njk" as articleMetaWidget %}
+{% import "widgets/article-image.njk" as articleImageWidget %}
+{% import "widgets/article-content.njk" as articleContentWidget %}
+{% import "widgets/article-tags.njk" as articleTagsWidget %}
+{% import "widgets/related-news.njk" as relatedNewsWidget %}
+{% import "widgets/sidebar-widget.njk" as sidebarWidget %}
+{% import "widgets/social-share.njk" as socialShareWidget %}
+{% import "widgets/comment-section.njk" as commentSectionWidget %}
+{% import "widgets/ad-placeholder.njk" as adPlaceholderWidget %}
+
+{# Article Widget Renderer Macro - Dynamically renders widgets based on type #}
+{% macro render(widget, article, pageUrl, relatedArticles = [], sidebarArticles = [], comments = [], hasMoreComments = false) %}
+  {% if widget.type == 'article-header' %}
+    {{ articleHeaderWidget.articleHeader(article) }}
+  
+  {% elif widget.type == 'article-meta' %}
+    {{ articleMetaWidget.articleMeta(article) }}
+  
+  {% elif widget.type == 'article-image' %}
+    {{ articleImageWidget.articleImage(article, widget.config or {}) }}
+  
+  {% elif widget.type == 'article-content' %}
+    {{ articleContentWidget.articleContent(article) }}
+  
+  {% elif widget.type == 'article-tags' %}
+    {{ articleTagsWidget.articleTags(article) }}
+  
+  {% elif widget.type == 'related-articles' %}
+    {% if widget.data and widget.data.articles and widget.data.articles.length > 0 %}
+      {{ relatedNewsWidget.relatedNews(widget.data.articles) }}
+    {% elif relatedArticles and relatedArticles.length > 0 %}
+      {{ relatedNewsWidget.relatedNews(relatedArticles) }}
+    {% endif %}
+  
+  {% elif widget.type == 'sidebar-widget' %}
+    {% if widget.data and widget.data.articles and widget.data.articles.length > 0 %}
+      {{ sidebarWidget.sidebarWidget(widget.data.articles, widget.config or {}) }}
+    {% elif sidebarArticles and sidebarArticles.length > 0 %}
+      {{ sidebarWidget.sidebarWidget(sidebarArticles, widget.config or {}) }}
+    {% endif %}
+  
+  {% elif widget.type == 'social-share' %}
+    {{ socialShareWidget.socialShare(article, pageUrl, widget.config or {}) }}
+  
+  {% elif widget.type == 'comment-section' %}
+    {% if article and article.id %}
+      {{ commentSectionWidget.commentSection(article.id, article.comments or [], article.hasMoreComments or false) }}
+    {% endif %}
+  
+  {% elif widget.type == 'ad-placeholder' %}
+    {% set config = widget.config or {} %}
+    {% set slot = config.slot or 'article-content' %}
+    {% set label = config.label or 'Reklam Alanı' %}
+    {% set size = config.size or 'standard' %}
+    {{ adPlaceholderWidget.adPlaceholder(slot, label, size) }}
+  
+  {% endif %}
+{% endmacro %}
+

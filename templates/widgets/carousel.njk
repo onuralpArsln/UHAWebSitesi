@@ -1,31 +1,35 @@
-{% macro carousel(id, slides) %}
-<div class="carousel-widget" data-widget="carousel" data-carousel-id="{{ id }}">
+{% macro carousel(id, slides, config = {}) %}
+<div class="carousel-widget" 
+     data-widget="carousel" 
+     data-carousel-id="{{ id }}"
+     data-autoplay="{{ config.autoPlay | default(true) }}"
+     data-delay="{{ config.autoPlayDelay | default(5000) }}">
   <div class="carousel-container">
     <div class="carousel-track">
       {% for slide in slides %}
       {% set image = slide.images and slide.images[0] %}
-      <div class="carousel-slide{% if loop.first %} active{% endif %}" data-article-id="{{ slide.id }}">
-        <div class="slide-image">
-          {% if image %}
-          <img
-            src="{% if loop.first %}{{ image.lowRes or image.url }}{% else %}{{ placeholder_image }}{% endif %}"
-            data-low-res="{{ image.lowRes or image.url }}"
-            data-high-res="{{ image.highRes or '' }}"
-            alt="{{ image.alt }}"
-            width="{{ image.width }}"
-            height="{{ image.height }}"
-            {% if loop.first %}loading="eager"{% else %}loading="lazy"{% endif %}
-          >
-          {% endif %}
-        </div>
-        <div class="slide-content">
-          <h3><a href="{{ asset('haber/' ~ slide.slug) }}">{{ slide.title }}</a></h3>
-          <p>{{ slide.summary }}</p>
-          <div class="slide-meta">
-            <span class="category">{{ slide.category }}</span>
-            <span class="date">{{ slide.publishedAt | formatDate }}</span>
+      <div class="carousel-slide{% if loop.first %} active{% endif %}">
+        <a href="{{ asset('haber/' ~ slide.slug) }}" class="slide-link">
+          <div class="slide-image">
+            {% if image %}
+            <img
+              src="{{ image.url }}"
+              alt="{{ image.alt or slide.title }}"
+              width="{{ image.width }}"
+              height="{{ image.height }}"
+              {% if not loop.first %}loading="lazy"{% else %}loading="eager"{% endif %}
+            >
+            {% endif %}
           </div>
-        </div>
+          <div class="slide-content">
+            <h3>{{ slide.title }}</h3>
+            <p>{{ slide.summary }}</p>
+            <div class="slide-meta">
+              <span class="category">{{ slide.category }}</span>
+              <span class="date">{{ slide.publishedAt | formatDate }}</span>
+            </div>
+          </div>
+        </a>
       </div>
       {% endfor %}
     </div>
@@ -45,7 +49,5 @@
       {% endfor %}
     </div>
   </div>
-
 </div>
 {% endmacro %}
-

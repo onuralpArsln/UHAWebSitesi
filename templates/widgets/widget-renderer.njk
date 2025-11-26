@@ -14,7 +14,7 @@
     <section class="hero-carousel">
       <div class="container">
         {% if widget.data.articles and widget.data.articles | length %}
-        {{ carouselWidget.carousel(widget.config.id, widget.data.articles) }}
+        {{ carouselWidget.carousel(widget.config.id, widget.data.articles, widget.config) }}
         {% else %}
         <p>Şu anda öne çıkan haber bulunmuyor.</p>
         {% endif %}

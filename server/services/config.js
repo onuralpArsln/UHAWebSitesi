@@ -6,6 +6,7 @@
 
 const path = require('path');
 const os = require('os');
+const cmsTabs = require('../config/cms-tabs');
 
 class ConfigService {
   constructor() {
@@ -48,17 +49,8 @@ class ConfigService {
       adsenseSlotId: process.env.ADSENSE_SLOT_ID || ''
     };
 
-    // CMS Tabs Configuration
-    this.cmsTabs = [
-      { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', permission: 'view_tab_dashboard' },
-      { id: 'articles', label: 'Haberler', icon: 'article', permission: 'view_tab_articles' },
-      { id: 'categories', label: 'Kategoriler', icon: 'category', permission: 'view_tab_categories' },
-      { id: 'media', label: 'Medya', icon: 'image', permission: 'view_tab_media' },
-      { id: 'branding', label: 'Marka', icon: 'branding_watermark', permission: 'view_tab_branding' },
-      { id: 'layout', label: 'Sayfa Düzeni', icon: 'view_quilt', permission: 'view_tab_layout' },
-      { id: 'settings', label: 'Ayarlar', icon: 'settings', permission: 'view_tab_settings' },
-      { id: 'users', label: 'Kullanıcılar', icon: 'people', permission: 'view_tab_users' }
-    ];
+    // CMS Tabs Configuration - imported from cms-tabs.js
+    this.cmsTabs = cmsTabs;
 
     // Cache for request-based configs
     this.requestCache = new Map();

@@ -1,0 +1,15 @@
+
+> uha-news-website@1.0.0 start
+> node server/index.js
+
+🌐 Server configured to support both HTTP and HTTPS
+   - HTTP requests: HTTPS security headers disabled
+   - HTTPS requests: Full security headers enabled
+📝 Loaded 39 slug mappings from cache
+🚀 UHA News Server running on port 3000
+📰 Environment: production
+🌐 Auto-configuring: Protocol and URLs detected from requests
+   - Base Path: (root)
+   - Frontend: http://localhost:3000/
+   - CMS: http://localhost:3000/cms
+Killed

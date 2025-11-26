@@ -1,0 +1,13 @@
+{% macro articleHeader(article) %}
+{% if article %}
+<header class="article-view__header">
+  {% if article.category %}
+  <span class="badge badge--category">{{ article.category }}</span>
+  {% endif %}
+  {% if article.title %}
+  <h1 class="article-view__title">{{ article.title }}</h1>
+  {% endif %}
+</header>
+{% endif %}
+{% endmacro %}
+

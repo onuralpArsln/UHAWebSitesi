@@ -92,6 +92,7 @@
         mediaSearchTerm: '',
         mediaSearchTerm: '',
         homepageLayout: initialState.homepageLayout || [],
+        articleLayout: initialState.articleLayout || [],
         users: initialState.users || [],
         cmsTabs: initialState.cmsTabs || []
       };
@@ -108,6 +109,8 @@
       this.bindEvents();
       this.initializeArticleMediaManager();
       this.initializeLayoutManager();
+      this.initializeArticleLayoutManager();
+      this.initializeHeadlineLayoutManager();
       this.renderInitialState();
     }
 
@@ -3445,23 +3448,37 @@
 
       if (widget.type === 'carousel') {
         configHtml = `
-          <label class="config-control">
-            <input type="checkbox" 
-                   data-config="autoplay" 
-                   data-widget-index="${index}"
-                   ${widget.config.autoplay ? 'checked' : ''}>
-            Otomatik oynat
-          </label>
-          <label class="config-control">
-            <span>Süre:</span>
-            <input type="number" 
-                   data-config="interval" 
-                   data-widget-index="${index}"
-                   value="${(widget.config.interval / 1000) || 5}" 
-                   min="1" 
-                   max="30"
-                   class="config-input-small"> saniye
-          </label>
+          <div class="config-row">
+            <label class="config-control">
+              <span class="config-label">Limit:</span>
+              <input type="number" 
+                     data-config="maxArticles" 
+                     data-widget-index="${index}"
+                     value="${widget.config.maxArticles || 5}" 
+                     min="1" 
+                     max="10"
+                     class="config-input-small"
+                     title="Maksimum haber sayısı">
+            </label>
+            <label class="config-control">
+              <input type="checkbox" 
+                     data-config="autoPlay" 
+                     data-widget-index="${index}"
+                     ${widget.config.autoPlay ? 'checked' : ''}>
+              Oto. Oynat
+            </label>
+            <label class="config-control">
+              <span class="config-label">Süre (ms):</span>
+              <input type="number" 
+                     data-config="autoPlayDelay" 
+                     data-widget-index="${index}"
+                     value="${widget.config.autoPlayDelay || 5000}" 
+                     min="1000" 
+                     max="10000"
+                     step="500"
+                     class="config-input-small">
+            </label>
+          </div>
         `;
       } else if (widget.type === 'hero-title') {
         configHtml = `
@@ -3734,6 +3751,898 @@
       }
     }
 
+    initializeArticleLayoutManager() {
+      // Initialize article layout manager with similar functionality to homepage layout
+      this.articleLayoutTable = document.querySelector('[data-cms="article-layout-table"]');
+      this.saveArticleLayoutBtn = document.querySelector('[data-action="save-article-layout"]');
+      this.addArticleWidgetBtn = document.querySelector('[data-action="add-article-widget"]');
+      this.articleModalOverlay = document.querySelector('[data-modal="add-article-widget"]');
+      this.articleModalCloseBtn = this.articleModalOverlay ? this.articleModalOverlay.querySelector('[data-action="close-modal"]') : null;
+      this.articleWidgetListContainer = document.querySelector('[data-cms="article-widget-list"]');
+
+      this.draggedArticleRow = null;
+      this.currentArticleDropTarget = null;
+
+      // Available article widgets
+      this.availableArticleWidgets = [
+        {
+          type: 'article-header',
+          title: 'Makale Başlığı',
+          desc: 'Makale başlığı ve meta bilgileri',
+          defaultConfig: {}
+        },
+        {
+          type: 'article-meta',
+          title: 'Makale Bilgileri',
+          desc: 'Yazar, tarih, kategori bilgileri',
+          defaultConfig: {}
+        },
+        {
+          type: 'article-image',
+          title: 'Öne Çıkan Görsel',
+          desc: 'Makale ana görseli',
+          defaultConfig: { showCaption: true }
+        },
+        {
+          type: 'article-content',
+          title: 'Makale İçeriği',
+          desc: 'Ana makale içeriği',
+          defaultConfig: {}
+        },
+        {
+          type: 'article-tags',
+          title: 'Etiketler',
+          desc: 'Makale etiketleri',
+          defaultConfig: {}
+        },
+        {
+          type: 'related-articles',
+          title: 'İlgili Haberler',
+          desc: 'Benzer veya ilgili haberler listesi',
+          defaultConfig: { limit: 4, sameCategory: true }
+        },
+        {
+          type: 'sidebar-widget',
+          title: 'Yan Menü',
+          desc: 'Yan menü widget alanı',
+          defaultConfig: { widgetType: 'popular', limit: 5 }
+        },
+        {
+          type: 'social-share',
+          title: 'Sosyal Medya Paylaşım',
+          desc: 'Sosyal medya paylaşım butonları',
+          defaultConfig: { showFacebook: true, showTwitter: true, showWhatsapp: true }
+        },
+        {
+          type: 'comment-section',
+          title: 'Yorum Bölümü',
+          desc: 'Kullanıcı yorumları alanı',
+          defaultConfig: {}
+        },
+        {
+          type: 'ad-placeholder',
+          title: 'Reklam Alanı',
+          desc: 'Reklam yerleşimi için boş alan',
+          defaultConfig: { size: 'standard', position: 'inline' }
+        }
+      ];
+
+      if (this.articleLayoutTable) {
+        // Drag and drop handlers
+        const dragHandles = this.articleLayoutTable.querySelectorAll('.layout-drag-handle');
+        dragHandles.forEach(handle => {
+          const row = handle.closest('tr');
+          if (row) {
+            handle.addEventListener('mousedown', () => {
+              row.setAttribute('draggable', 'true');
+            });
+            handle.addEventListener('mouseup', () => {
+              setTimeout(() => row.removeAttribute('draggable'), 100);
+            });
+          }
+        });
+
+        this.articleLayoutTable.addEventListener('dragstart', this.handleArticleDragStart.bind(this));
+        this.articleLayoutTable.addEventListener('dragover', this.handleArticleDragOver.bind(this));
+        this.articleLayoutTable.addEventListener('drop', this.handleArticleDrop.bind(this));
+        this.articleLayoutTable.addEventListener('dragend', this.handleArticleDragEnd.bind(this));
+        this.articleLayoutTable.addEventListener('dragleave', (e) => this.handleArticleDragLeave(e));
+
+        // Widget actions
+        this.articleLayoutTable.addEventListener('click', (e) => {
+          const removeBtn = e.target.closest('[data-action="remove-article-widget"]');
+          if (removeBtn) {
+            const index = parseInt(removeBtn.dataset.widgetIndex);
+            this.removeArticleWidget(index);
+            return;
+          }
+
+          const statusBtn = e.target.closest('[data-action="toggle-article-status"]');
+          if (statusBtn) {
+            const index = parseInt(statusBtn.dataset.widgetIndex);
+            this.toggleArticleWidgetStatus(index, statusBtn);
+          }
+        });
+
+        this.initializeArticleConfigControls();
+      }
+
+      if (this.saveArticleLayoutBtn) {
+        this.saveArticleLayoutBtn.addEventListener('click', () => this.saveArticleLayout());
+      }
+
+      if (this.addArticleWidgetBtn && this.articleModalOverlay) {
+        this.addArticleWidgetBtn.addEventListener('click', () => this.openAddArticleWidgetModal());
+
+        if (this.articleModalCloseBtn) {
+          this.articleModalCloseBtn.addEventListener('click', () => this.closeAddArticleWidgetModal());
+        }
+
+        this.articleModalOverlay.addEventListener('click', (e) => {
+          if (e.target === this.articleModalOverlay) {
+            this.closeAddArticleWidgetModal();
+          }
+        });
+      }
+    }
+
+    openAddArticleWidgetModal() {
+      if (!this.articleModalOverlay || !this.articleWidgetListContainer) return;
+
+      if (!this.articleWidgetListContainer.children.length) {
+        this.articleWidgetListContainer.innerHTML = this.availableArticleWidgets.map(widget => `
+          <div class="widget-item" data-widget-type="${widget.type}">
+            <div class="widget-item__title">${widget.title}</div>
+            <div class="widget-item__desc">${widget.desc}</div>
+          </div>
+        `).join('');
+
+        this.articleWidgetListContainer.querySelectorAll('.widget-item').forEach(item => {
+          item.addEventListener('click', () => {
+            this.addArticleWidget(item.dataset.widgetType);
+          });
+        });
+      }
+
+      this.articleModalOverlay.classList.add('is-active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    closeAddArticleWidgetModal() {
+      if (!this.articleModalOverlay) return;
+      this.articleModalOverlay.classList.remove('is-active');
+      document.body.style.overflow = '';
+    }
+
+    addArticleWidget(type) {
+      const widgetDef = this.availableArticleWidgets.find(w => w.type === type);
+      if (!widgetDef) return;
+
+      const newWidget = {
+        type: type,
+        config: { ...widgetDef.defaultConfig }
+      };
+
+      if (!this.state.articleLayout) {
+        this.state.articleLayout = [];
+      }
+
+      this.state.articleLayout.push(newWidget);
+      this.renderArticleLayoutTable();
+      this.closeAddArticleWidgetModal();
+      this.showSuccess(`${widgetDef.title} eklendi`);
+    }
+
+    removeArticleWidget(index) {
+      if (!confirm('Bu bileşeni kaldırmak istediğinize emin misiniz?')) return;
+
+      if (this.state.articleLayout && this.state.articleLayout[index]) {
+        this.state.articleLayout.splice(index, 1);
+        this.renderArticleLayoutTable();
+        this.showSuccess('Bileşen kaldırıldı');
+      }
+    }
+
+    toggleArticleWidgetStatus(index, button) {
+      if (!this.state.articleLayout || !this.state.articleLayout[index]) return;
+
+      const widget = this.state.articleLayout[index];
+      widget.config.hidden = !widget.config.hidden;
+
+      button.textContent = widget.config.hidden ? 'Pasif' : 'Aktif';
+      button.classList.toggle('is-passive', widget.config.hidden);
+    }
+
+    initializeArticleConfigControls() {
+      if (!this.articleLayoutTable) return;
+
+      this.articleLayoutTable.addEventListener('change', (e) => {
+        const target = e.target;
+        const configKey = target.dataset.config;
+        const widgetIndex = parseInt(target.dataset.widgetIndex);
+
+        if (configKey !== undefined && widgetIndex !== undefined) {
+          this.updateArticleWidgetConfig(widgetIndex, configKey, target);
+        }
+      });
+
+      this.articleLayoutTable.addEventListener('input', (e) => {
+        const target = e.target;
+        if (target.type === 'number' || target.type === 'text') {
+          const configKey = target.dataset.config;
+          const widgetIndex = parseInt(target.dataset.widgetIndex);
+
+          if (configKey !== undefined && widgetIndex !== undefined) {
+            this.updateArticleWidgetConfig(widgetIndex, configKey, target);
+          }
+        }
+      });
+    }
+
+    updateArticleWidgetConfig(widgetIndex, configKey, element) {
+      if (!this.state.articleLayout[widgetIndex]) return;
+
+      let value;
+
+      if (element.type === 'checkbox') {
+        value = element.checked;
+      } else if (element.type === 'number') {
+        // Handle empty number inputs - preserve empty/undefined for optional fields
+        if (element.value === '' || element.value === null || element.value === undefined) {
+          // For optional fields like maxHeight, remove from config if empty
+          if (configKey === 'maxHeight') {
+            delete this.state.articleLayout[widgetIndex].config[configKey];
+            return;
+          } else {
+            value = 0;
+          }
+        } else {
+          const parsed = parseInt(element.value);
+          // Validate parsed value - must be a valid number
+          if (isNaN(parsed) || parsed < 0) {
+            // For optional fields, remove invalid values instead of setting to 0
+            if (configKey === 'maxHeight') {
+              delete this.state.articleLayout[widgetIndex].config[configKey];
+              return;
+            } else {
+              value = 0;
+            }
+          } else {
+            value = parsed;
+          }
+        }
+      } else {
+        value = element.value;
+      }
+
+      this.state.articleLayout[widgetIndex].config[configKey] = value;
+    }
+
+    handleArticleDragStart(e) {
+      const row = e.target.closest('tr');
+      if (!row) return;
+
+      this.draggedArticleRow = row;
+      this.articleLayoutTable.classList.add('dragging-active');
+      e.dataTransfer.effectAllowed = 'move';
+
+      const dragImage = row.cloneNode(true);
+      dragImage.style.position = 'absolute';
+      dragImage.style.top = '-9999px';
+      dragImage.style.width = (row.offsetWidth * 0.5) + 'px';
+      dragImage.style.height = '40px';
+      dragImage.style.opacity = '0.7';
+      dragImage.style.backgroundColor = '#e3f2fd';
+      dragImage.style.border = '2px solid #007bff';
+      dragImage.style.borderRadius = '4px';
+      dragImage.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+      dragImage.style.overflow = 'hidden';
+      dragImage.style.display = 'table';
+      dragImage.style.tableLayout = 'fixed';
+      dragImage.style.fontSize = '12px';
+      dragImage.style.whiteSpace = 'nowrap';
+
+      document.body.appendChild(dragImage);
+      e.dataTransfer.setDragImage(dragImage, (row.offsetWidth * 0.25), 20);
+
+      setTimeout(() => {
+        document.body.removeChild(dragImage);
+      }, 0);
+
+      setTimeout(() => {
+        row.classList.add('cms-dragging');
+      }, 0);
+    }
+
+    handleArticleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+
+      const row = e.target.closest('tr');
+      if (!row || row === this.draggedArticleRow || !this.draggedArticleRow) return;
+
+      this.clearArticleDropIndicators();
+
+      const bounding = row.getBoundingClientRect();
+      const offset = bounding.y + (bounding.height / 2);
+      const isAfter = e.clientY - offset > 0;
+
+      if (isAfter) {
+        row.classList.add('drop-below');
+      } else {
+        row.classList.add('drop-above');
+      }
+
+      this.currentArticleDropTarget = row;
+    }
+
+    handleArticleDrop(e) {
+      e.stopPropagation();
+      e.preventDefault();
+
+      if (!this.draggedArticleRow || !this.currentArticleDropTarget) return;
+
+      const bounding = this.currentArticleDropTarget.getBoundingClientRect();
+      const offset = bounding.y + (bounding.height / 2);
+      const isAfter = e.clientY - offset > 0;
+
+      if (isAfter) {
+        this.currentArticleDropTarget.after(this.draggedArticleRow);
+      } else {
+        this.currentArticleDropTarget.before(this.draggedArticleRow);
+      }
+
+      // First, collect widgets in new DOM order using OLD data-index values
+      const rows = this.articleLayoutTable.querySelectorAll('tbody tr');
+      const newOrder = Array.from(rows).map(row => {
+        const oldIndex = parseInt(row.dataset.index);
+        return this.state.articleLayout[oldIndex];
+      });
+
+      // Update state array to match new DOM order
+      this.state.articleLayout = newOrder;
+
+      // Now update visual order numbers, data-index attributes, and config control indices
+      // (using the updated state array)
+      this.updateArticleLayoutOrder();
+
+      this.clearArticleDropIndicators();
+
+      return false;
+    }
+
+    handleArticleDragEnd(e) {
+      this.articleLayoutTable.classList.remove('dragging-active');
+      this.clearArticleDropIndicators();
+
+      if (this.draggedArticleRow) {
+        this.draggedArticleRow.classList.remove('cms-dragging');
+        this.draggedArticleRow.removeAttribute('draggable');
+        this.draggedArticleRow = null;
+      }
+
+      this.currentArticleDropTarget = null;
+    }
+
+    handleArticleDragLeave(e) {
+      const row = e.target.closest('tr');
+      if (row) {
+        row.classList.remove('drop-above', 'drop-below', 'drag-over');
+      }
+    }
+
+    clearArticleDropIndicators() {
+      const rows = this.articleLayoutTable.querySelectorAll('tbody tr');
+      rows.forEach(row => {
+        row.classList.remove('drop-above', 'drop-below', 'drag-over');
+      });
+    }
+
+    updateArticleLayoutOrder() {
+      const rows = this.articleLayoutTable.querySelectorAll('tbody tr');
+      rows.forEach((row, index) => {
+        // Update visual order number
+        const orderCell = row.querySelector('.layout-order');
+        if (orderCell) {
+          orderCell.textContent = index + 1;
+        }
+
+        // Update data-index attribute to match new DOM order
+        row.dataset.index = index;
+
+        // Update all data-widget-index attributes in config controls
+        row.querySelectorAll('[data-widget-index]').forEach(el => {
+          el.dataset.widgetIndex = index;
+        });
+      });
+    }
+
+    renderArticleLayoutTable() {
+      if (!this.articleLayoutTable) return;
+
+      const tbody = this.articleLayoutTable.querySelector('tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+
+      if (!this.state.articleLayout || this.state.articleLayout.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="cms-empty-state">Bileşen bulunamadı.</td></tr>';
+        return;
+      }
+
+      this.state.articleLayout.forEach((widget, index) => {
+        const row = this.createArticleLayoutRow(widget, index);
+        tbody.appendChild(row);
+      });
+
+      // Re-initialize drag handles
+      const dragHandles = tbody.querySelectorAll('.layout-drag-handle');
+      dragHandles.forEach(handle => {
+        const row = handle.closest('tr');
+        if (row) {
+          handle.addEventListener('mousedown', () => {
+            row.setAttribute('draggable', 'true');
+          });
+          handle.addEventListener('mouseup', () => {
+            setTimeout(() => row.removeAttribute('draggable'), 100);
+          });
+        }
+      });
+    }
+
+    createArticleLayoutRow(widget, index) {
+      const tr = document.createElement('tr');
+      tr.dataset.index = index;
+
+      const widgetTitles = {
+        'article-header': 'Makale Başlığı',
+        'article-meta': 'Makale Bilgileri',
+        'article-image': 'Öne Çıkan Görsel',
+        'article-content': 'Makale İçeriği',
+        'article-tags': 'Etiketler',
+        'related-articles': 'İlgili Haberler',
+        'sidebar-widget': 'Yan Menü',
+        'social-share': 'Sosyal Medya Paylaşım',
+        'comment-section': 'Yorum Bölümü',
+        'ad-placeholder': 'Reklam Alanı'
+      };
+
+      tr.innerHTML = `
+        <td class="layout-drag-handle" title="Sürükle">
+          <span class="drag-icon">⋮⋮</span>
+        </td>
+        <td class="layout-order">${index + 1}</td>
+        <td>
+          <span class="cms-badge cms-badge--primary">${widgetTitles[widget.type] || widget.type}</span>
+        </td>
+        <td>
+          <div class="widget-config-controls">
+            ${this.getArticleConfigHtml(widget, index)}
+          </div>
+        </td>
+        <td>
+          <div class="status-actions">
+            <span class="cms-status ${widget.config.hidden ? 'is-passive' : ''}" 
+                  data-action="toggle-article-status" 
+                  data-widget-index="${index}"
+                  title="Durumu değiştirmek için tıklayın">
+              ${widget.config.hidden ? 'Pasif' : 'Aktif'}
+            </span>
+            <button type="button" class="btn-icon btn-delete" data-action="remove-article-widget" data-widget-index="${index}" title="Bileşeni Kaldır">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+            </button>
+          </div>
+        </td>
+      `;
+
+      return tr;
+    }
+
+    getArticleConfigHtml(widget, index) {
+      if (widget.type === 'related-articles') {
+        return `
+          <label class="config-control">
+            <span>Haber sayısı:</span>
+            <input type="number" 
+                   data-config="limit" 
+                   data-widget-index="${index}"
+                   value="${widget.config.limit || 4}" 
+                   min="1" 
+                   max="12"
+                   class="config-input-small">
+          </label>
+          <label class="config-control">
+            <input type="checkbox" 
+                   data-config="sameCategory" 
+                   data-widget-index="${index}"
+                   ${widget.config.sameCategory ? 'checked' : ''}>
+            Aynı kategoriden
+          </label>
+        `;
+      } else if (widget.type === 'sidebar-widget') {
+        return `
+          <label class="config-control">
+            <span>Widget Tipi:</span>
+            <select data-config="widgetType" 
+                    data-widget-index="${index}"
+                    class="config-select">
+              <option value="popular" ${widget.config.widgetType === 'popular' ? 'selected' : ''}>Popüler Haberler</option>
+              <option value="recent" ${widget.config.widgetType === 'recent' ? 'selected' : ''}>Son Haberler</option>
+              <option value="category" ${widget.config.widgetType === 'category' ? 'selected' : ''}>Kategori Akışı</option>
+            </select>
+          </label>
+          <label class="config-control">
+            <span>Haber sayısı:</span>
+            <input type="number" 
+                   data-config="limit" 
+                   data-widget-index="${index}"
+                   value="${widget.config.limit || 5}" 
+                   min="1" 
+                   max="10"
+                   class="config-input-small">
+          </label>
+        `;
+      } else if (widget.type === 'ad-placeholder') {
+        return `
+          <label class="config-control">
+            <span>Boyut:</span>
+            <select data-config="size" 
+                    data-widget-index="${index}"
+                    class="config-select">
+              <option value="standard" ${widget.config.size === 'standard' ? 'selected' : ''}>Standart</option>
+              <option value="large" ${widget.config.size === 'large' ? 'selected' : ''}>Büyük</option>
+              <option value="banner" ${widget.config.size === 'banner' ? 'selected' : ''}>Banner</option>
+            </select>
+          </label>
+          <label class="config-control">
+            <span>Pozisyon:</span>
+            <select data-config="position" 
+                    data-widget-index="${index}"
+                    class="config-select">
+              <option value="inline" ${widget.config.position === 'inline' ? 'selected' : ''}>İçerik arası</option>
+              <option value="sidebar" ${widget.config.position === 'sidebar' ? 'selected' : ''}>Yan menü</option>
+            </select>
+          </label>
+        `;
+      }
+
+      return '<span class="config-text">Özel yapılandırma</span>';
+    }
+
+    async saveArticleLayout() {
+      console.log('🔵 Save Article Layout button clicked!');
+      try {
+        // Ensure articleLayout is initialized
+        if (!this.state.articleLayout) {
+          console.log('🔵 Initializing articleLayout state');
+          this.state.articleLayout = [];
+        }
+
+        const rows = this.articleLayoutTable.querySelectorAll('tbody tr');
+        console.log('🔵 Found rows:', rows.length);
+        console.log('🔵 Current state.articleLayout length:', this.state.articleLayout ? this.state.articleLayout.length : 0);
+
+        // Filter out empty state rows
+        const validRows = Array.from(rows).filter(row => {
+          return row.dataset.index !== undefined && !row.classList.contains('empty-state') && !row.querySelector('.cms-empty-state');
+        });
+
+        console.log('🔵 Valid rows:', validRows.length);
+
+        if (validRows.length === 0) {
+          // No widgets to save, save empty array
+          console.log('🔵 No widgets to save, saving empty array');
+          this.state.articleLayout = [];
+
+          const response = await fetch('/cms/layouts/article', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ layout: [] })
+          });
+
+          if (!response.ok) throw new Error('Failed to save article layout');
+          this.showToast('Makale düzeni başarıyla kaydedildi', 'success');
+          return;
+        }
+
+        // Collect widgets in DOM order using current data-index values
+        const newOrder = validRows.map(row => {
+          const index = parseInt(row.dataset.index);
+          const widget = this.state.articleLayout && this.state.articleLayout[index];
+
+          if (!widget) {
+            console.error(`❌ Widget at index ${index} not found in state.articleLayout`);
+            console.error(`   State array length: ${this.state.articleLayout ? this.state.articleLayout.length : 'undefined'}`);
+            console.error(`   State array:`, this.state.articleLayout);
+            return null;
+          }
+
+          return widget;
+        }).filter(Boolean); // Remove any null/undefined widgets
+
+        console.log('🔵 New order widgets:', newOrder.map(w => w.type));
+
+        // Reassign indices to match new DOM order for subsequent operations
+        validRows.forEach((row, newIndex) => {
+          row.dataset.index = newIndex;
+
+          // Update all data-widget-index attributes in config controls
+          row.querySelectorAll('[data-widget-index]').forEach(el => {
+            el.dataset.widgetIndex = newIndex;
+          });
+        });
+
+        // Update state array (should already be in sync, but ensure consistency)
+        this.state.articleLayout = newOrder;
+
+        console.log('🔵 Sending PUT request to /cms/layouts/article...');
+        console.log('🔵 Payload:', JSON.stringify({ layout: newOrder }, null, 2));
+
+        const response = await fetch('/cms/layouts/article', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ layout: newOrder })
+        });
+
+        console.log('🔵 Response status:', response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Save failed with status:', response.status);
+          console.error('❌ Error response:', errorText);
+          throw new Error(`Failed to save article layout: ${response.status} - ${errorText}`);
+        }
+
+        const responseData = await response.json();
+        console.log('🔵 Save successful, response:', responseData);
+
+        this.showToast('Makale düzeni başarıyla kaydedildi', 'success');
+      } catch (error) {
+        console.error('❌ Save article layout error:', error);
+        console.error('❌ Error stack:', error.stack);
+        this.showToast('Makale düzeni kaydedilemedi', 'error');
+      }
+    }
+
+    initializeHeadlineLayoutManager() {
+      this.headlineTable = document.querySelector('[data-cms="headline-layout-table"]');
+      this.addHeadlineBtn = document.querySelector('[data-action="add-carousel-article"]');
+      this.saveHeadlineBtn = document.querySelector('[data-action="save-carousel-layout"]');
+      this.headlineModal = document.querySelector('#add-carousel-article-modal');
+      this.headlineSearchInput = document.querySelector('[data-action="search-carousel-articles"]');
+      this.headlineSelectionList = document.querySelector('[data-cms="article-selection-list"]');
+      this.headlineCountBadge = document.querySelector('[data-cms="carousel-count"]');
+
+      if (!this.headlineTable) return;
+
+      // Event Listeners
+      this.addHeadlineBtn?.addEventListener('click', () => this.openHeadlineModal());
+      this.saveHeadlineBtn?.addEventListener('click', () => this.saveHeadlineLayout());
+
+      // Table Actions (Remove)
+      this.headlineTable.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('[data-action="remove-carousel-article"]');
+        if (removeBtn) {
+          const row = removeBtn.closest('tr');
+          this.removeHeadlineArticle(row);
+        }
+      });
+
+      // Drag and Drop
+      this.headlineTable.addEventListener('dragstart', this.handleHeadlineDragStart.bind(this));
+      this.headlineTable.addEventListener('dragover', this.handleHeadlineDragOver.bind(this));
+      this.headlineTable.addEventListener('drop', this.handleHeadlineDrop.bind(this));
+      this.headlineTable.addEventListener('dragend', this.handleHeadlineDragEnd.bind(this));
+
+      // Modal Search
+      let searchTimeout;
+      this.headlineSearchInput?.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          this.searchHeadlineArticles(e.target.value);
+        }, 300);
+      });
+
+      // Modal Close
+      this.headlineModal?.addEventListener('click', (e) => {
+        if (e.target.dataset.action === 'close-modal' || e.target.classList.contains('cms-modal__overlay')) {
+          this.closeHeadlineModal();
+        }
+      });
+
+      // Modal Selection (Event Delegation)
+      this.headlineSelectionList?.addEventListener('click', (e) => {
+        const item = e.target.closest('.article-selection-item');
+        // Check if clicked on the button or the item itself
+        if (item && !item.classList.contains('disabled')) {
+          const articleId = item.dataset.articleId;
+          this.addHeadlineToCarousel(articleId);
+        }
+      });
+    }
+
+    openHeadlineModal() {
+      this.headlineModal.hidden = false;
+      this.headlineSearchInput.value = '';
+      this.headlineSearchInput.focus();
+      this.searchHeadlineArticles('');
+    }
+
+    closeHeadlineModal() {
+      this.headlineModal.hidden = true;
+    }
+
+    async searchHeadlineArticles(query) {
+      if (!this.headlineSelectionList) return;
+
+      this.headlineSelectionList.innerHTML = '<div class="loading-spinner">Yükleniyor...</div>';
+
+      try {
+        const response = await fetch(`/api/articles?search=${encodeURIComponent(query)}&limit=20`);
+        const data = await response.json();
+
+        this.renderHeadlineSearchResults(data.articles || []);
+      } catch (error) {
+        console.error('Search error:', error);
+        this.headlineSelectionList.innerHTML = '<div class="error-message">Arama sırasında bir hata oluştu.</div>';
+      }
+    }
+
+    renderHeadlineSearchResults(articles) {
+      if (!articles.length) {
+        this.headlineSelectionList.innerHTML = '<div class="empty-message">Haber bulunamadı.</div>';
+        return;
+      }
+
+      const currentIds = Array.from(this.headlineTable.querySelectorAll('tr[data-article-id]'))
+        .map(row => row.dataset.articleId);
+
+      const html = articles.map(article => {
+        const isAdded = currentIds.includes(article.id);
+        const image = article.images && article.images[0] ? article.images[0].url : '';
+
+        return `
+          <div class="article-selection-item ${isAdded ? 'disabled' : ''}" 
+               data-article-id="${article.id}">
+            ${image ? `<img src="${image}" alt="">` : '<div class="no-image"></div>'}
+            <div class="article-selection-info">
+              <span class="article-selection-title">${this.escapeHtml(article.title)}</span>
+              <span class="article-selection-meta">
+                ${article.category || 'Genel'} • ${new Date(article.publishedAt).toLocaleDateString('tr-TR')}
+                ${isAdded ? '• <span class="badge badge--success">Eklendi</span>' : ''}
+              </span>
+            </div>
+            ${!isAdded ? '<button class="cms-btn cms-btn--small cms-btn--primary">Ekle</button>' : ''}
+          </div>
+        `;
+      }).join('');
+
+      this.headlineSelectionList.innerHTML = html;
+    }
+
+    async addHeadlineToCarousel(articleId) {
+      try {
+        const response = await fetch('/cms/carousel/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ articleId })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to add article');
+        }
+
+        const data = await response.json();
+        this.showToast('Haber manşete eklendi', 'success');
+
+        // Reload page to refresh table (simplest way for now)
+        // Or we could fetch the updated list and re-render the table
+        window.location.reload();
+      } catch (error) {
+        console.error('Add error:', error);
+        this.showToast(error.message, 'error');
+      }
+    }
+
+    async removeHeadlineArticle(row) {
+      if (!confirm('Bu haberi manşetten kaldırmak istediğinize emin misiniz?')) return;
+
+      row.remove();
+      this.updateHeadlineOrder();
+
+      // We need to save immediately or just update UI?
+      // The plan says "Save Button" saves the layout.
+      // But removing a row is a UI action.
+      // However, if we want to persist the removal, we should probably call save.
+      // Or just let the user click save.
+      // Let's let the user click save, but update the count.
+      this.updateHeadlineCount();
+    }
+
+    updateHeadlineCount() {
+      const count = this.headlineTable.querySelectorAll('tbody tr[data-article-id]').length;
+      if (this.headlineCountBadge) {
+        this.headlineCountBadge.textContent = count;
+      }
+    }
+
+    updateHeadlineOrder() {
+      const rows = this.headlineTable.querySelectorAll('tbody tr[data-article-id]');
+      rows.forEach((row, index) => {
+        const orderCell = row.querySelector('.layout-order');
+        if (orderCell) orderCell.textContent = index + 1;
+        row.dataset.index = index;
+      });
+      this.updateHeadlineCount();
+    }
+
+    async saveHeadlineLayout() {
+      try {
+        const rows = Array.from(this.headlineTable.querySelectorAll('tbody tr[data-article-id]'));
+        const articles = rows.map((row, index) => ({
+          articleId: row.dataset.articleId,
+          order: index
+        }));
+
+        const response = await fetch('/cms/carousel', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ articles })
+        });
+
+        if (!response.ok) throw new Error('Failed to save layout');
+
+        this.showToast('Manşet düzeni kaydedildi', 'success');
+      } catch (error) {
+        console.error('Save error:', error);
+        this.showToast('Kaydetme başarısız', 'error');
+      }
+    }
+
+    // Drag and Drop Handlers (Simplified version of LayoutManager)
+    handleHeadlineDragStart(e) {
+      const row = e.target.closest('tr');
+      if (!row) return;
+      this.draggedHeadlineRow = row;
+      e.dataTransfer.effectAllowed = 'move';
+      row.classList.add('cms-dragging');
+    }
+
+    handleHeadlineDragOver(e) {
+      e.preventDefault();
+      const row = e.target.closest('tr');
+      if (!row || row === this.draggedHeadlineRow) return;
+
+      const bounding = row.getBoundingClientRect();
+      const offset = bounding.y + (bounding.height / 2);
+      if (e.clientY - offset > 0) {
+        row.after(this.draggedHeadlineRow);
+      } else {
+        row.before(this.draggedHeadlineRow);
+      }
+      this.updateHeadlineOrder();
+    }
+
+    handleHeadlineDrop(e) {
+      e.preventDefault();
+    }
+
+    handleHeadlineDragEnd(e) {
+      this.draggedHeadlineRow?.classList.remove('cms-dragging');
+      this.draggedHeadlineRow = null;
+      this.updateHeadlineOrder();
+    }
+
     async logout() {
       if (!confirm('Çıkış yapmak istediğinize emin misiniz?')) {
         return;
@@ -3753,7 +4662,7 @@
         }
 
         const data = await response.json();
-        
+
         // Redirect to login page
         if (data.redirect) {
           window.location.href = data.redirect;

@@ -10,6 +10,8 @@
 {% from "cms/components/branding-form.njk" import BrandingForm %}
 {% from "cms/components/media-controls.njk" import MediaControls %}
 {% from "cms/components/layout-list.njk" import LayoutList %}
+{% from "cms/components/article-layout.njk" import ArticleLayout %}
+{% from "cms/components/headline-layout.njk" import HeadlineLayout %}
 {% from "cms/components/user-table.njk" import UserTable %}
 {% from "cms/components/user-editor.njk" import UserEditor %}
 
@@ -43,6 +45,10 @@
   {{ BrandingForm(branding) }}
 
   {{ LayoutList(initialState.homepageLayout) }}
+
+  {{ ArticleLayout(initialState.articleLayout) }}
+
+  {{ HeadlineLayout(carouselArticles, carouselLimit) }}
 
   {{ UserTable(users) }}
 

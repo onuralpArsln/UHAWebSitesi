@@ -13,31 +13,38 @@ const router = express.Router();
 // Allow dependency injection for testing, default to new instance
 let dataServiceInstance = null;
 const getDataService = () => {
-    if (dataServiceInstance) {
-        return dataServiceInstance;
-    }
-    if (!getDataService._default) {
-        getDataService._default = new DataService();
-    }
-    return getDataService._default;
+  if (dataServiceInstance) {
+    return dataServiceInstance;
+  }
+  // Safety: Don't create default instance in test environment
+  if (process.env.NODE_ENV === 'test') {
+    throw new Error(
+      'CMS Routes: DataService must be injected in test environment. ' +
+      'Use cmsRoutes.setDataService(testDataService) in your test setup.'
+    );
+  }
+  if (!getDataService._default) {
+    getDataService._default = new DataService();
+  }
+  return getDataService._default;
 };
 
 // Export setter for testing
 getDataService.setInstance = (instance) => {
-    dataServiceInstance = instance;
+  dataServiceInstance = instance;
 };
 
 getDataService.reset = () => {
-    dataServiceInstance = null;
-    getDataService._default = null;
+  dataServiceInstance = null;
+  getDataService._default = null;
 };
 
 // For backward compatibility, create a proxy that uses getDataService()
 const dataService = new Proxy({}, {
-    get(target, prop) {
-        const instance = getDataService();
-        return instance[prop];
-    }
+  get(target, prop) {
+    const instance = getDataService();
+    return instance[prop];
+  }
 });
 
 const urlSlugService = URLSlugService;
@@ -239,6 +246,15 @@ router.get('/', (req, res) => {
   const statusSummary = dataService.getArticleStatusSummary();
   const branding = formatBrandingForClient(dataService.getBranding());
   const { layout: homepageLayout } = dataService.getHomepageLayout();
+  const { layout: articleLayout } = dataService.getArticleLayout();
+
+  // Fetch articles in carousel
+  const carouselArticlesResult = dataService.getArticles({
+    limit: 100,
+    sortBy: 'publishedAt',
+    sortOrder: 'desc',
+    targettedView: 'carousel'
+  });
 
   const stats = {
     totalArticles: statusSummary.total,
@@ -283,8 +299,10 @@ router.get('/', (req, res) => {
     targetOptions,
     branding,
     homepageLayout,
+    articleLayout,
     users,
     cmsTabs, // Pass cmsTabs to initialState
+    carouselArticles, // Pass carouselArticles to initialState
     currentUser: {
       username: req.session.username,
       displayName: req.session.displayName,
@@ -301,7 +319,9 @@ router.get('/', (req, res) => {
     initialState,
     initialStateJson,
     cmsTabs: config.getCmsTabs(),
-    user: initialState.currentUser
+    user: initialState.currentUser,
+    carouselArticles: carouselArticlesResult.articles,
+    carouselLimit: getCarouselLimit()
   });
 });
 
@@ -848,6 +868,101 @@ router.post('/layouts', async (req, res) => {
 });
 
 /**
+ * Carousel Management Routes
+ */
+
+// Helper to get carousel limit
+const getCarouselLimit = () => {
+  const { layout } = dataService.getHomepageLayout();
+  const carouselWidget = layout.find(w => w.type === 'carousel');
+  return parseInt(carouselWidget?.config?.maxArticles) || 5;
+};
+
+// Get carousel configuration
+router.get('/carousel', (req, res) => {
+  try {
+    const layout = dataService.getCarouselLayout();
+    const limit = getCarouselLimit();
+
+    res.json({
+      ...layout,
+      maxArticles: limit
+    });
+  } catch (error) {
+    console.error('Get carousel error:', error);
+    res.status(500).json({ error: 'Failed to get carousel configuration' });
+  }
+});
+
+// Update carousel configuration
+router.put('/carousel', (req, res) => {
+  try {
+    const { articles } = req.body;
+
+    if (!Array.isArray(articles)) {
+      return res.status(400).json({ error: 'Articles must be an array' });
+    }
+
+    const limit = getCarouselLimit();
+
+    let finalArticles = articles;
+    if (articles.length > limit) {
+      finalArticles = articles.slice(0, limit);
+    }
+
+    const updated = dataService.updateCarouselLayout(finalArticles);
+    res.json({
+      ...updated,
+      maxArticles: limit
+    });
+  } catch (error) {
+    console.error('Update carousel error:', error);
+    res.status(500).json({ error: 'Failed to update carousel' });
+  }
+});
+
+// Add article to carousel (Convenience endpoint)
+router.post('/carousel/add', (req, res) => {
+  try {
+    const { articleId } = req.body;
+    if (!articleId) {
+      return res.status(400).json({ error: 'Article ID is required' });
+    }
+
+    const { articles } = dataService.getCarouselLayout();
+    const limit = getCarouselLimit();
+
+    // Check if already exists
+    if (articles.some(a => a.articleId === articleId)) {
+      return res.status(400).json({ error: 'Article already in carousel' });
+    }
+
+    // Add new article to the beginning (order 0)
+    const newArticle = { articleId, order: 0 };
+
+    let newArticles = [newArticle, ...articles];
+
+    // Auto-drop if over limit
+    if (newArticles.length > limit) {
+      newArticles = newArticles.slice(0, limit);
+    }
+
+    // Re-index orders
+    newArticles = newArticles.map((a, index) => ({ ...a, order: index }));
+
+    const updated = dataService.updateCarouselLayout(newArticles);
+    res.json({
+      ...updated,
+      maxArticles: limit,
+      added: true
+    });
+  } catch (error) {
+    console.error('Add to carousel error:', error);
+    res.status(500).json({ error: 'Failed to add article to carousel' });
+  }
+});
+
+/**
  * Update homepage layout (MUST be before /layouts/:id)
  */
 router.put('/layouts/homepage', async (req, res) => {
@@ -891,6 +1006,53 @@ router.put('/layouts/homepage', async (req, res) => {
   } catch (error) {
     console.error('CMS Update homepage layout error:', error);
     res.status(500).json({ error: 'Failed to update homepage layout' });
+  }
+});
+
+/**
+ * Update article layout
+ */
+router.put('/layouts/article', async (req, res) => {
+  const fs = require('fs');
+  const timestamp = new Date().toISOString();
+
+  console.error('🟢 PUT /layouts/article endpoint HIT!\n');
+  try {
+    const { layout } = req.body;
+
+    if (!Array.isArray(layout)) {
+      return res.status(400).json({ error: 'Invalid layout format' });
+    }
+
+    // Print current widget list to terminal
+    const output = [];
+    output.push('\n========================================');
+    output.push('📋 MAKALE DÜZENİ GÜNCELLENDİ');
+    output.push(`⏰ Zaman: ${timestamp}`);
+    output.push('========================================');
+    output.push(`Widget Sayısı: ${layout.length}`);
+    output.push('\nWidget Listesi:');
+    layout.forEach((widget, index) => {
+      output.push(`\n${index + 1}. Widget:`);
+      output.push(`   Tip: ${widget.type}`);
+      output.push(`   Config: ${JSON.stringify(widget.config, null, 2).split('\n').map((line, i) => i === 0 ? line : `   ${line}`).join('\n')}`);
+    });
+    output.push('\n========================================\n');
+
+    const logMessage = output.join('\n');
+
+    // Write to stderr (unbuffered)
+    console.error(logMessage);
+
+    // Also write to a log file
+    fs.appendFileSync('layout-changes.log', logMessage + '\n');
+
+    const updated = dataService.updateArticleLayout(layout);
+    res.json(updated);
+
+  } catch (error) {
+    console.error('CMS Update article layout error:', error);
+    res.status(500).json({ error: 'Failed to update article layout' });
   }
 });
 

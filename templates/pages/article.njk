@@ -1,11 +1,9 @@
 {% extends "layouts/base.njk" %}
-{% from "widgets/comment-section.njk" import commentSection %}
-{% from "widgets/related-news.njk" import relatedNews %}
-{% from "widgets/ad-placeholder.njk" import adPlaceholder %}
 {% from "widgets/site-header.njk" import siteHeader %}
+{% import "widgets/article-widget-renderer.njk" as widgetRenderer %}
 
 {% block head_extra %}
-<meta name="keywords" content="{{ article.keywords | join(', ') if article.keywords else '' }}">
+<meta name="keywords" content="{% if article.keywords %}{{ article.keywords | join(', ') }}{% endif %}">
 <meta property="article:published_time" content="{{ article.publishedAt }}">
 <meta property="article:modified_time" content="{{ article.updatedAt }}">
 <meta property="article:author" content="{{ article.writer or article.author }}">
@@ -17,98 +15,106 @@
 {{ siteHeader(brand, navCategories or []) }}
 
 <main class="site-main">
+  {% if layout and layout.length > 0 %}
+    {# Dynamic widget rendering based on saved layout #}
+    <article class="article-view container">
+      {# Render article content widgets (within article tag) #}
+      {% for widget in layout %}
+        {% if widget.type in ['article-header', 'article-meta', 'article-image', 'article-content', 'article-tags'] %}
+          {{ widgetRenderer.render(widget, article, pageUrl) }}
+        {% endif %}
+      {% endfor %}
+    </article>
 
+    {# Render supplementary widgets (outside article tag) #}
+    {% for widget in layout %}
+      {% if widget.type not in ['article-header', 'article-meta', 'article-image', 'article-content', 'article-tags'] %}
+        <section class="container article-supplement">
+          {{ widgetRenderer.render(widget, article, pageUrl) }}
+        </section>
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    {# Fallback to default hardcoded layout if no layout is configured #}
+    <article class="article-view container">
+      <header class="article-view__header">
+        <span class="badge badge--category">{{ article.category }}</span>
+        <h1 class="article-view__title">{{ article.title }}</h1>
+        <div class="article-view__meta">
+          <span>Yazar: {{ article.writer or article.author }}</span>
+          <time datetime="{{ article.publishedAt }}">Yayın: {{ article.publishedAt | formatDate }}</time>
+          {% if article.updatedAt %}
+          <time datetime="{{ article.updatedAt }}">Güncelleme: {{ article.updatedAt | formatDate }}</time>
+          {% endif %}
+        </div>
+      </header>
 
-  <article class="article-view container">
-    <header class="article-view__header">
-      <span class="badge badge--category">{{ article.category }}</span>
-      <h1 class="article-view__title">{{ article.title }}</h1>
-      <div class="article-view__meta">
-        <span>Yazar: {{ article.writer or article.author }}</span>
-        <time datetime="{{ article.publishedAt }}">Yayın: {{ article.publishedAt | formatDate }}</time>
-        {% if article.updatedAt %}
-        <time datetime="{{ article.updatedAt }}">Güncelleme: {{ article.updatedAt | formatDate }}</time>
+      {% if article.images and article.images.length > 0 %}
+      {% set heroImage = article.images[0] %}
+      <figure class="article-view__media">
+        <img
+          src="{{ heroImage.lowRes }}"
+          alt="{{ heroImage.alt }}"
+          data-high-res="{{ heroImage.highRes }}"
+          loading="eager"
+        >
+      </figure>
+      {% endif %}
+
+      {% if article.videoUrl %}
+      <div class="article-view__video">
+        {% if article.videoUrl.startsWith('/uploads/') %}
+        <video controls preload="metadata" style="width: 100%; height: auto; border-radius: 8px;">
+          <source src="{{ article.videoUrl }}" type="video/mp4">
+          Tarayıcınız video etiketini desteklemiyor.
+        </video>
+        {% else %}
+        <iframe
+          src="{{ article.videoUrl }}"
+          title="{{ article.title }} video"
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+        ></iframe>
         {% endif %}
       </div>
-    </header>
-
-    {% set heroImage = article.images and article.images[0] %}
-    {% if heroImage %}
-    <figure class="article-view__media">
-      <img
-        src="{{ heroImage.lowRes }}"
-        alt="{{ heroImage.alt }}"
-        data-high-res="{{ heroImage.highRes }}"
-        loading="eager"
-      >
-    </figure>
-    {% endif %}
-
-    {% if article.videoUrl %}
-    <div class="article-view__video">
-      {% if article.videoUrl.startsWith('/uploads/') %}
-      <video controls preload="metadata" style="width: 100%; height: auto; border-radius: 8px;">
-        <source src="{{ article.videoUrl }}" type="video/mp4">
-        Tarayıcınız video etiketini desteklemiyor.
-      </video>
-      {% else %}
-      <iframe
-        src="{{ article.videoUrl }}"
-        title="{{ article.title }} video"
-        loading="lazy"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowfullscreen
-      ></iframe>
       {% endif %}
-    </div>
-    {% endif %}
 
-    <div class="article-view__content">
-      {{ article.content | safe }}
-    </div>
+      <div class="article-view__content">
+        {{ article.content | safe }}
+      </div>
 
-    <div class="article-info">
-      {% if article.source %}
-      <div class="article-info__item"><strong>Kaynak:</strong> {{ article.source }}</div>
-      {% endif %}
-      {% if article.pressAnnouncementId %}
-      <div class="article-info__item"><strong>Basın İlan ID:</strong> {{ article.pressAnnouncementId }}</div>
-      {% endif %}
-      {% if article.outlinks and article.outlinks.length %}
-      <div class="article-info__item">
-        <strong>Referanslar:</strong>
-        <ul class="article-info__links">
-          {% for link in article.outlinks %}
-          <li><a href="{{ link }}" target="_blank" rel="noopener">{{ link }}</a></li>
+      <div class="article-info">
+        {% if article.source %}
+        <div class="article-info__item"><strong>Kaynak:</strong> {{ article.source }}</div>
+        {% endif %}
+        {% if article.pressAnnouncementId %}
+        <div class="article-info__item"><strong>Basın İlan ID:</strong> {{ article.pressAnnouncementId }}</div>
+        {% endif %}
+        {% if article.outlinks and article.outlinks.length > 0 %}
+        <div class="article-info__item">
+          <strong>Referanslar:</strong>
+          <ul class="article-info__links">
+            {% for link in article.outlinks %}
+            <li><a href="{{ link }}" target="_blank" rel="noopener">{{ link }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if article.keywords %}
+      <div class="article-tags">
+        <h2>Etiketler</h2>
+        <div class="article-tags__list">
+          {% for keyword in article.keywords %}
+          <span class="article-tags__tag">{{ keyword }}</span>
           {% endfor %}
-        </ul>
+        </div>
       </div>
       {% endif %}
-    </div>
-
-    {% if article.keywords %}
-    <div class="article-tags">
-      <h2>Etiketler</h2>
-      <div class="article-tags__list">
-        {% for keyword in article.keywords %}
-        <span class="article-tags__tag">{{ keyword }}</span>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-  </article>
-
-  <section class="container article-supplement">
-    {{ adPlaceholder('article-content', 'Reklam Alanı', '300x250') }}
-  </section>
-
-  <section class="container article-supplement">
-    {{ commentSection(article.id, article.comments or [], article.hasMoreComments or false) }}
-  </section>
-
-  <section class="container article-supplement">
-    {{ relatedNews(relatedArticles) }}
-  </section>
+    </article>
+  {% endif %}
 </main>
 
 <footer class="site-footer">

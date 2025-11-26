@@ -1,0 +1,13 @@
+{% macro articleTags(article) %}
+{% if article and article.keywords and article.keywords.length %}
+<div class="article-tags">
+  <h2>Etiketler</h2>
+  <div class="article-tags__list">
+    {% for keyword in article.keywords %}
+    <span class="article-tags__tag">{{ keyword }}</span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endmacro %}
+

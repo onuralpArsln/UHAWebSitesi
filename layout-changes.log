@@ -228,3 +228,99 @@ Widget Listesi:
 
 ========================================
 
+
+========================================
+📋 MAKALE DÜZENİ GÜNCELLENDİ
+⏰ Zaman: 2025-11-26T22:13:53.228Z
+========================================
+Widget Sayısı: 7
+
+Widget Listesi:
+
+1. Widget:
+   Tip: article-meta
+   Config: {}
+
+2. Widget:
+   Tip: article-image
+   Config: {
+     "showCaption": true
+   }
+
+3. Widget:
+   Tip: article-content
+   Config: {}
+
+4. Widget:
+   Tip: related-articles
+   Config: {
+     "limit": 4,
+     "sameCategory": true
+   }
+
+5. Widget:
+   Tip: article-tags
+   Config: {}
+
+6. Widget:
+   Tip: article-header
+   Config: {}
+
+7. Widget:
+   Tip: social-share
+   Config: {
+     "showFacebook": true,
+     "showTwitter": true,
+     "showWhatsapp": true
+   }
+
+========================================
+
+
+========================================
+📋 MAKALE DÜZENİ GÜNCELLENDİ
+⏰ Zaman: 2025-11-26T22:14:17.823Z
+========================================
+Widget Sayısı: 7
+
+Widget Listesi:
+
+1. Widget:
+   Tip: article-header
+   Config: {}
+
+2. Widget:
+   Tip: article-meta
+   Config: {}
+
+3. Widget:
+   Tip: article-image
+   Config: {
+     "showCaption": true
+   }
+
+4. Widget:
+   Tip: article-content
+   Config: {}
+
+5. Widget:
+   Tip: related-articles
+   Config: {
+     "limit": 4,
+     "sameCategory": true
+   }
+
+6. Widget:
+   Tip: article-tags
+   Config: {}
+
+7. Widget:
+   Tip: social-share
+   Config: {
+     "showFacebook": true,
+     "showTwitter": true,
+     "showWhatsapp": true
+   }
+
+========================================
+

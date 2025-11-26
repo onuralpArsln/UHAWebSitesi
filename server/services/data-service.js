@@ -23,6 +23,14 @@ class DataService {
       this.ensureHomepageLayoutDefaults();
       // Don't migrate mock data in test mode
     } else {
+      // Safety check: Prevent using production database in test environment
+      if (process.env.NODE_ENV === 'test') {
+        throw new Error(
+          'DataService: Cannot create DataService without database instance in test environment. ' +
+          'Tests must provide a test database instance to prevent modifying production data.'
+        );
+      }
+
       // Normal initialization for production
       // Ensure data directory exists
       const dataDir = path.join(__dirname, '../../data');
@@ -51,6 +59,11 @@ class DataService {
 
       // Ensure homepage layout defaults exist
       this.ensureHomepageLayoutDefaults();
+
+      // Ensure article layout defaults exist
+      this.ensureArticleLayoutDefaults();
+      // Ensure carousel defaults exist
+      this.ensureCarouselDefaults();
 
       // Migrate mock data if database is empty
       this.migrateMockDataIfNeeded();
@@ -136,6 +149,15 @@ class DataService {
     // Create homepage layout table
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS homepage_layout (
+        id TEXT PRIMARY KEY,
+        layout TEXT NOT NULL,
+        updatedAt TEXT
+      )
+    `);
+
+    // Create article layout table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS article_layout (
         id TEXT PRIMARY KEY,
         layout TEXT NOT NULL,
         updatedAt TEXT
@@ -316,18 +338,9 @@ class DataService {
     if (!existing || existing.count === 0) {
       const now = new Date().toISOString();
       const defaultLayout = [
-        {
-          type: 'flash-news',
-          config: {
-            id: 'flash-news',
-            speed: 30,
-            pauseDelay: 3000,
-            duplicateCount: 2,
-            source: 'latest'
-          }
-        },
+        { type: 'flash-news', config: { id: 'flash-news', speed: 30, pauseDelay: 3000, duplicateCount: 2, source: 'latest' } },
         { type: 'hero-title', config: { title: 'Son Dakika Haberleri' } },
-        { type: 'carousel', config: { source: 'featured', id: 'home-hero' } },
+        { type: 'carousel', config: { source: 'manual', id: 'home-hero', maxArticles: 5, autoPlay: true, autoPlayDelay: 5000 } },
         { type: 'featured-news-grid', config: { title: 'Öne Çıkan Haberler', source: 'featured' } },
         { type: 'category-feed', config: { category: 'Gündem', slug: 'gundem' } },
         { type: 'category-feed', config: { category: 'Ekonomi', slug: 'ekonomi' } },
@@ -379,6 +392,164 @@ class DataService {
     `).run(updated);
 
     return this.getHomepageLayout();
+  }
+
+  /**
+   * Ensure article layout defaults exist
+   */
+  ensureArticleLayoutDefaults() {
+    const existing = this.db.prepare('SELECT COUNT(*) as count FROM article_layout WHERE id = ?').get('article');
+    if (!existing || existing.count === 0) {
+      const now = new Date().toISOString();
+      // Default layout matching the widget types we implemented
+      const defaultLayout = [
+        { type: 'article-header', config: {} },
+        { type: 'article-meta', config: {} },
+        { type: 'article-image', config: { showCaption: true } },
+        { type: 'article-content', config: {} },
+        { type: 'article-tags', config: {} },
+        { type: 'related-articles', config: { limit: 4, sameCategory: true } },
+        { type: 'comment-section', config: {} }
+      ];
+
+      this.db.prepare(`
+        INSERT INTO article_layout (id, layout, updatedAt)
+        VALUES (@id, @layout, @updatedAt)
+      `).run({
+        id: 'article',
+        layout: JSON.stringify(defaultLayout),
+        updatedAt: now
+      });
+    }
+  }
+
+  ensureCarouselDefaults() {
+    // Create table if not exists
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS carousel_layout (
+        id TEXT PRIMARY KEY,
+        articles TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+      )
+    `);
+
+    const existing = this.db.prepare('SELECT COUNT(*) as count FROM carousel_layout').get();
+    if (!existing || existing.count === 0) {
+      const now = new Date().toISOString();
+      // Initialize with empty array
+      this.db.prepare(`
+        INSERT INTO carousel_layout (id, articles, updatedAt)
+        VALUES (@id, @articles, @updatedAt)
+      `).run({
+        id: 'main-carousel',
+        articles: JSON.stringify([]),
+        updatedAt: now
+      });
+    }
+  }
+  /**
+   * Get article layout configuration
+   */
+  getArticleLayout() {
+    const row = this.db.prepare('SELECT * FROM article_layout WHERE id = ?').get('article');
+    if (!row) {
+      this.ensureArticleLayoutDefaults();
+      return this.getArticleLayout();
+    }
+
+    return {
+      layout: JSON.parse(row.layout),
+      updatedAt: row.updatedAt || new Date().toISOString()
+    };
+  }
+
+  /**
+   * Update article layout configuration
+   */
+  updateArticleLayout(newLayout = []) {
+    const updated = {
+      layout: JSON.stringify(newLayout),
+      updatedAt: new Date().toISOString()
+    };
+
+    this.db.prepare(`
+      UPDATE article_layout
+      SET layout = @layout,
+          updatedAt = @updatedAt
+      WHERE id = 'article'
+    `).run(updated);
+
+    return this.getArticleLayout();
+  }
+
+  /**
+   * Get carousel layout configuration
+   */
+  getCarouselLayout() {
+    const row = this.db.prepare('SELECT * FROM carousel_layout WHERE id = ?').get('main-carousel');
+    if (!row) {
+      this.ensureCarouselDefaults();
+      return this.getCarouselLayout();
+    }
+
+    return {
+      articles: JSON.parse(row.articles),
+      updatedAt: row.updatedAt || new Date().toISOString()
+    };
+  }
+
+  /**
+   * Update carousel layout configuration
+   */
+  updateCarouselLayout(newArticles = []) {
+    const updated = {
+      articles: JSON.stringify(newArticles),
+      updatedAt: new Date().toISOString()
+    };
+
+    this.db.prepare(`
+      UPDATE carousel_layout
+      SET articles = @articles,
+          updatedAt = @updatedAt
+      WHERE id = 'main-carousel'
+    `).run(updated);
+
+    return this.getCarouselLayout();
+  }
+
+  /**
+   * Get full article data for carousel
+   */
+  getCarouselArticles() {
+    const { articles: carouselItems } = this.getCarouselLayout();
+
+    if (!carouselItems || carouselItems.length === 0) {
+      return [];
+    }
+
+    const articleIds = carouselItems.map(item => item.articleId);
+
+    // Fetch articles from DB
+    const placeholders = articleIds.map(() => '?').join(',');
+    const articles = this.db.prepare(`
+      SELECT * FROM articles 
+      WHERE id IN (${placeholders})
+    `).all(...articleIds);
+
+    // Map articles back to the order in carouselItems
+    const orderedArticles = carouselItems.map(item => {
+      const article = articles.find(a => a.id === item.articleId);
+      if (!article) return null;
+
+      // Parse images if string
+      if (typeof article.images === 'string') {
+        article.images = JSON.parse(article.images);
+      }
+
+      return article;
+    }).filter(Boolean); // Remove any nulls (deleted articles)
+
+    return orderedArticles;
   }
 
   /**

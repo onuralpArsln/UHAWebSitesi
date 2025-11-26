@@ -1,0 +1,206 @@
+{% macro ArticleLayout(layout = []) %}
+<section id="article-layout" class="cms-section" data-cms="article-layout-section" hidden>
+  <div class="cms-section-heading">
+    <div>
+      <h2 class="cms-section__title">Makale Düzeni</h2>
+      <p class="cms-section__description">Makale sayfalarında görünecek bileşenlerin sıralaması ve yapılandırması. Sıralamayı değiştirmek için sürükleyip bırakın.</p>
+    </div>
+    <div class="cms-section-actions">
+      <button class="cms-btn cms-btn-secondary" data-action="add-article-widget">Bileşen Ekle</button>
+      <button class="cms-btn cms-btn-primary" data-action="save-article-layout">Değişiklikleri Kaydet</button>
+    </div>
+  </div>
+
+  <div class="cms-card">
+    <div class="cms-table-container">
+      <table class="cms-table" data-cms="article-layout-table">
+        <thead>
+          <tr>
+            <th width="40"></th>
+            <th width="50">Sıra</th>
+            <th>Bileşen Tipi</th>
+            <th>Yapılandırma</th>
+            <th>Durum</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if layout and layout.length %}
+            {% for widget in layout %}
+            <tr data-index="{{ loop.index0 }}">
+              <td class="layout-drag-handle" title="Sürükle">
+                <span class="drag-icon">⋮⋮</span>
+              </td>
+              <td class="layout-order">{{ loop.index }}</td>
+              <td>
+                {% set widgetTitles = {
+                  'article-header': 'Makale Başlığı',
+                  'article-meta': 'Makale Bilgileri',
+                  'article-image': 'Öne Çıkan Görsel',
+                  'article-content': 'Makale İçeriği',
+                  'article-tags': 'Etiketler',
+                  'related-articles': 'İlgili Haberler',
+                  'sidebar-widget': 'Yan Menü',
+                  'social-share': 'Sosyal Medya Paylaşım',
+                  'comment-section': 'Yorum Bölümü',
+                  'ad-placeholder': 'Reklam Alanı'
+                } %}
+                <span class="cms-badge cms-badge--primary">{{ widgetTitles[widget.type] or widget.type }}</span>
+              </td>
+              <td>
+                <div class="widget-config-controls">
+                  {% if widget.type == 'related-articles' %}
+                    <label class="config-control">
+                      <span>Haber sayısı:</span>
+                      <input type="number" 
+                             data-config="limit" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.limit or 4 }}" 
+                             min="1" 
+                             max="12"
+                             class="config-input-small"> 
+                    </label>
+                    <label class="config-control">
+                      <input type="checkbox" 
+                             data-config="sameCategory" 
+                             data-widget-index="{{ loop.index0 }}"
+                             {% if widget.config.sameCategory %}checked{% endif %}>
+                      Aynı kategoriden
+                    </label>
+                  
+                  {% elif widget.type == 'sidebar-widget' %}
+                    <label class="config-control">
+                      <span>Widget Tipi:</span>
+                      <select data-config="widgetType" 
+                              data-widget-index="{{ loop.index0 }}"
+                              class="config-select">
+                        <option value="popular" {% if widget.config.widgetType == 'popular' %}selected{% endif %}>Popüler Haberler</option>
+                        <option value="recent" {% if widget.config.widgetType == 'recent' %}selected{% endif %}>Son Haberler</option>
+                        <option value="category" {% if widget.config.widgetType == 'category' %}selected{% endif %}>Kategori Akışı</option>
+                      </select>
+                    </label>
+                    <label class="config-control">
+                      <span>Haber sayısı:</span>
+                      <input type="number" 
+                             data-config="limit" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.limit or 5 }}" 
+                             min="1" 
+                             max="10"
+                             class="config-input-small">
+                    </label>
+                  
+                  {% elif widget.type == 'article-image' %}
+                    <label class="config-control">
+                      <input type="checkbox" 
+                             data-config="showCaption" 
+                             data-widget-index="{{ loop.index0 }}"
+                             {% if widget.config.showCaption %}checked{% endif %}>
+                      Altyazı göster
+                    </label>
+                    <label class="config-control">
+                      <span>Maks. yükseklik (px):</span>
+                      <input type="number" 
+                             data-config="maxHeight" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.maxHeight or '' }}" 
+                             min="100" 
+                             max="2000"
+                             step="50"
+                             placeholder="Sınırsız"
+                             class="config-input-small"> 
+                      <span class="config-hint">Boş bırakılırsa sınırsız</span>
+                    </label>
+                  
+                  {% elif widget.type == 'social-share' %}
+                    <label class="config-control">
+                      <input type="checkbox" 
+                             data-config="showFacebook" 
+                             data-widget-index="{{ loop.index0 }}"
+                             {% if widget.config.showFacebook !== false %}checked{% endif %}>
+                      Facebook
+                    </label>
+                    <label class="config-control">
+                      <input type="checkbox" 
+                             data-config="showTwitter" 
+                             data-widget-index="{{ loop.index0 }}"
+                             {% if widget.config.showTwitter !== false %}checked{% endif %}>
+                      Twitter
+                    </label>
+                    <label class="config-control">
+                      <input type="checkbox" 
+                             data-config="showWhatsapp" 
+                             data-widget-index="{{ loop.index0 }}"
+                             {% if widget.config.showWhatsapp !== false %}checked{% endif %}>
+                      WhatsApp
+                    </label>
+                  
+                  {% elif widget.type == 'ad-placeholder' %}
+                    <label class="config-control">
+                      <span>Boyut:</span>
+                      <select data-config="size" 
+                              data-widget-index="{{ loop.index0 }}"
+                              class="config-select">
+                        <option value="standard" {% if widget.config.size == 'standard' %}selected{% endif %}>Standart</option>
+                        <option value="large" {% if widget.config.size == 'large' %}selected{% endif %}>Büyük</option>
+                        <option value="banner" {% if widget.config.size == 'banner' %}selected{% endif %}>Banner</option>
+                      </select>
+                    </label>
+                    <label class="config-control">
+                      <span>Pozisyon:</span>
+                      <select data-config="position" 
+                              data-widget-index="{{ loop.index0 }}"
+                              class="config-select">
+                        <option value="inline" {% if widget.config.position == 'inline' %}selected{% endif %}>İçerik arası</option>
+                        <option value="sidebar" {% if widget.config.position == 'sidebar' %}selected{% endif %}>Yan menü</option>
+                      </select>
+                    </label>
+                  
+                  {% else %}
+                    <span class="config-text">Özel yapılandırma</span>
+                  {% endif %}
+                </div>
+              </td>
+              <td>
+                <div class="status-actions">
+                  <span class="cms-status {% if widget.config.hidden %}is-passive{% endif %}" 
+                        data-action="toggle-article-status" 
+                        data-widget-index="{{ loop.index0 }}"
+                        title="Durumu değiştirmek için tıklayın">
+                    {{ 'Pasif' if widget.config.hidden else 'Aktif' }}
+                  </span>
+                  <button type="button" class="btn-icon btn-delete" data-action="remove-article-widget" data-widget-index="{{ loop.index0 }}" title="Bileşeni Kaldır">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="5" class="cms-empty-state">Bileşen bulunamadı.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="cms-modal-overlay" data-modal="add-article-widget">
+    <div class="cms-modal">
+      <div class="cms-modal__header">
+        <h3 class="cms-modal__title">Makale Bileşeni Ekle</h3>
+        <button class="cms-modal__close" data-action="close-modal">×</button>
+      </div>
+      <div class="cms-modal__body">
+        <div class="widget-list" data-cms="article-widget-list">
+          <!-- Widgets will be populated here by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endmacro %}

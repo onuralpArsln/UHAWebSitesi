@@ -103,6 +103,13 @@ router.get('/', async (req, res) => {
               slug: urlSlugService.getSlugById(article.id) ||
                 urlSlugService.generateSlug(article.title)
             }));
+          } else if (widget.type === 'carousel' && widget.config.source === 'manual') {
+            const carouselArticles = dataService.getCarouselArticles();
+            widgetData.data.articles = carouselArticles.map(article => ({
+              ...article,
+              images: optimizeImageData(article.images),
+              slug: urlSlugService.getSlugById(article.id) || urlSlugService.generateSlug(article.title)
+            }));
           }
           break;
 
@@ -201,8 +208,10 @@ router.get('/haber/:slug', async (req, res) => {
       return res.status(404).send('Article not found');
     }
 
-    // Fetch related articles
-    const relatedArticles = dataService.getRelatedArticles(articleId, 4);
+    // Fetch article layout configuration
+    const { layout } = dataService.getArticleLayout() || { layout: [] };
+
+    // Fetch categories for navigation and processing
     const categories = dataService.getCategories();
     const navCategories = buildNavCategories(categories);
     const articleCategory = categories.find(cat => cat.name === article.category);
@@ -212,13 +221,128 @@ router.get('/haber/:slug', async (req, res) => {
     // Branding data
     const branding = formatBranding(dataService.getBranding());
 
-    // Prepare page data
+    // Prepare page URL for social sharing
     const siteUrl = config.getSiteUrl(req);
+    const pageUrl = `${siteUrl}/haber/${slug}`;
+
+    // Process layout and fetch data for each widget
+    // Filter out hidden widgets (ensure layout is an array)
+    const layoutArray = Array.isArray(layout) ? layout : [];
+    const visibleLayout = layoutArray.filter(widget => !widget.config?.hidden);
+
+    const processedLayout = visibleLayout.map(widget => {
+      const widgetData = { ...widget, data: {} };
+
+      switch (widget.type) {
+        case 'related-articles':
+          // Fetch related articles based on config
+          const limit = parseInt(widget.config?.limit) || 4;
+          const sameCategory = widget.config?.sameCategory !== false; // Default to true
+
+          let relatedArticles = [];
+
+          if (sameCategory && article.category) {
+            // Fetch articles from same category
+            const categoryArticles = dataService.getArticles({
+              category: article.category,
+              limit: limit + 1, // +1 to exclude current article
+              sortBy: 'publishedAt',
+              sortOrder: 'desc',
+              status: 'visible'
+            });
+
+            // Filter out current article and limit
+            relatedArticles = categoryArticles.articles
+              .filter(a => a.id !== articleId)
+              .slice(0, limit);
+          } else {
+            // Use manually related articles or fetch recent
+            const manualRelated = dataService.getRelatedArticles(articleId, limit);
+            if (manualRelated && manualRelated.length > 0) {
+              relatedArticles = manualRelated;
+            } else {
+              // Fallback to recent articles
+              const recentArticles = dataService.getArticles({
+                limit: limit + 1,
+                sortBy: 'publishedAt',
+                sortOrder: 'desc',
+                status: 'visible'
+              });
+              relatedArticles = recentArticles.articles
+                .filter(a => a.id !== articleId)
+                .slice(0, limit);
+            }
+          }
+
+          // Add slugs to related articles
+          widgetData.data.articles = relatedArticles.map(related => ({
+            ...related,
+            slug: urlSlugService.getSlugById(related.id) ||
+              urlSlugService.generateSlug(related.title),
+            images: optimizeImageData(related.images)
+          }));
+          break;
+
+        case 'sidebar-widget':
+          // Fetch articles based on widgetType
+          const widgetType = widget.config?.widgetType || 'popular';
+          const sidebarLimit = parseInt(widget.config?.limit) || 5;
+
+          let sidebarArticles = [];
+
+          if (widgetType === 'popular') {
+            // For now, use recent articles as "popular" (can be enhanced later)
+            const popularResult = dataService.getArticles({
+              limit: sidebarLimit,
+              sortBy: 'publishedAt',
+              sortOrder: 'desc',
+              status: 'visible'
+            });
+            sidebarArticles = popularResult.articles;
+          } else if (widgetType === 'recent') {
+            const recentResult = dataService.getArticles({
+              limit: sidebarLimit,
+              sortBy: 'publishedAt',
+              sortOrder: 'desc',
+              status: 'visible'
+            });
+            sidebarArticles = recentResult.articles;
+          } else if (widgetType === 'category' && article.category) {
+            const categoryResult = dataService.getArticles({
+              category: article.category,
+              limit: sidebarLimit + 1, // +1 to exclude current
+              sortBy: 'publishedAt',
+              sortOrder: 'desc',
+              status: 'visible'
+            });
+            sidebarArticles = categoryResult.articles
+              .filter(a => a.id !== articleId)
+              .slice(0, sidebarLimit);
+          }
+
+          // Add slugs to sidebar articles
+          widgetData.data.articles = sidebarArticles.map(sidebar => ({
+            ...sidebar,
+            slug: urlSlugService.getSlugById(sidebar.id) ||
+              urlSlugService.generateSlug(sidebar.title),
+            images: optimizeImageData(sidebar.images)
+          }));
+          break;
+
+        // Other widget types don't need additional data fetching
+        default:
+          break;
+      }
+
+      return widgetData;
+    });
+
+    // Prepare page data
     const siteDefaults = config.getSiteDefaults();
     const meta = buildMeta({
       title: `${article.title} - ${siteDefaults.name}`,
       description: article.summary,
-      url: `${siteUrl}/haber/${slug}`,
+      url: pageUrl,
       image: article.images?.[0]?.highRes,
       type: 'article'
     }, req);
@@ -236,20 +360,19 @@ router.get('/haber/:slug', async (req, res) => {
         ...article,
         slug,
         images: optimizeImageData(article.images),
-        categorySlug: articleCategorySlug
+        categorySlug: articleCategorySlug,
+        comments: article.comments || [],
+        hasMoreComments: article.hasMoreComments || false
       },
-      relatedArticles: relatedArticles.map(related => ({
-        ...related,
-        slug: urlSlugService.getSlugById(related.id) ||
-          urlSlugService.generateSlug(related.title)
-      })),
+      layout: processedLayout,
+      pageUrl,
       navCategories,
       jsonLd: articleSchema
     };
 
     res.render('pages/article.njk', pageData);
   } catch (error) {
-    console.error('Article page error:', error);
+    console.error('Article detail error:', error);
     res.status(500).send('Internal Server Error');
   }
 });

@@ -70,6 +70,15 @@ nunjucksEnv.addFilter('initials', (value) => {
   return value.trim().charAt(0).toUpperCase();
 });
 
+nunjucksEnv.addFilter('urlencode', (value) => {
+  if (!value) return '';
+  try {
+    return encodeURIComponent(String(value));
+  } catch (error) {
+    return value;
+  }
+});
+
 nunjucksEnv.addGlobal('placeholder_image', 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==');
 nunjucksEnv.addGlobal('current_year', new Date().getFullYear());
 nunjucksEnv.addGlobal('BASE_PATH', BASE_PATH);

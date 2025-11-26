@@ -1,0 +1,16 @@
+{% macro articleMeta(article) %}
+{% if article %}
+<div class="article-view__meta">
+  {% if article.writer or article.author %}
+  <span>Yazar: {{ article.writer or article.author }}</span>
+  {% endif %}
+  {% if article.publishedAt %}
+  <time datetime="{{ article.publishedAt }}">Yayın: {{ article.publishedAt | formatDate }}</time>
+  {% endif %}
+  {% if article.updatedAt %}
+  <time datetime="{{ article.updatedAt }}">Güncelleme: {{ article.updatedAt | formatDate }}</time>
+  {% endif %}
+</div>
+{% endif %}
+{% endmacro %}
+
