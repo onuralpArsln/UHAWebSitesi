@@ -1,0 +1,149 @@
+# User Actions
+
+## Authentication
+action: Login
+explanation: Authenticate user with username and password
+request: POST /api/auth/login
+
+action: Logout
+explanation: End user session
+request: POST /api/auth/logout
+
+action: Get Current User
+explanation: Retrieve information about the currently logged-in user
+request: GET /api/auth/me
+
+## User Management (Admin)
+action: List Users
+explanation: Retrieve a list of all users
+request: GET /api/auth/users
+
+action: Create User
+explanation: Create a new user account
+request: POST /api/auth/users
+
+action: Update User
+explanation: Update an existing user's information
+request: PUT /api/auth/users/:id
+
+action: Delete User
+explanation: Remove a user account
+request: DELETE /api/auth/users/:id
+
+## CMS - Dashboard & Settings
+action: View Dashboard
+explanation: Retrieve statistics and summary data for the CMS dashboard
+request: GET /cms/dashboard
+
+action: Get Branding Settings
+explanation: Retrieve current site branding configuration
+request: GET /cms/branding
+
+action: Update Branding Settings
+explanation: Update site branding (colors, logos)
+request: POST /cms/branding
+
+## CMS - Articles
+action: List Articles
+explanation: Retrieve a paginated list of articles with filters
+request: GET /cms/articles
+
+action: Get Article
+explanation: Retrieve a single article by ID for editing
+request: GET /cms/articles/:id
+
+action: Create Article
+explanation: Create a new article
+request: POST /cms/articles
+
+action: Update Article
+explanation: Update an existing article
+request: PUT /cms/articles/:id
+
+action: Update Article Status
+explanation: Change the visibility status of an article (visible/hidden)
+request: PUT /cms/articles/:id/status
+
+action: Delete Article
+explanation: Delete an article
+request: DELETE /cms/articles/:id
+
+## CMS - Categories
+action: List Categories
+explanation: Retrieve all categories
+request: GET /cms/categories
+
+action: Create Category
+explanation: Create a new category
+request: POST /cms/categories
+
+action: Update Category
+explanation: Update an existing category
+request: PUT /cms/categories/:id
+
+action: Delete Category
+explanation: Delete a category
+request: DELETE /cms/categories/:id
+
+## CMS - Layouts
+action: Get Layouts
+explanation: Retrieve available page layouts
+request: GET /cms/layouts
+
+action: Save Layout
+explanation: Save configuration for a specific layout
+request: POST /cms/layouts
+
+## CMS - Media
+action: List Media
+explanation: List media files and folders
+request: GET /cms/media
+
+action: Upload Media
+explanation: Upload a new media file
+request: POST /cms/media/upload
+
+action: Rename Media
+explanation: Rename a media file
+request: PUT /cms/media
+
+action: Rename Media (Alt)
+explanation: Rename a media file (alternative endpoint)
+request: PUT /cms/media/:filename
+
+action: Delete Media
+explanation: Delete a media file
+request: DELETE /cms/media
+
+action: Delete Media (Alt)
+explanation: Delete a media file (alternative endpoint)
+request: DELETE /cms/media/:filename
+
+action: Get Folder Tree
+explanation: Retrieve the folder structure
+request: GET /cms/media/folders/tree
+
+action: List Folders
+explanation: List subfolders in a directory
+request: GET /cms/media/folders
+
+action: Create Folder
+explanation: Create a new folder
+request: POST /cms/media/folders
+
+action: Rename Folder
+explanation: Rename an existing folder
+request: PUT /cms/media/folders
+
+## Public API (User Interactions)
+action: Submit Comment
+explanation: Submit a new comment on an article
+request: POST /api/comments
+
+action: Like Comment
+explanation: Like a specific comment
+request: POST /api/comments/:id/like
+
+action: Clear Cache
+explanation: Clear the server cache
+request: POST /api/cache/clear

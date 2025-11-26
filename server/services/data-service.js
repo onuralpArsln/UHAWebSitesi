@@ -93,6 +93,7 @@ class DataService {
 
     // Migrate existing data if needed
     this.migrateSchemaIfNeeded();
+    this.migrateUsersSchemaIfNeeded();
 
     // Create indexes for better performance
     this.db.exec(`
@@ -138,6 +139,7 @@ class DataService {
         display_name TEXT,
         role TEXT DEFAULT 'editor',
         permissions TEXT,
+        allowed_tabs TEXT,
         created_at TEXT,
         last_login TEXT
       )
@@ -194,6 +196,24 @@ class DataService {
       }
     } catch (error) {
       console.error('⚠️ Schema migration error (might be expected on first run):', error.message);
+    }
+  }
+
+  /**
+   * Migrate users schema if needed
+   */
+  migrateUsersSchemaIfNeeded() {
+    try {
+      const tableInfo = this.db.prepare("PRAGMA table_info(users)").all();
+      const columnNames = tableInfo.map(col => col.name);
+
+      if (!columnNames.includes('allowed_tabs')) {
+        console.log('🔄 Migrating users table schema...');
+        this.db.exec("ALTER TABLE users ADD COLUMN allowed_tabs TEXT");
+        console.log('✅ Users schema migration completed');
+      }
+    } catch (error) {
+      console.error('⚠️ Users schema migration error:', error.message);
     }
   }
 
@@ -1414,27 +1434,26 @@ class DataService {
    * Create a new user
    */
   createUser(userData) {
-    const { username, password, displayName, role, permissions } = userData;
-    const id = randomUUID();
+    const { username, password, displayName, role, permissions, allowedTabs } = userData;
+    const id = require('crypto').randomUUID();
+    const passwordHash = require('bcrypt').hashSync(password, 10);
     const now = new Date().toISOString();
-    const passwordHash = bcrypt.hashSync(password, 10);
 
-    const stmt = this.db.prepare(`
-      INSERT INTO users (id, username, password_hash, display_name, role, permissions, created_at)
-      VALUES (@id, @username, @passwordHash, @displayName, @role, @permissions, @createdAt)
-    `);
-
-    stmt.run({
+    this.db.prepare(`
+      INSERT INTO users (id, username, password_hash, display_name, role, permissions, allowed_tabs, created_at)
+      VALUES (@id, @username, @passwordHash, @displayName, @role, @permissions, @allowedTabs, @createdAt)
+    `).run({
       id,
       username,
       passwordHash,
       displayName,
       role: role || 'editor',
       permissions: JSON.stringify(permissions || []),
+      allowedTabs: JSON.stringify(allowedTabs || []),
       createdAt: now
     });
 
-    return { id, username, displayName, role, permissions };
+    return this.getUserById(id);
   }
 
   /**
@@ -1470,28 +1489,33 @@ class DataService {
     const current = this.getUserById(id);
     if (!current) return null;
 
-    const { password, displayName, role, permissions } = updates;
-    let passwordHash = current.password_hash; // Keep existing hash by default
+    const { password, displayName, role, permissions, allowedTabs } = updates;
+    let passwordHash;
+
+    // We need to fetch the raw row to get the password hash if we aren't updating it
+    const rawUser = this.db.prepare('SELECT * FROM users WHERE id = ?').get(id);
 
     if (password) {
-      passwordHash = bcrypt.hashSync(password, 10);
+      passwordHash = require('bcrypt').hashSync(password, 10);
+    } else {
+      passwordHash = rawUser.password_hash;
     }
 
-    const stmt = this.db.prepare(`
+    this.db.prepare(`
       UPDATE users
       SET password_hash = @passwordHash,
           display_name = @displayName,
           role = @role,
-          permissions = @permissions
+          permissions = @permissions,
+          allowed_tabs = @allowedTabs
       WHERE id = @id
-    `);
-
-    stmt.run({
+    `).run({
       id,
       passwordHash,
       displayName: displayName || current.displayName,
       role: role || current.role,
-      permissions: permissions ? JSON.stringify(permissions) : JSON.stringify(current.permissions)
+      permissions: JSON.stringify(permissions !== undefined ? permissions : current.permissions),
+      allowedTabs: JSON.stringify(allowedTabs !== undefined ? allowedTabs : (current.allowedTabs || []))
     });
 
     return this.getUserById(id);
@@ -1525,6 +1549,7 @@ class DataService {
       displayName: row.display_name,
       role: row.role,
       permissions: row.permissions ? JSON.parse(row.permissions) : [],
+      allowedTabs: row.allowed_tabs ? JSON.parse(row.allowed_tabs) : [],
       createdAt: row.created_at,
       lastLogin: row.last_login
     };

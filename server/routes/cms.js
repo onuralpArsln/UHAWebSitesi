@@ -6,6 +6,7 @@ const DataService = require('../services/data-service');
 const URLSlugService = require('../services/url-slug');
 const config = require('../services/config');
 const { requirePermission } = require('../middleware/auth');
+const cmsTabs = require('../config/cms-tabs');
 
 const router = express.Router();
 const dataService = new DataService();
@@ -241,6 +242,8 @@ router.get('/', (req, res) => {
     .map(mapArticleToSummary)
     .filter(Boolean);
 
+  const cmsTabs = config.getCmsTabs(); // Get cmsTabs here
+
   const initialState = {
     stats,
     articles: articleSummaries,
@@ -251,7 +254,7 @@ router.get('/', (req, res) => {
     branding,
     homepageLayout,
     users,
-    cmsTabs: config.getCmsTabs(),
+    cmsTabs, // Pass cmsTabs to initialState
     currentUser: {
       username: req.session.username,
       displayName: req.session.displayName,

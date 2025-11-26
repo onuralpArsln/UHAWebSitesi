@@ -41,6 +41,7 @@ router.post('/login', async (req, res) => {
         req.session.displayName = user.displayName;
         req.session.role = user.role;
         req.session.permissions = user.permissions;
+        req.session.allowedTabs = user.allowedTabs || [];
         req.session.isMaster = false;
 
         // Update last login
@@ -77,6 +78,7 @@ router.get('/me', requireAuth, (req, res) => {
         displayName: req.session.displayName,
         role: req.session.role,
         permissions: req.session.permissions,
+        allowedTabs: req.session.allowedTabs,
         isMaster: req.session.isMaster
     });
 });
@@ -104,7 +106,7 @@ router.get('/users', requirePermission('manage_users'), (req, res) => {
  */
 router.post('/users', requirePermission('manage_users'), (req, res) => {
     try {
-        const { username, password, displayName, role, permissions } = req.body;
+        const { username, password, displayName, role, permissions, allowedTabs } = req.body;
 
         if (!username || !password) {
             return res.status(400).json({ error: 'Kullanıcı adı ve şifre zorunludur.' });
@@ -121,7 +123,8 @@ router.post('/users', requirePermission('manage_users'), (req, res) => {
             password,
             displayName,
             role,
-            permissions
+            permissions,
+            allowedTabs
         });
 
         res.status(201).json(newUser);
