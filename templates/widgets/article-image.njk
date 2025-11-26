@@ -11,9 +11,6 @@
       loading="eager"
       {% if maxHeight %}style="max-height: {{ maxHeight }}px; width: 100%; height: auto; object-fit: contain; display: block;"{% endif %}
     >
-    {% if config.showCaption and heroImage.alt %}
-    <figcaption>{{ heroImage.alt }}</figcaption>
-    {% endif %}
   </figure>
   {% endif %}
   

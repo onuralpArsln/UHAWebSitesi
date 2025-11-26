@@ -534,7 +534,7 @@ router.post('/articles', async (req, res) => {
 
     // Store slug mapping
     if (newArticle.id) {
-      urlSlugService.getSlugForArticle(newArticle.id, newArticle.header);
+      await urlSlugService.getSlugForArticle(newArticle.id, newArticle.header);
     }
 
     res.status(201).json(newArticle);
@@ -572,11 +572,7 @@ router.put('/articles/:id', async (req, res) => {
       images: toImageArray(articleData.images),
       body: articleData.body,
       videoUrl: (articleData.videoUrl || articleData.video || '').toString().trim(),
-      images: toImageArray(articleData.images),
-      body: articleData.body,
-      videoUrl: (articleData.videoUrl || articleData.video || '').toString().trim(),
       // writer is handled below based on permissions
-      creationDate: articleData.creationDate,
       creationDate: articleData.creationDate,
       source: articleData.source,
       outlinks: toLineArray(articleData.outlinks),
@@ -612,7 +608,7 @@ router.put('/articles/:id', async (req, res) => {
 
     // Update slug if title changed
     if (headerChanged) {
-      urlSlugService.updateSlug(id, normalizedArticle.header);
+      await urlSlugService.updateSlug(id, normalizedArticle.header);
     }
 
     res.json(updatedArticle);

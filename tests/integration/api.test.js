@@ -446,5 +446,245 @@ describe('API Routes Integration Tests', () => {
             expect(res.body).toHaveProperty('message');
         });
     });
+
+    describe('Invalid Parameters Handling', () => {
+        test('should handle invalid page parameter', async () => {
+            const invalidPages = ['abc', null, undefined, '', '0', '-1', '999999999'];
+            
+            for (const page of invalidPages) {
+                const res = await request(app)
+                    .get('/api/articles')
+                    .query({ page });
+
+                // Should handle gracefully (use default or return error)
+                expect([200, 400]).toContain(res.statusCode);
+            }
+        });
+
+        test('should handle invalid limit parameter', async () => {
+            const invalidLimits = ['abc', null, undefined, '', '0', '-1', '999999999'];
+            
+            for (const limit of invalidLimits) {
+                const res = await request(app)
+                    .get('/api/articles')
+                    .query({ limit });
+
+                // Should handle gracefully
+                expect([200, 400]).toContain(res.statusCode);
+            }
+        });
+
+        test('should handle invalid sortBy parameter', async () => {
+            const invalidSortBy = ['invalid', 'DROP TABLE', '; DELETE', null, undefined];
+            
+            for (const sortBy of invalidSortBy) {
+                const res = await request(app)
+                    .get('/api/articles')
+                    .query({ sortBy });
+
+                // Should handle gracefully (use default)
+                expect([200, 400]).toContain(res.statusCode);
+            }
+        });
+
+        test('should handle invalid sortOrder parameter', async () => {
+            const invalidSortOrder = ['invalid', 'DROP', null, undefined];
+            
+            for (const sortOrder of invalidSortOrder) {
+                const res = await request(app)
+                    .get('/api/articles')
+                    .query({ sortOrder });
+
+                // Should handle gracefully (use default)
+                expect([200, 400]).toContain(res.statusCode);
+            }
+        });
+
+        test('should handle very large limit values', async () => {
+            const res = await request(app)
+                .get('/api/articles')
+                .query({ limit: 1000000 });
+
+            // Should either cap the limit or return error
+            expect([200, 400]).toContain(res.statusCode);
+            if (res.statusCode === 200) {
+                // If successful, should not return more than reasonable limit
+                expect(res.body.articles.length).toBeLessThanOrEqual(10000);
+            }
+        });
+    });
+
+    describe('SQL Injection Protection', () => {
+        const { sqlInjectionPayloads } = require('../test-helpers/security-helpers');
+
+        test('should prevent SQL injection in search parameter', async () => {
+            for (const payload of sqlInjectionPayloads.slice(0, 5)) {
+                const res = await request(app)
+                    .get('/api/articles')
+                    .query({ search: payload });
+
+                // Should not return 500 (database error)
+                expect(res.statusCode).not.toBe(500);
+                // Should not expose SQL errors
+                expect(JSON.stringify(res.body)).not.toContain('SQLITE');
+                expect(JSON.stringify(res.body)).not.toContain('syntax error');
+            }
+        });
+
+        test('should prevent SQL injection in category parameter', async () => {
+            for (const payload of sqlInjectionPayloads.slice(0, 5)) {
+                const res = await request(app)
+                    .get('/api/articles')
+                    .query({ category: payload });
+
+                expect(res.statusCode).not.toBe(500);
+                expect(JSON.stringify(res.body)).not.toContain('SQLITE');
+            }
+        });
+
+        test('should prevent SQL injection in article ID', async () => {
+            for (const payload of sqlInjectionPayloads.slice(0, 5)) {
+                const res = await request(app)
+                    .get(`/api/articles/${encodeURIComponent(payload)}`);
+
+                // Should return 404 or 400, not 500
+                expect([200, 404, 400]).toContain(res.statusCode);
+                expect(res.statusCode).not.toBe(500);
+            }
+        });
+    });
+
+    describe('Large Dataset Handling', () => {
+        test('should handle requests with many articles', async () => {
+            // Create many articles
+            const articles = [];
+            for (let i = 0; i < 100; i++) {
+                articles.push(createTestArticle({
+                    id: `large-${i}`,
+                    header: `Article ${i}`,
+                    category: 'Gündem',
+                    status: 'visible'
+                }));
+            }
+
+            // Insert articles
+            for (const article of articles) {
+                insertArticle(testDb, article);
+            }
+
+            // Test pagination with large dataset
+            const res = await request(app)
+                .get('/api/articles')
+                .query({ page: 1, limit: 20 });
+
+            expect(res.statusCode).toBe(200);
+            expect(res.body.articles.length).toBeLessThanOrEqual(20);
+            expect(res.body.pagination.total).toBeGreaterThanOrEqual(100);
+        });
+
+        test('should handle pagination with large page numbers', async () => {
+            // Create many articles
+            for (let i = 0; i < 50; i++) {
+                insertArticle(testDb, createTestArticle({
+                    id: `page-${i}`,
+                    header: `Article ${i}`,
+                    category: 'Gündem',
+                    status: 'visible'
+                }));
+            }
+
+            // Request high page number
+            const res = await request(app)
+                .get('/api/articles')
+                .query({ page: 100, limit: 10 });
+
+            expect(res.statusCode).toBe(200);
+            // Should return empty array or handle gracefully
+            expect(Array.isArray(res.body.articles)).toBe(true);
+        });
+
+        test('should handle large result sets efficiently', async () => {
+            // Create many articles
+            for (let i = 0; i < 200; i++) {
+                insertArticle(testDb, createTestArticle({
+                    id: `perf-${i}`,
+                    header: `Article ${i}`,
+                    category: 'Gündem',
+                    status: 'visible'
+                }));
+            }
+
+            const startTime = Date.now();
+            const res = await request(app)
+                .get('/api/articles')
+                .query({ limit: 100 });
+
+            const duration = Date.now() - startTime;
+
+            expect(res.statusCode).toBe(200);
+            // Should complete in reasonable time (less than 5 seconds)
+            expect(duration).toBeLessThan(5000);
+        });
+    });
+
+    describe('Edge Case Pagination', () => {
+        test('should handle page 0', async () => {
+            const res = await request(app)
+                .get('/api/articles')
+                .query({ page: 0 });
+
+            // Should handle as page 1 or return error
+            expect([200, 400]).toContain(res.statusCode);
+        });
+
+        test('should handle negative page numbers', async () => {
+            const res = await request(app)
+                .get('/api/articles')
+                .query({ page: -1 });
+
+            // Should handle as page 1 or return error
+            expect([200, 400]).toContain(res.statusCode);
+        });
+
+        test('should handle zero limit', async () => {
+            const res = await request(app)
+                .get('/api/articles')
+                .query({ limit: 0 });
+
+            // Should use default limit or return error
+            expect([200, 400]).toContain(res.statusCode);
+        });
+
+        test('should handle last page correctly', async () => {
+            // Create articles
+            for (let i = 0; i < 25; i++) {
+                insertArticle(testDb, createTestArticle({
+                    id: `last-page-${i}`,
+                    header: `Article ${i}`,
+                    category: 'Gündem',
+                    status: 'visible'
+                }));
+            }
+
+            // Request last page
+            const res = await request(app)
+                .get('/api/articles')
+                .query({ page: 3, limit: 10 });
+
+            expect(res.statusCode).toBe(200);
+            expect(res.body.pagination.page).toBe(3);
+            expect(res.body.pagination.totalPages).toBeGreaterThanOrEqual(3);
+        });
+
+        test('should handle page beyond total pages', async () => {
+            const res = await request(app)
+                .get('/api/articles')
+                .query({ page: 99999, limit: 10 });
+
+            expect(res.statusCode).toBe(200);
+            // Should return empty array or last page
+            expect(Array.isArray(res.body.articles)).toBe(true);
+        });
+    });
 });
 

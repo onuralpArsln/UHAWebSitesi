@@ -117,15 +117,9 @@
   {% endif %}
 </main>
 
-<footer class="site-footer">
-  <div class="container">
-    {% if brand.footerLogo %}
-    <div class="site-footer__logo">
-      <img src="{{ brand.footerLogo }}" alt="{{ brand.siteName or 'UHA News' }}">
-    </div>
-    {% endif %}
-    <p>&copy; {{ current_year }} {{ brand.siteName or 'UHA News' }}. Tüm hakları saklıdır.</p>
-  </div>
-</footer>
+{% import "widgets/footer.njk" as footer %}
+
+{# Site Footer #}
+{{ footer.siteFooter(branding, navCategories) }}
 {% endblock %}
 
