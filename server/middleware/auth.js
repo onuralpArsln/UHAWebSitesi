@@ -7,8 +7,14 @@ const requireAuth = (req, res, next) => {
         return next();
     }
 
+    // Check if this is an API-like request (POST/PUT/DELETE to /cms routes or JSON accept)
+    const isApiRequest = req.path.startsWith('/api/') || 
+                        req.xhr || 
+                        req.accepts('json') ||
+                        (req.path.startsWith('/cms/') && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method));
+
     // If it's an API request, return 401
-    if (req.path.startsWith('/api/') || req.xhr) {
+    if (isApiRequest) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -18,8 +24,14 @@ const requireAuth = (req, res, next) => {
 
 const requirePermission = (permission) => {
     return (req, res, next) => {
+        // Check if this is an API-like request (POST/PUT/DELETE to /cms routes or JSON accept)
+        const isApiRequest = req.path.startsWith('/api/') || 
+                            req.xhr || 
+                            req.accepts('json') ||
+                            (req.path.startsWith('/cms/') && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method));
+
         if (!req.session || !req.session.userId) {
-            if (req.path.startsWith('/api/') || req.xhr) {
+            if (isApiRequest) {
                 return res.status(401).json({ error: 'Unauthorized' });
             }
             return res.redirect('/cms/login');
@@ -36,7 +48,7 @@ const requirePermission = (permission) => {
         }
 
         // Forbidden
-        if (req.path.startsWith('/api/') || req.xhr) {
+        if (isApiRequest) {
             return res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
         }
 

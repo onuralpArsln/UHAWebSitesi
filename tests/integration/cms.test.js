@@ -9,6 +9,9 @@ const bodyParser = require('body-parser');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const nunjucks = require('nunjucks');
+const config = require('../../server/services/config');
+const DataService = require('../../server/services/data-service');
 const cmsRoutes = require('../../server/routes/cms');
 const {
     createTestDatabase,
@@ -46,6 +49,12 @@ describe('CMS Routes Integration Tests', () => {
         // Create test database
         testDb = createTestDatabase();
         
+        // Create DataService instance with test database
+        const testDataService = new DataService(testDb);
+        
+        // Inject test DataService into CMS routes
+        cmsRoutes.setDataService(testDataService);
+        
         // Create upload directory for branding
         uploadDir = path.join(__dirname, '../../public/uploads/branding');
         if (!fs.existsSync(uploadDir)) {
@@ -54,6 +63,17 @@ describe('CMS Routes Integration Tests', () => {
 
         // Create test app
         app = express();
+        
+        // Configure template engine (nunjucks)
+        const paths = config.getPaths();
+        nunjucks.configure(paths.templates, {
+            autoescape: true,
+            express: app,
+            noCache: true
+        });
+        app.set('views', paths.templates);
+        app.set('view engine', 'njk');
+        
         app.use(bodyParser.json());
         app.use(bodyParser.urlencoded({ extended: true }));
         app.use(session({
@@ -77,6 +97,8 @@ describe('CMS Routes Integration Tests', () => {
     });
 
     afterAll(() => {
+        // Reset DataService to default
+        cmsRoutes.resetDataService();
         cleanupTestDatabase(testDb);
         // Clean up upload directory
         if (fs.existsSync(uploadDir)) {
@@ -363,10 +385,14 @@ describe('CMS Routes Integration Tests', () => {
                 .post('/cms/categories')
                 .send({ name: 'Duplicate' });
             
+            // First request should succeed
+            expect(res1.statusCode).toBe(201);
+            
             const res2 = await request(app)
                 .post('/cms/categories')
                 .send({ name: 'Duplicate' });
 
+            // Second request should fail with duplicate error
             expect([409, 400]).toContain(res2.statusCode);
         });
     });

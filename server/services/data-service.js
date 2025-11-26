@@ -12,37 +12,49 @@ const bcrypt = require('bcrypt');
 const MEDIA_UPLOAD_WEB_PATH = '/uploads/media';
 
 class DataService {
-  constructor() {
-    // Ensure data directory exists
-    const dataDir = path.join(__dirname, '../../data');
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+  constructor(dbInstance = null) {
+    if (dbInstance) {
+      // Use provided database instance (for testing)
+      this.db = dbInstance;
+      // Initialize schema if needed
+      this.initializeDatabase();
+      // Ensure defaults exist
+      this.ensureBrandingDefaults();
+      this.ensureHomepageLayoutDefaults();
+      // Don't migrate mock data in test mode
+    } else {
+      // Normal initialization for production
+      // Ensure data directory exists
+      const dataDir = path.join(__dirname, '../../data');
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+
+      // Ensure branding upload directory exists
+      const brandingUploadDir = path.join(__dirname, '../../public/uploads/branding');
+      if (!fs.existsSync(brandingUploadDir)) {
+        fs.mkdirSync(brandingUploadDir, { recursive: true });
+      }
+
+      // Initialize database
+      const dbPath = path.join(dataDir, 'news.db');
+      this.db = new Database(dbPath);
+
+      // Enable foreign keys and WAL mode for better concurrency
+      this.db.pragma('journal_mode = WAL');
+
+      // Initialize schema
+      this.initializeDatabase();
+
+      // Ensure branding defaults exist
+      this.ensureBrandingDefaults();
+
+      // Ensure homepage layout defaults exist
+      this.ensureHomepageLayoutDefaults();
+
+      // Migrate mock data if database is empty
+      this.migrateMockDataIfNeeded();
     }
-
-    // Ensure branding upload directory exists
-    const brandingUploadDir = path.join(__dirname, '../../public/uploads/branding');
-    if (!fs.existsSync(brandingUploadDir)) {
-      fs.mkdirSync(brandingUploadDir, { recursive: true });
-    }
-
-    // Initialize database
-    const dbPath = path.join(dataDir, 'news.db');
-    this.db = new Database(dbPath);
-
-    // Enable foreign keys and WAL mode for better concurrency
-    this.db.pragma('journal_mode = WAL');
-
-    // Initialize schema
-    this.initializeDatabase();
-
-    // Ensure branding defaults exist
-    this.ensureBrandingDefaults();
-
-    // Ensure homepage layout defaults exist
-    this.ensureHomepageLayoutDefaults();
-
-    // Migrate mock data if database is empty
-    this.migrateMockDataIfNeeded();
   }
 
   /**

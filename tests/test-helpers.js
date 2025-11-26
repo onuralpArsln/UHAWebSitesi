@@ -59,6 +59,38 @@ function createTestDatabase() {
     )
   `);
 
+    // Create branding table
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS branding (
+      id TEXT PRIMARY KEY,
+      siteName TEXT,
+      primaryColor TEXT,
+      secondaryColor TEXT,
+      accentColor TEXT,
+      logoTextColor TEXT,
+      navTextColor TEXT,
+      navBackgroundColor TEXT,
+      headerLogo TEXT,
+      footerLogo TEXT,
+      updatedAt TEXT
+    )
+  `);
+
+    // Create users table
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      username TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      display_name TEXT,
+      role TEXT DEFAULT 'editor',
+      permissions TEXT,
+      allowed_tabs TEXT,
+      created_at TEXT,
+      last_login TEXT
+    )
+  `);
+
     return db;
 }
 

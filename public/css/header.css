@@ -51,6 +51,32 @@
 .header-nav {
   background: var(--color-nav-bg);
   border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.header-nav .container {
+  min-width: min-content;
+  width: 100%;
+}
+
+.header-nav::-webkit-scrollbar {
+  height: 4px;
+}
+
+.header-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.header-nav::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+.header-nav::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.5);
 }
 
 .site-nav-bar__link {

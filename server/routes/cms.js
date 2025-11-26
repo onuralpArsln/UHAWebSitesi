@@ -5,11 +5,41 @@ const multer = require('multer');
 const DataService = require('../services/data-service');
 const URLSlugService = require('../services/url-slug');
 const config = require('../services/config');
-const { requirePermission } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 const cmsTabs = require('../config/cms-tabs');
 
 const router = express.Router();
-const dataService = new DataService();
+
+// Allow dependency injection for testing, default to new instance
+let dataServiceInstance = null;
+const getDataService = () => {
+    if (dataServiceInstance) {
+        return dataServiceInstance;
+    }
+    if (!getDataService._default) {
+        getDataService._default = new DataService();
+    }
+    return getDataService._default;
+};
+
+// Export setter for testing
+getDataService.setInstance = (instance) => {
+    dataServiceInstance = instance;
+};
+
+getDataService.reset = () => {
+    dataServiceInstance = null;
+    getDataService._default = null;
+};
+
+// For backward compatibility, create a proxy that uses getDataService()
+const dataService = new Proxy({}, {
+    get(target, prop) {
+        const instance = getDataService();
+        return instance[prop];
+    }
+});
+
 const urlSlugService = URLSlugService;
 
 const BRANDING_UPLOAD_DIR = path.join(__dirname, '../../public/uploads/branding');
@@ -463,11 +493,8 @@ router.post('/articles', async (req, res) => {
       images: toImageArray(articleData.images),
       body: articleData.body,
       videoUrl: (articleData.videoUrl || articleData.video || '').toString().trim(),
-      body: articleData.body,
-      videoUrl: (articleData.videoUrl || articleData.video || '').toString().trim(),
       // Enforce writer as the current user's display name or username
-      writer: req.session.displayName || req.session.username,
-      creationDate: articleData.creationDate,
+      writer: (req.session && (req.session.displayName || req.session.username)) || undefined,
       creationDate: articleData.creationDate,
       source: articleData.source,
       outlinks: toLineArray(articleData.outlinks),
@@ -613,7 +640,7 @@ router.put('/articles/:id/status', async (req, res) => {
 /**
  * Delete article
  */
-router.delete('/articles/:id', async (req, res) => {
+router.delete('/articles/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -629,7 +656,9 @@ router.delete('/articles/:id', async (req, res) => {
 
     if (!canDeleteAny) {
       // Editors can only delete their own articles
-      if (article.created_by !== req.session.username) {
+      // Check both username and userId for compatibility
+      const userIdentifier = req.session.username || req.session.userId;
+      if (article.created_by !== userIdentifier) {
         return res.status(403).json({ error: 'Sadece kendi oluşturduğunuz haberleri silebilirsiniz.' });
       }
     }
@@ -691,7 +720,7 @@ router.post('/categories', async (req, res) => {
 
   } catch (error) {
     console.error('CMS Create category error:', error);
-    if (error && error.code === 'SQLITE_CONSTRAINT') {
+    if (error && (error.code === 'SQLITE_CONSTRAINT' || error.code === 'SQLITE_CONSTRAINT_UNIQUE')) {
       return res.status(409).json({ error: 'Bu kategori adı zaten kullanılıyor' });
     }
     res.status(500).json({ error: 'Kategori oluşturulamadı' });
@@ -727,7 +756,7 @@ router.put('/categories/:id', async (req, res) => {
     res.json(updatedCategory);
   } catch (error) {
     console.error('CMS Update category error:', error);
-    if (error && error.code === 'SQLITE_CONSTRAINT') {
+    if (error && (error.code === 'SQLITE_CONSTRAINT' || error.code === 'SQLITE_CONSTRAINT_UNIQUE')) {
       return res.status(409).json({ error: 'Bu kategori adı zaten kullanılıyor' });
     }
     res.status(500).json({ error: 'Kategori güncellenemedi' });
@@ -1006,4 +1035,7 @@ router.put('/settings', async (req, res) => {
   }
 });
 
+// Export router and dataService setter for testing
 module.exports = router;
+module.exports.setDataService = getDataService.setInstance;
+module.exports.resetDataService = getDataService.reset;

@@ -5,6 +5,8 @@
 const request = require('supertest');
 const express = require('express');
 const bodyParser = require('body-parser');
+const nunjucks = require('nunjucks');
+const config = require('../../server/services/config');
 const pagesRoutes = require('../../server/routes/pages');
 const {
     createTestDatabase,
@@ -27,6 +29,17 @@ describe('Pages Routes Integration Tests', () => {
         
         // Create test app
         app = express();
+        
+        // Configure template engine (nunjucks)
+        const paths = config.getPaths();
+        nunjucks.configure(paths.templates, {
+            autoescape: true,
+            express: app,
+            noCache: true
+        });
+        app.set('views', paths.templates);
+        app.set('view engine', 'njk');
+        
         app.use(bodyParser.json());
         app.use(bodyParser.urlencoded({ extended: true }));
         app.use('/', pagesRoutes);

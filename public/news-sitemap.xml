@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+  <url>
+    <loc>http://127.0.0.1:36763/haber/test-article-4</loc>
+    <lastmod>2025-11-26T19:49:44.410Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T19:49:44.410Z</news:publication_date>
+      <news:title>Test Article</news:title>
+      
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/new-article-4</loc>
+    <lastmod>2025-11-26T19:49:44.384Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T19:49:44.384Z</news:publication_date>
+      <news:title>New Article</news:title>
+      
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/test-article-3</loc>
+    <lastmod>2025-11-26T19:41:32.838Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T19:41:32.838Z</news:publication_date>
+      <news:title>Test Article</news:title>
+      
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/new-article-3</loc>
+    <lastmod>2025-11-26T19:41:32.808Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T19:41:32.808Z</news:publication_date>
+      <news:title>New Article</news:title>
+      
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/test-article-2</loc>
+    <lastmod>2025-11-26T19:41:25.552Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T19:41:25.552Z</news:publication_date>
+      <news:title>Test Article</news:title>
+      
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/new-article-2</loc>
+    <lastmod>2025-11-26T19:41:25.507Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T19:41:25.507Z</news:publication_date>
+      <news:title>New Article</news:title>
+      
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/test-article-1</loc>
+    <lastmod>2025-11-26T19:41:19.903Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T19:41:19.903Z</news:publication_date>
+      <news:title>Test Article</news:title>
+      
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/new-article-1</loc>
+    <lastmod>2025-11-26T19:41:19.860Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T19:41:19.860Z</news:publication_date>
+      <news:title>New Article</news:title>
+      
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/test-article</loc>
+    <lastmod>2025-11-26T19:41:13.147Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T19:41:13.147Z</news:publication_date>
+      <news:title>Test Article</news:title>
+      
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/new-article</loc>
+    <lastmod>2025-11-26T19:41:13.105Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T19:41:13.105Z</news:publication_date>
+      <news:title>New Article</news:title>
+      
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/curl-test-article</loc>
+    <lastmod>2025-11-26T19:15:02.976Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T19:15:02.976Z</news:publication_date>
+      <news:title>Curl Test Article</news:title>
+      
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/izmirde-52-buyuklugunde-deprem-oldu</loc>
+    <lastmod>2025-11-26T19:49:44.433Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T13:25:37.897Z</news:publication_date>
+      <news:title>Updated Article</news:title>
+      
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/meclis-yeni-yasama-yilina-basladi</loc>
+    <lastmod>2025-11-26T19:29:13.265Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T12:25:37.897Z</news:publication_date>
+      <news:title>Meclis Yeni Yasama Yılına Başladı</news:title>
+      <news:keywords>tbmm, meclis, siyaset, yasama</news:keywords>
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/istanbulda-trafik-yogunlugu-percent85e-ulasti</loc>
+    <lastmod>2025-11-26T11:25:37.897Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T11:25:37.897Z</news:publication_date>
+      <news:title>İstanbul&#39;da Trafik Yoğunluğu %85&#39;e Ulaştı</news:title>
+      <news:keywords>istanbul, trafik, ulaşım</news:keywords>
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/meteorolojiden-kuvvetli-yagis-uyarisi</loc>
+    <lastmod>2025-11-26T10:25:37.897Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-26T10:25:37.897Z</news:publication_date>
+      <news:title>Meteoroloji&#39;den Kuvvetli Yağış Uyarısı</news:title>
+      <news:keywords>hava durumu, meteoroloji, yağmur</news:keywords>
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/turkiye-ekonomisinde-buyume-rakamlari-aciklandi</loc>
+    <lastmod>2025-11-25T13:25:37.897Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-25T13:25:37.897Z</news:publication_date>
+      <news:title>Türkiye Ekonomisinde Büyüme Rakamları Açıklandı</news:title>
+      <news:keywords>ekonomi, büyüme, tüik, gdp</news:keywords>
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/borsa-istanbul-rekor-tazeledi</loc>
+    <lastmod>2025-11-25T12:25:37.897Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-25T12:25:37.897Z</news:publication_date>
+      <news:title>Borsa İstanbul Rekor Tazeledi</news:title>
+      <news:keywords>borsa, bist100, finans, yatırım</news:keywords>
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/altin-fiyatlarinda-son-durum</loc>
+    <lastmod>2025-11-25T11:02:17.897Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-25T11:02:17.897Z</news:publication_date>
+      <news:title>Altın Fiyatlarında Son Durum</news:title>
+      <news:keywords>altın, döviz, yatırım</news:keywords>
+    </news:news>
+  </url>
+  <url>
+    <loc>http://127.0.0.1:36763/haber/ihracat-rakamlari-yuz-guldurdu</loc>
+    <lastmod>2025-11-25T09:38:57.897Z</lastmod>
+    <news:news>
+      <news:publication>
+        <news:name>UHA News</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>2025-11-25T09:38:57.897Z</news:publication_date>
+      <news:title>İhracat Rakamları Yüz Güldürdü</news:title>
+      <news:keywords>ihracat, ticaret, ekonomi</news:keywords>
+    </news:news>
+  </url>
+</urlset>
