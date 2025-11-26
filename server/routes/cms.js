@@ -267,7 +267,7 @@ router.get('/', (req, res) => {
     pageTitle: 'UHA CMS',
     initialState,
     initialStateJson,
-    cmsTabs: initialState.cmsTabs,
+    cmsTabs: config.getCmsTabs(),
     user: initialState.currentUser
   });
 });

@@ -1,5 +1,5 @@
 {% extends "cms/layouts/base.njk" %}
-{% from "cms/components/sidebar.njk" import Sidebar %}
+{% from "cms/components/sidebar.njk" import Sidebar with context %}
 {% from "cms/components/topbar.njk" import TopBar %}
 {% from "cms/components/stats.njk" import DashboardStats %}
 {% from "cms/components/recent-articles.njk" import RecentArticles %}
@@ -21,7 +21,7 @@
 {% set users = initialState.users or [] %}
 
 {% block body %}
-{{ Sidebar('dashboard') }}
+{{ Sidebar('dashboard', cmsTabs=cmsTabs) }}
 <main class="cms-main">
   {{ TopBar('Dashboard', branding.siteName or 'UHA News') }}
 
