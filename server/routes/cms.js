@@ -302,7 +302,7 @@ router.get('/', (req, res) => {
     articleLayout,
     users,
     cmsTabs, // Pass cmsTabs to initialState
-    carouselArticles, // Pass carouselArticles to initialState
+    carouselArticles: carouselArticlesResult.articles, // Pass carouselArticles to initialState
     currentUser: {
       username: req.session.username,
       displayName: req.session.displayName,
