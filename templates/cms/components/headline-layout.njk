@@ -37,7 +37,9 @@
               {% endif %}
               <div class="article-info">
                 <span class="article-title">{{ article.header or article.title }}</span>
-                <span class="article-status {{ article.status }}">{{ article.status == 'published' ? 'Yayında' : 'Taslak' }}</span>
+                <span class="article-status {{ article.status }}">
+                  {{ 'Yayında' if article.status == 'published' else 'Taslak' }}
+                </span>
               </div>
             </div>
           </td>

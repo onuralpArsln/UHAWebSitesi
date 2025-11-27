@@ -18,7 +18,7 @@
 {% set articles = initialState.articles or [] %}
 {% set categories = initialState.categories or [] %}
 {% set stats = initialState.stats or {} %}
-{% set targetOptions = initialState.targetOptions %}
+{% set targetOptions = initialState.targetOptions or ['carousel', 'manset', 'anasayfa', 'akış'] %}
 {% set branding = initialState.branding or {} %}
 {% set users = initialState.users or [] %}
 
@@ -36,8 +36,9 @@
 
   {{ ArticleTable(articles) }}
 
-  {# {{ ArticleEditor(categories, targetOptions) }} #}
-  {# {{ CategoryTable(categories) }} #}
+  {{ ArticleEditor(categories, targetOptions) }}
+
+  {{ CategoryTable(categories) }}
 
   {{ MediaControls() }}
 

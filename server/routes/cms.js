@@ -235,94 +235,124 @@ function removeOldBrandingAsset(relativePath) {
  * Serve CMS panel
  */
 router.get('/', (req, res) => {
-  const articlesResult = dataService.getArticles({
-    page: 1,
-    limit: 50,
-    sortBy: 'creationDate',
-    sortOrder: 'desc'
-  });
+  try {
+    const dataServiceInstance = getDataService();
 
-  const categories = dataService.getCategories();
-  const statusSummary = dataService.getArticleStatusSummary();
-  const branding = formatBrandingForClient(dataService.getBranding());
-  const { layout: homepageLayout } = dataService.getHomepageLayout();
-  const { layout: articleLayout } = dataService.getArticleLayout();
+    const articlesResult = dataServiceInstance.getArticles({
+      page: 1,
+      limit: 50,
+      sortBy: 'creationDate',
+      sortOrder: 'desc'
+    }) || { articles: [] };
 
-  // Fetch articles in carousel
-  const carouselArticlesResult = dataService.getArticles({
-    limit: 100,
-    sortBy: 'publishedAt',
-    sortOrder: 'desc',
-    targettedView: 'carousel'
-  });
+    const categories = dataServiceInstance.getCategories() || [];
+    const statusSummary = dataServiceInstance.getArticleStatusSummary() || {
+      total: 0,
+      visible: 0,
+      hidden: 0
+    };
+    const branding = formatBrandingForClient(dataServiceInstance.getBranding());
 
-  const stats = {
-    totalArticles: statusSummary.total,
-    totalCategories: categories.length,
-    visibleArticles: statusSummary.visible,
-    hiddenArticles: statusSummary.hidden
-  };
+    const homepageLayoutResult = dataServiceInstance.getHomepageLayout() || { layout: [] };
+    const { layout: homepageLayout = [] } = homepageLayoutResult;
 
-  // Get users (only if admin)
-  let users = [];
-  if (req.session.role === 'admin' || req.session.isMaster) {
-    users = dataService.getAllUsers();
-  }
+    const articleLayoutResult = dataServiceInstance.getArticleLayout() || { layout: [] };
+    const { layout: articleLayout = [] } = articleLayoutResult;
 
-  const settings = {
-    siteName: config.getSiteDefaults().name,
-    siteDescription: config.getSiteDefaults().description,
-    siteUrl: config.getSiteUrl(req),
-    adsenseClientId: config.getFeatures().adsenseClientId,
-    adsenseSlotId: config.getFeatures().adsenseSlotId
-  };
+    // Fetch articles in carousel
+    const carouselArticlesResult = dataServiceInstance.getArticles({
+      limit: 100,
+      sortBy: 'publishedAt',
+      sortOrder: 'desc',
+      targettedView: 'carousel'
+    }) || { articles: [] };
 
-  const targetOptions = [
-    { value: 'carousel', label: 'Manşet Slider' },
-    { value: 'featured-news-grid', label: 'Öne Çıkanlar Izgarası' },
-    { value: 'category-feed', label: 'Kategori Akışı' },
-    { value: 'flash-news', label: 'Son Dakika Bandı' }
-  ];
+    const stats = {
+      totalArticles: statusSummary.total || 0,
+      totalCategories: categories.length,
+      visibleArticles: statusSummary.visible || 0,
+      hiddenArticles: statusSummary.hidden || 0
+    };
 
-  const articleSummaries = articlesResult.articles
-    .map(mapArticleToSummary)
-    .filter(Boolean);
-
-  const cmsTabs = config.getCmsTabs(); // Get cmsTabs here
-
-  const initialState = {
-    stats,
-    articles: articleSummaries,
-    categories,
-    recentArticles: articleSummaries.slice(0, 5),
-    settings,
-    targetOptions,
-    branding,
-    homepageLayout,
-    articleLayout,
-    users,
-    cmsTabs, // Pass cmsTabs to initialState
-    carouselArticles: carouselArticlesResult.articles, // Pass carouselArticles to initialState
-    currentUser: {
-      username: req.session.username,
-      displayName: req.session.displayName,
-      role: req.session.role,
-      permissions: req.session.permissions || [],
-      isMaster: req.session.isMaster
+    // Get users (only if admin)
+    let users = [];
+    if (req.session.role === 'admin' || req.session.isMaster) {
+      users = dataServiceInstance.getAllUsers() || [];
     }
-  };
 
-  const initialStateJson = JSON.stringify(initialState).replace(/</g, '\\u003c');
+    const settings = {
+      siteName: config.getSiteDefaults().name,
+      siteDescription: config.getSiteDefaults().description,
+      siteUrl: config.getSiteUrl(req),
+      adsenseClientId: config.getFeatures().adsenseClientId,
+      adsenseSlotId: config.getFeatures().adsenseSlotId
+    };
 
-  res.render('cms/pages/dashboard.njk', {
-    pageTitle: 'UHA CMS',
-    initialState,
-    initialStateJson,
-    cmsTabs: config.getCmsTabs(),
-    user: initialState.currentUser,
-    carouselArticles: carouselArticlesResult.articles,
-    carouselLimit: getCarouselLimit()
-  });
+    const targetOptions = [
+      { value: 'carousel', label: 'Manşet Slider' },
+      { value: 'featured-news-grid', label: 'Öne Çıkanlar Izgarası' },
+      { value: 'category-feed', label: 'Kategori Akışı' },
+      { value: 'flash-news', label: 'Son Dakika Bandı' }
+    ];
+
+    const articleSummaries = (articlesResult.articles || [])
+      .map(mapArticleToSummary)
+      .filter(Boolean);
+
+    const cmsTabs = config.getCmsTabs(); // Get cmsTabs here
+
+    const initialState = {
+      stats,
+      articles: articleSummaries,
+      categories,
+      recentArticles: articleSummaries.slice(0, 5),
+      settings,
+      targetOptions,
+      branding,
+      homepageLayout,
+      articleLayout,
+      users,
+      cmsTabs, // Pass cmsTabs to initialState
+      carouselArticles: carouselArticlesResult.articles || [], // Pass carouselArticles to initialState
+      currentUser: {
+        username: req.session.username,
+        displayName: req.session.displayName,
+        role: req.session.role,
+        permissions: req.session.permissions || [],
+        isMaster: req.session.isMaster
+      }
+    };
+
+    const initialStateJson = JSON.stringify(initialState).replace(/</g, '\\u003c');
+
+    res.render('cms/pages/dashboard.njk', {
+      pageTitle: 'UHA CMS',
+      initialState,
+      initialStateJson,
+      cmsTabs: config.getCmsTabs(),
+      user: initialState.currentUser,
+      carouselArticles: carouselArticlesResult.articles || [],
+      carouselLimit: getCarouselLimit()
+    });
+  } catch (error) {
+    console.error('CMS Dashboard route error:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+
+    if (!res.headersSent) {
+      res.status(500).send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>CMS Error</title></head>
+        <body>
+          <h1>Internal Server Error</h1>
+          <p><strong>Error:</strong> ${error.message}</p>
+          <pre>${error.stack}</pre>
+        </body>
+        </html>
+      `);
+    }
+  }
 });
 
 
