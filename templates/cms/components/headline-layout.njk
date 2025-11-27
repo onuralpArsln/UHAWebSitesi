@@ -8,9 +8,6 @@
         <span class="cms-badge badge--info">Limit: <span data-cms="carousel-count">{{ carouselArticles.length }}</span> / {{ carouselLimit }}</span>
       </p>
     </div>
-    <button class="cms-btn cms-btn--primary" data-action="add-carousel-article">
-      <i class="icon-plus"></i> Haber Ekle
-    </button>
   </div>
 
   <div class="cms-table-wrapper">
@@ -56,7 +53,6 @@
           <td colspan="6">
             <div class="cms-empty-state">
               <p>Henüz manşet slider'ına eklenmiş haber bulunmuyor.</p>
-              <button class="cms-btn cms-btn--text" data-action="add-carousel-article">Haber Ekle</button>
             </div>
           </td>
         </tr>
@@ -71,26 +67,6 @@
     </button>
   </div>
 </section>
-
-<!-- Add Article Modal -->
-<div class="cms-modal" id="add-carousel-article-modal" hidden>
-  <div class="cms-modal__overlay" data-action="close-modal"></div>
-  <div class="cms-modal__content">
-    <div class="cms-modal__header">
-      <h3>Manşete Haber Ekle</h3>
-      <button class="cms-modal__close" data-action="close-modal">&times;</button>
-    </div>
-    <div class="cms-modal__body">
-      <div class="cms-search-bar">
-        <input type="text" class="cms-input" placeholder="Haber başlığı ile ara..." data-action="search-carousel-articles">
-      </div>
-      <div class="article-selection-list" data-cms="article-selection-list">
-        <div class="loading-spinner" hidden>Yükleniyor...</div>
-        <!-- Articles will be injected here via JS -->
-      </div>
-    </div>
-  </div>
-</div>
 
 <style>
 .drag-handle-cell {
@@ -129,50 +105,6 @@
 }
 .article-status.published {
   color: #38a169;
-}
-.article-selection-list {
-  max-height: 400px;
-  overflow-y: auto;
-  margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.article-selection-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.article-selection-item:hover {
-  background: #f7fafc;
-  border-color: #cbd5e0;
-}
-.article-selection-item.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: #f7fafc;
-}
-.article-selection-item img {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
-  border-radius: 4px;
-}
-.article-selection-info {
-  flex: 1;
-}
-.article-selection-title {
-  font-weight: 500;
-  display: block;
-}
-.article-selection-meta {
-  font-size: 0.8em;
-  color: #718096;
 }
 .cms-actions-footer {
   margin-top: 2rem;

@@ -4415,17 +4415,12 @@
 
     initializeHeadlineLayoutManager() {
       this.headlineTable = document.querySelector('[data-cms="headline-layout-table"]');
-      this.addHeadlineBtn = document.querySelector('[data-action="add-carousel-article"]');
       this.saveHeadlineBtn = document.querySelector('[data-action="save-carousel-layout"]');
-      this.headlineModal = document.querySelector('#add-carousel-article-modal');
-      this.headlineSearchInput = document.querySelector('[data-action="search-carousel-articles"]');
-      this.headlineSelectionList = document.querySelector('[data-cms="article-selection-list"]');
       this.headlineCountBadge = document.querySelector('[data-cms="carousel-count"]');
 
       if (!this.headlineTable) return;
 
       // Event Listeners
-      this.addHeadlineBtn?.addEventListener('click', () => this.openHeadlineModal());
       this.saveHeadlineBtn?.addEventListener('click', () => this.saveHeadlineLayout());
 
       // Table Actions (Remove)
@@ -4443,115 +4438,6 @@
       this.headlineTable.addEventListener('drop', this.handleHeadlineDrop.bind(this));
       this.headlineTable.addEventListener('dragend', this.handleHeadlineDragEnd.bind(this));
 
-      // Modal Search
-      let searchTimeout;
-      this.headlineSearchInput?.addEventListener('input', (e) => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-          this.searchHeadlineArticles(e.target.value);
-        }, 300);
-      });
-
-      // Modal Close
-      this.headlineModal?.addEventListener('click', (e) => {
-        if (e.target.dataset.action === 'close-modal' || e.target.classList.contains('cms-modal__overlay')) {
-          this.closeHeadlineModal();
-        }
-      });
-
-      // Modal Selection (Event Delegation)
-      this.headlineSelectionList?.addEventListener('click', (e) => {
-        const item = e.target.closest('.article-selection-item');
-        // Check if clicked on the button or the item itself
-        if (item && !item.classList.contains('disabled')) {
-          const articleId = item.dataset.articleId;
-          this.addHeadlineToCarousel(articleId);
-        }
-      });
-    }
-
-    openHeadlineModal() {
-      this.headlineModal.hidden = false;
-      this.headlineSearchInput.value = '';
-      this.headlineSearchInput.focus();
-      this.searchHeadlineArticles('');
-    }
-
-    closeHeadlineModal() {
-      this.headlineModal.hidden = true;
-    }
-
-    async searchHeadlineArticles(query) {
-      if (!this.headlineSelectionList) return;
-
-      this.headlineSelectionList.innerHTML = '<div class="loading-spinner">Yükleniyor...</div>';
-
-      try {
-        const response = await fetch(`/api/articles?search=${encodeURIComponent(query)}&limit=20`);
-        const data = await response.json();
-
-        this.renderHeadlineSearchResults(data.articles || []);
-      } catch (error) {
-        console.error('Search error:', error);
-        this.headlineSelectionList.innerHTML = '<div class="error-message">Arama sırasında bir hata oluştu.</div>';
-      }
-    }
-
-    renderHeadlineSearchResults(articles) {
-      if (!articles.length) {
-        this.headlineSelectionList.innerHTML = '<div class="empty-message">Haber bulunamadı.</div>';
-        return;
-      }
-
-      const currentIds = Array.from(this.headlineTable.querySelectorAll('tr[data-article-id]'))
-        .map(row => row.dataset.articleId);
-
-      const html = articles.map(article => {
-        const isAdded = currentIds.includes(article.id);
-        const image = article.images && article.images[0] ? article.images[0].url : '';
-
-        return `
-          <div class="article-selection-item ${isAdded ? 'disabled' : ''}" 
-               data-article-id="${article.id}">
-            ${image ? `<img src="${image}" alt="">` : '<div class="no-image"></div>'}
-            <div class="article-selection-info">
-              <span class="article-selection-title">${this.escapeHtml(article.title)}</span>
-              <span class="article-selection-meta">
-                ${article.category || 'Genel'} • ${new Date(article.publishedAt).toLocaleDateString('tr-TR')}
-                ${isAdded ? '• <span class="badge badge--success">Eklendi</span>' : ''}
-              </span>
-            </div>
-            ${!isAdded ? '<button class="cms-btn cms-btn--small cms-btn--primary">Ekle</button>' : ''}
-          </div>
-        `;
-      }).join('');
-
-      this.headlineSelectionList.innerHTML = html;
-    }
-
-    async addHeadlineToCarousel(articleId) {
-      try {
-        const response = await fetch('/cms/carousel/add', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ articleId })
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to add article');
-        }
-
-        const data = await response.json();
-        this.showToast('Haber manşete eklendi', 'success');
-
-        // Reload page to refresh table (simplest way for now)
-        // Or we could fetch the updated list and re-render the table
-        window.location.reload();
-      } catch (error) {
-        console.error('Add error:', error);
-        this.showToast(error.message, 'error');
-      }
     }
 
     async removeHeadlineArticle(row) {

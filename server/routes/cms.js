@@ -260,12 +260,22 @@ router.get('/', (req, res) => {
     const { layout: articleLayout = [] } = articleLayoutResult;
 
     // Fetch articles in carousel
-    const carouselArticlesResult = dataServiceInstance.getArticles({
-      limit: 100,
-      sortBy: 'publishedAt',
-      sortOrder: 'desc',
-      targettedView: 'carousel'
-    }) || { articles: [] };
+    // Priority: 1. Manual list (saved order), 2. Featured list (date sorted fallback)
+    let carouselArticlesResult = { articles: [] };
+    const manualCarouselArticles = dataServiceInstance.getCarouselArticles();
+
+    if (manualCarouselArticles && manualCarouselArticles.length > 0) {
+      carouselArticlesResult.articles = manualCarouselArticles;
+    } else {
+      // Fallback to featured articles if manual list is empty
+      const featuredArticles = dataServiceInstance.getArticles({
+        limit: 100,
+        sortBy: 'publishedAt',
+        sortOrder: 'desc',
+        targettedView: 'carousel'
+      });
+      carouselArticlesResult.articles = featuredArticles.articles || [];
+    }
 
     const stats = {
       totalArticles: statusSummary.total || 0,
