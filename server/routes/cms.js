@@ -917,12 +917,22 @@ const getCarouselLimit = () => {
 // Get carousel configuration
 router.get('/carousel', (req, res) => {
   try {
-    const layout = dataService.getCarouselLayout();
+    // OLD: const layout = dataService.getCarouselLayout();
+    // NEW: Fetch dynamic data directly from articles table
+    const articlesResult = dataService.getArticles({
+      targettedView: 'carousel',
+      limit: 20,
+      sortBy: 'publishedAt',
+      sortOrder: 'desc'
+    });
+
     const limit = getCarouselLimit();
 
     res.json({
-      ...layout,
-      maxArticles: limit
+      articles: [], // Legacy field, kept empty or could be populated if needed for backward compat
+      populatedArticles: articlesResult.articles || [], // The actual data source
+      maxArticles: limit,
+      updatedAt: new Date().toISOString()
     });
   } catch (error) {
     console.error('Get carousel error:', error);

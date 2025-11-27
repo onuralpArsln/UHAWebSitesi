@@ -533,52 +533,52 @@
       }
     }
 
-    showSection(sectionId) {
+    async showSection(sectionId) {
       const sectionTitles = {
         dashboard: 'Dashboard',
         articles: 'Haberler',
         categories: 'Kategoriler',
-        media: 'Medya Kontrolleri',
         media: 'Medya Kontrolleri',
         branding: 'Marka',
         settings: 'Site Ayarları',
         users: 'Kullanıcı Yönetimi'
       };
 
-      this.navLinks.forEach((link) => {
-        link.classList.toggle('active', link.getAttribute('href') === `#${sectionId}`);
+      // Hide all sections
+      this.sections.forEach(section => {
+        section.classList.remove('active');
+        section.style.display = 'none';
       });
 
-      this.sections.forEach((section) => {
-        if (section.id === sectionId) {
-          section.classList.add('active');
-          section.removeAttribute('hidden');
+      // Show target section
+      const targetSection = document.getElementById(sectionId);
+      if (targetSection) {
+        targetSection.classList.add('active');
+        targetSection.style.display = 'block';
+      }
+
+      // Update active nav link
+      this.navLinks.forEach(link => {
+        if (link.getAttribute('href') === `#${sectionId}`) {
+          link.classList.add('active');
         } else {
-          section.classList.remove('active');
-          section.setAttribute('hidden', '');
+          link.classList.remove('active');
         }
       });
-
-      if (this.editorSection) {
-        this.editorSection.setAttribute('hidden', '');
-        this.editorSection.classList.remove('active');
-      }
-
-      if (this.userEditorSection) {
-        this.userEditorSection.setAttribute('hidden', '');
-        this.userEditorSection.classList.remove('active');
-      }
 
       if (this.pageTitleElement) {
         this.pageTitleElement.textContent = sectionTitles[sectionId] || 'Dashboard';
       }
 
+      // Load specific data based on section
       if (sectionId === 'categories') {
-        this.loadCategories();
+        await this.loadCategories();
+      } else if (sectionId === 'media') {
+        await this.loadMedia();
+      } else if (sectionId === 'headline-layout') {
+        await this.loadHeadlineLayout();
       }
-      if (sectionId === 'media') {
-        this.ensureMediaLoaded();
-      }
+
       if (sectionId === 'layout') {
         // Update category dropdowns when showing layout section
         this.updateLayoutCategorySelects();
@@ -1656,9 +1656,15 @@
           throw new Error(error.error || 'Haber kaydedilemedi');
         }
 
-        this.showSuccess('Haber kaydedildi.');
+        const savedArticle = await response.json();
+        this.showSuccess('Haber başarıyla kaydedildi!');
         this.returnToArticleList();
-        await this.loadArticles();
+        this.loadArticles();
+
+        // If article targets carousel, refresh the headline layout
+        if (savedArticle.targettedViews && savedArticle.targettedViews.includes('carousel')) {
+          this.loadHeadlineLayout();
+        }
       } catch (error) {
         this.showError(error.message);
       }
@@ -4492,6 +4498,64 @@
       } catch (error) {
         console.error('Save error:', error);
         this.showToast('Kaydetme başarısız', 'error');
+      }
+    }
+
+    async loadHeadlineLayout() {
+      try {
+        const response = await fetch('/cms/carousel');
+        if (!response.ok) throw new Error('Failed to load carousel data');
+
+        const data = await response.json();
+        const articles = data.populatedArticles || [];
+
+        if (!this.headlineTable) return;
+
+        const tbody = this.headlineTable.querySelector('tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = articles.map((article, index) => `
+          <tr data-article-id="${article.id}" data-index="${index}" draggable="true">
+            <td class="layout-order">${index + 1}</td>
+            <td>
+              <div class="article-title-cell">
+                ${article.images && article.images.length > 0
+            ? `<img src="${article.images[0].url}" alt="" class="article-thumb">`
+            : '<div class="article-thumb-placeholder"><i class="fas fa-image"></i></div>'
+          }
+                <div class="article-info">
+                  <span class="article-title">${article.header}</span>
+                  <span class="article-meta">${new Date(article.publishedAt).toLocaleDateString('tr-TR')}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge status-${article.status}">${article.status === 'visible' ? 'Yayında' : 'Taslak'}</span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon text-danger" onclick="cms.removeHeadline('${article.id}')" title="Kaldır">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
+        this.updateHeadlineCount();
+
+        // Re-attach drag events to new rows
+        const rows = tbody.querySelectorAll('tr[draggable="true"]');
+        rows.forEach(row => {
+          row.addEventListener('dragstart', (e) => this.handleHeadlineDragStart(e));
+          row.addEventListener('dragover', (e) => this.handleHeadlineDragOver(e));
+          row.addEventListener('drop', (e) => this.handleHeadlineDrop(e));
+          row.addEventListener('dragend', (e) => this.handleHeadlineDragEnd(e));
+        });
+
+      } catch (error) {
+        console.error('Load headline layout error:', error);
+        this.showToast('Manşet verileri yüklenemedi', 'error');
       }
     }
 

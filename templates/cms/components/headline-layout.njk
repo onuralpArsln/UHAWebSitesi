@@ -11,15 +11,15 @@
   </div>
 
   <div class="cms-table-wrapper">
-    <table class="cms-table" data-cms="headline-layout-table">
+    <table class="cms-table" id="headline-layout-table" data-cms="headline-layout-table">
       <thead>
         <tr>
-          <th width="50"></th>
-          <th width="60">Sıra</th>
+          <th>Sıra</th>
           <th>Haber</th>
+          <th>Durum</th>
           <th>Kategori</th>
           <th>Tarih</th>
-          <th width="100">İşlemler</th>
+          <th>İşlemler</th>
         </tr>
       </thead>
       <tbody>
@@ -68,50 +68,5 @@
   </div>
 </section>
 
-<style>
-.drag-handle-cell {
-  cursor: grab;
-  color: #a0aec0;
-  text-align: center;
-}
-.drag-handle {
-  font-size: 1.2em;
-}
-.article-title-cell {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.article-thumb {
-  width: 60px;
-  height: 40px;
-  object-fit: cover;
-  border-radius: 4px;
-  flex-shrink: 0;
-  background: #edf2f7;
-}
-.article-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.article-title {
-  font-weight: 500;
-  color: #2d3748;
-}
-.article-status {
-  font-size: 0.75em;
-  color: #718096;
-}
-.article-status.published {
-  color: #38a169;
-}
-.cms-actions-footer {
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: flex-end;
-}
-</style>
+
 {% endmacro %}

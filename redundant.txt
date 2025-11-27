@@ -1,0 +1,103 @@
+This file documents the redundancy of the `carousel_layout` table and the manual sorting mechanism for the Manşet (Headline) slider.
+
+As of the latest update to fix the Manşet refresh issue:
+
+1.  **Data Source Change**: The `GET /cms/carousel` endpoint no longer relies on the `carousel_layout` table to determine which articles to show. Instead, it dynamically queries the `articles` table for any article where the `targettedView` field includes 'carousel'.
+
+2.  **Redundancy**: The `carousel_layout` table, which stored the manual order of articles, is now effectively redundant for the purpose of *fetching* data for the CMS dashboard. The dashboard now reflects the live state of articles tagged with "Manşet Slider".
+
+3.  **Reasoning**: This change was made to ensure that when a user adds a new article with the "Manşet" target, it immediately appears in the "Manşet Düzeni" tab without requiring a manual refresh or a complex synchronization process between the article creation and the layout table.
+
+4.  **Future Cleanup**: In a future refactor, the `carousel_layout` table and the associated "Save Order" functionality in the CMS can be fully deprecated or repurposed if manual ordering is re-introduced as a layer *on top* of the dynamic list.
+
+---
+
+## Additional Redundant or Divergent Paths
+
+### Dual carousel hydration code paths
+- **Dynamic path**: For most pages the base layout (`templates/layouts/base.njk`, scripts block) loads `public/js/hydration.js`, whose `HydrationEngine.hydrateWidget('carousel')` handler (see `public/js/hydration.js` around the `hydrateWidget` switch and `hydrateCarousel` implementation) wires up slide controls, autoplay, and ad refresh callbacks.
+- **Manual path**: The homepage overrides the base scripts (`templates/pages/home.njk` block `scripts`) and instead loads `public/js/carousel.js`, which instantiates its own `Carousel` class with separate autoplay, touch, and indicator logic. Because the homepage drops the base script block, it never loads `hydration.js`, so carousels are controlled by a completely different implementation there.
+- **Impact**: Bug fixes or behavior changes must be applied twice (once in `HydrationEngine`, once in `Carousel`). The two implementations already differ (e.g., `hydration.js` triggers ad refresh hooks while `carousel.js` does not), leading to inconsistent user experience depending on which page renders the carousel widget.
+
+### Two separate mobile navigation controllers
+- **Base implementation**: `public/js/nav.js` (loaded by default in `templates/layouts/base.njk`) manages `[data-nav-toggle]`/`[data-nav-panel]` with focus trapping, ESC key handling, overlay management, and `hidden` state syncing.
+- **Alternate implementation**: The homepage-specific script block (`templates/pages/home.njk`) swaps in `public/js/mobile-menu.js`, which attaches its own toggle logic to the same data attributes but lacks the accessibility handling that `nav.js` has.
+- **Impact**: Different pages depend on different JS controllers for the same navigation markup, so fixes to one path do not benefit the other. Users see inconsistent keyboard behavior between the homepage and interior pages, and engineers have to maintain two nearly identical stacks of event handlers.
+
+---
+
+## Deep-Dive Guide for Debugging/Mitigating the Duplicated Systems
+
+### 1. Manşet (Carousel) Manual vs Dynamic Data Flow
+
+#### 1.1 Storage & DataService APIs
+- **Manual order** still persists inside the SQLite-backed table `carousel_layout` that is created in `DataService.ensureCarouselDefaults()` and accessed via `getCarouselLayout()`, `updateCarouselLayout()`, and `getCarouselArticles()` (`server/services/data-service.js`).
+- **Dynamic selection** comes from the same `DataService.getArticles()` method, filtered with `targettedView: 'carousel'`. The filtering logic is powered by a `LIKE` search on the `targettedViews` JSON column (see `getArticles` under the `targettedView` option).
+- Because both persistence mechanisms live side-by-side, any code path in the app can opt into either storage layer simply by calling one of these service helpers.
+
+#### 1.2 CMS-Side Behavior
+- **Manual Management UI**: The "Manşet Düzeni" CMS tab uses the `HeadlineLayout` macro (`templates/cms/components/headline-layout.njk`) plus drag-and-drop handlers inside `public/cms/js/cms-app.js` (`data-action="save-carousel-layout"`). These controls invoke:
+  - `GET /cms` → `server/routes/cms.js` loads `dataService.getCarouselArticles()` first. If that array is non-empty it renders the manual list; otherwise it falls back to the dynamic path.
+  - `PUT /cms/carousel` and `POST /cms/carousel/add` to mutate the `carousel_layout` table through `dataService.updateCarouselLayout()`.
+- **Dynamic Preview Endpoint**: `GET /cms/carousel` (also in `server/routes/cms.js`) now bypasses `carousel_layout` entirely and returns `articlesResult` produced by `getArticles({ targettedView: 'carousel' })`. However, the response structure still exposes the legacy `articles` field for backward compatibility, so consuming clients need to know which field is authoritative (`populatedArticles` vs `articles`).
+
+#### 1.3 Frontend Rendering
+- **Homepage widget pipeline**: `server/routes/pages.js` reads the persisted homepage layout via `dataService.getHomepageLayout()`. For any widget of type `carousel`, it checks `widget.config.source`.
+  - If the widget config says `source: 'manual'`, `dataService.getCarouselArticles()` hydrates the widget with the manually ordered rows, preserving `order` and `articleId` from `carousel_layout`.
+  - If `source: 'featured'` (or any non-manual value), it runs the dynamic path (`getArticles` with `targettedView: widget.type`), effectively rendering the "automatic" list.
+- **Verification scripts** like `verify_carousel_data.js` illustrate how both data sets coexist: the script dumps the `homepage_layout` JSON (to identify the widget source) **and** the `carousel_layout` rows, plus a third list of articles tagged for the `carousel` targetted view.
+
+#### 1.4 Implications & Troubleshooting Tips
+- When an editor complains "I re-ordered the Manşet but the public site did not change", check the homepage layout config (`homepage_layout.layout`) to see whether that carousel widget is configured for `source: 'manual'`. If not, the manual list is ignored even if the CMS UI still allows editing it.
+- Conversely, if manual ordering is enabled but the CMS "Manşet Düzeni" tab looks empty, verify whether the fallback path kicked in: `server/routes/cms.js` only shows manual rows if `getCarouselArticles()` returns data; deleted articles or empty tables will silently trigger the dynamic fallback.
+- Since both flows ultimately render the same `templates/widgets/carousel.njk` macro (and optionally `carouselSetSize.njk`), inconsistencies mainly stem from *which* service populated `widget.data.articles`. Inspect the serialized `layout` object in the rendered HTML (server renders `layout` into `window.__INITIAL_STATE__` inside the CMS dashboards) to confirm the source.
+
+### 2. Carousel Hydration / Interaction Scripts
+
+#### 2.1 Base Hydration (`public/js/hydration.js`)
+- Loaded automatically by `templates/layouts/base.njk` → includes `nav.js`, `hydration.js`, `lazy-load.js`, `ad-refresh.js`.
+- `HydrationEngine.hydrate()` scans every `[data-widget]`. When it sees `data-widget="carousel"`, it calls `hydrateCarousel()`:
+  - Maintains `currentSlide` state.
+  - Adds click listeners to `.carousel-prev`, `.carousel-next`, and `.indicator`.
+  - Starts autoplay via `startAutoPlay` with a 5s interval.
+  - Triggers `window.AdRefresh` after each navigation event.
+- Because it runs for every page using the base layout, *most* routes (articles, categories, search) rely on this code path even if the widget markup itself is identical to the homepage.
+
+#### 2.2 Homepage Override (`public/js/carousel.js`)
+- `templates/pages/home.njk` overrides the `scripts` block without calling `{{ super() }}`, so it **only** includes:
+  - `/static/js/carousel.js`
+  - `/static/js/flash-news.js`
+  - `/static/js/mobile-menu.js`
+- `carousel.js` defines a `Carousel` class that:
+  - Reads dataset flags `data-autoplay` & `data-delay`.
+  - Adds explicit touch/swipe handling (`touchstart`/`touchend`).
+  - Controls autoplay life-cycle with `startAutoPlay`/`stopAutoPlay`/`resetAutoPlay`.
+  - Does **not** trigger ad refresh callbacks, and it directly manipulates `.carousel-slide` display styles instead of toggling classes only.
+- Because `hydration.js` never loads on the homepage, any functionality exclusive to `HydrationEngine` (ad refresh, global widget registry) is absent there.
+
+#### 2.3 Debug Checklist
+- Inspect the rendered `<script>` tags in `templates/pages/home.njk` output; if you need hydration.js behaviors on the homepage you must reintroduce `{{ super() }}` or manually include the base bundle.
+- When a bug reproduces only on the homepage (e.g., swipe gestures working there but not elsewhere), check `public/js/carousel.js`. If it reproduces everywhere else, look at `public/js/hydration.js`.
+- Avoid patching one file without mirroring the change in the other unless you intentionally want the diverging behavior.
+
+### 3. Mobile Navigation Controllers
+
+#### 3.1 Default Controller (`public/js/nav.js`)
+- Included via the base layout for all non-homepage routes.
+- Features:
+  - Focus trapping inside `[data-nav-panel]` to keep keyboard users within the drawer (see `trapFocus`).
+  - `requestAnimationFrame`-based open animation, `hidden` attribute management, and ESC key handling via `handleEscape`.
+  - Restores focus to the previously focused element on close.
+  - Relies on a 300ms timeout to sync with CSS transitions.
+
+#### 3.2 Homepage Controller (`public/js/mobile-menu.js`)
+- Loaded only when `templates/pages/home.njk` overrides the script block.
+- Provides basic open/close toggling with `setTimeout` for transitions but lacks:
+  - Focus trapping, ESC cleanup, or previous-focus restoration.
+  - Overlay state syncing if the toggle elements don’t exist (it logs a console warning and returns early).
+- Both controllers target identical DOM hooks (`[data-nav-toggle]`, `[data-nav-panel]`, `[data-nav-overlay]`, `[data-nav-close]`), so event listeners double up if both bundles are present (not the case today, but important if someone adds `{{ super() }}` later).
+
+#### 3.3 Troubleshooting & Refactor Notes
+- Accessibility audits should concentrate on `nav.js`, since that version supports keyboard interaction. Home page audits must also run with `mobile-menu.js` to capture regressions unique to the alternate controller.
+- If you plan to unify the code paths, ensure the shared script is still deferred (the base layout uses `defer` while the homepage scripts are inline blocking). Failing to match loading strategy can reintroduce CLS regressions the `nav.js` refactor already fixed.
+- Look for redundant CSS selectors in `public/css/header.css`: both controllers assume the `is-open` class toggles the drawer, so any new animations only need to hook into that class once the JS duplication is resolved.
