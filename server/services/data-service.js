@@ -650,7 +650,7 @@ class DataService {
         outlinks: ['https://www.afad.gov.tr'],
         targettedViews: ['homepage', 'flash-news', 'carousel'],
         updatedAt: now,
-        images: [{ url: 'https://via.placeholder.com/800x600/1a365d/ffffff?text=Deprem+Haberi', highRes: 'https://via.placeholder.com/800x600/1a365d/ffffff?text=Deprem+Haberi' }],
+        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
         relatedArticles: ['2', '3'],
         created_by: 'mock_user_1'
       },
@@ -667,7 +667,7 @@ class DataService {
         source: 'TBMM',
         targettedViews: ['homepage', 'featured-news-grid'],
         updatedAt: new Date(Date.now() - 3600000).toISOString(),
-        images: [{ url: 'https://via.placeholder.com/800x600/c53030/ffffff?text=Meclis+Açılışı', highRes: 'https://via.placeholder.com/800x600/c53030/ffffff?text=Meclis+Açılışı' }],
+        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
         relatedArticles: ['1'],
         created_by: 'mock_user_1'
       },
@@ -684,7 +684,7 @@ class DataService {
         source: 'İBB',
         targettedViews: ['category-feed'],
         updatedAt: new Date(Date.now() - 7200000).toISOString(),
-        images: [{ url: 'https://via.placeholder.com/800x600/2d3748/ffffff?text=İstanbul+Trafik', highRes: 'https://via.placeholder.com/800x600/2d3748/ffffff?text=İstanbul+Trafik' }],
+        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
         relatedArticles: [],
         created_by: 'mock_user_2'
       },
@@ -701,7 +701,7 @@ class DataService {
         source: 'MGM',
         targettedViews: ['flash-news'],
         updatedAt: new Date(Date.now() - 10800000).toISOString(),
-        images: [{ url: 'https://via.placeholder.com/800x600/4a5568/ffffff?text=Hava+Durumu', highRes: 'https://via.placeholder.com/800x600/4a5568/ffffff?text=Hava+Durumu' }],
+        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
         relatedArticles: ['1'],
         created_by: 'mock_user_1'
       },
@@ -721,7 +721,7 @@ class DataService {
         outlinks: ['https://www.tuik.gov.tr'],
         targettedViews: ['homepage', 'carousel', 'category-feed'],
         updatedAt: new Date(Date.now() - 86400000).toISOString(),
-        images: [{ url: 'https://via.placeholder.com/800x600/3182ce/ffffff?text=Ekonomi+Haberi', highRes: 'https://via.placeholder.com/800x600/3182ce/ffffff?text=Ekonomi+Haberi' }],
+        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
         relatedArticles: ['6', '7'],
         created_by: 'mock_user_3'
       },
@@ -738,7 +738,7 @@ class DataService {
         source: 'Borsa İstanbul',
         targettedViews: ['featured-news-grid', 'flash-news'],
         updatedAt: new Date(Date.now() - 90000000).toISOString(),
-        images: [{ url: 'https://via.placeholder.com/800x600/2b6cb0/ffffff?text=Borsa+İstanbul', highRes: 'https://via.placeholder.com/800x600/2b6cb0/ffffff?text=Borsa+İstanbul' }],
+        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
         relatedArticles: ['5'],
         created_by: 'mock_user_3'
       },
@@ -755,7 +755,7 @@ class DataService {
         source: 'Piyasalar',
         targettedViews: ['category-feed'],
         updatedAt: new Date(Date.now() - 95000000).toISOString(),
-        images: [{ url: 'https://via.placeholder.com/800x600/d69e2e/ffffff?text=Altın+Fiyatları', highRes: 'https://via.placeholder.com/800x600/d69e2e/ffffff?text=Altın+Fiyatları' }],
+        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
         relatedArticles: ['5'],
         created_by: 'mock_user_3'
       },
@@ -772,7 +772,7 @@ class DataService {
         source: 'Ticaret Bakanlığı',
         targettedViews: ['category-feed'],
         updatedAt: new Date(Date.now() - 100000000).toISOString(),
-        images: [{ url: 'https://via.placeholder.com/800x600/2c5282/ffffff?text=İhracat+Rakamları', highRes: 'https://via.placeholder.com/800x600/2c5282/ffffff?text=İhracat+Rakamları' }],
+        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
         relatedArticles: ['5'],
         created_by: 'mock_user_3'
       },
@@ -792,7 +792,7 @@ class DataService {
         outlinks: [],
         targettedViews: ['homepage', 'carousel', 'featured-news-grid'],
         updatedAt: new Date(Date.now() - 172800000).toISOString(),
-        images: [{ url: 'https://via.placeholder.com/800x600/38a169/ffffff?text=Spor+Haberi', highRes: 'https://via.placeholder.com/800x600/38a169/ffffff?text=Spor+Haberi' }],
+        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
         relatedArticles: ['10', '11'],
         created_by: 'mock_user_4'
       },
