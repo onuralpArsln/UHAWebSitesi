@@ -40,7 +40,7 @@
               </div>
             </div>
           </td>
-          <td><span class="cms-badge">{{ article.category or 'Genel' }}</span></td>
+          <td>  <span class="cms-badge">{{ article.category or 'Genel' }}</span></td>
           <td>{{ article.creationDate or article.publishedAt | date('DD.MM.YYYY') }}</td>
           <td>
             <button class="cms-btn-icon danger" data-action="remove-carousel-article" title="Kaldır">
