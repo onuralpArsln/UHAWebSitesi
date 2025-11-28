@@ -161,8 +161,6 @@ router.put('/carousel', (req, res) => {
 
 **Breakpoint**: editors cannot confirm the order they saved, and deleting a row from the UI never removes it from the actual carousel feed because the feed no longer reads the manual table.
 
-**Status (2025-11-28 re-check)**: Current `server/routes/cms.js` still returns `populatedArticles` from `dataService.getArticles({ targettedView: 'carousel' })` while `PUT /cms/carousel` and `/carousel/add` mutate `dataService.updateCarouselLayout()`, so the dual data sources remain in place.
-
 3. **Homepage drops the shared JS bundle and hard-codes `/static` paths** – `templates/pages/home.njk` overrides `{% block scripts %}` without `{{ super() }}` and injects `/static/js/*.js`. That means the homepage never loads `nav.js`, `hydration.js`, `lazy-load.js`, or `ad-refresh.js`, and any deployment under a `BASE_PATH` instantly breaks because the absolute URLs ignore `asset()`.
 
 ```
@@ -289,69 +287,3 @@ describe('Carousel Widget', () => {
 11. **Base-path sensitive assets are hard-coded** – multiple places (`home.njk` scripts, branding image helpers, etc.) rely on `/static/...` or `/uploads/...` instead of `asset()` or `config.getBasePath()`, so any deployment under a non-root base path fails unless engineers patch each occurrence manually.
 
 Collectively these findings extend the redundancy matrix: there are now four separate implementations for nav/carousel/data flows, placeholder CMS APIs that do nothing, and schema migrations that quietly no-op. Each is a concrete breakpoint to prioritize before layering new features on top.
-
-## Solution Plans (Easiest → Hardest)
-
-1. **Lock public API visibility filters (Issue 8)**  
-   - Add `status: 'visible'` wherever `dataService.getArticles` is called inside `server/routes/api.js`, including `/articles`, `/breaking-news`, `/trending`, and `/related-news`.  
-   - Extend API tests (integration + unit) to assert hidden articles never surface.  
-   - Manual QA: create a draft article and confirm it no longer appears via REST endpoints.  
-   - Complexity: low; localized code change with straightforward regression coverage.
-
-2. **Restore shared script bundle & asset helpers on the homepage (Issues 3, 7, 11)**  
-   - Update `templates/pages/home.njk` to call `{{ super() }}` inside `block scripts`, then append page-specific bundles using `asset('js/...')` so `BASE_PATH` is respected.  
-   - Remove hard-coded `/static/` paths and rely on `asset()`/`config.getBasePath()` across templates/JS helpers (branding, uploads, etc.).  
-   - Verify that lazy-load and ad-refresh now run on `/` and that deployments under a sub-path keep working.  
-   - Complexity: low-medium; mostly templating plus regression tests.
-
-3. **Clarify CMS Settings/Layout endpoints (Issue 9, quick fix)**  
-   - Either disable the UI with a warning or wire `/cms/settings`, `/cms/layouts`, `/cms/widgets` to real persistence (JSON file or DB table).  
-   - At minimum, update `public/cms/js/cms-app.js` to show “Not implemented” errors so editors are not misled.  
-   - Complexity: medium; requires decisions about persistence but limited blast radius.
-
-4. **Fix schema migration override (Issue 1)**  
-   - Rename the late `migrateSchemaIfNeeded` (created_by-only) to `ensureCreatedByColumn` and call it separately so the original migration logic executes again.  
-   - Add tests that initialize an “old” DB schema and confirm new columns are added.  
-   - Run the corrected migration once in production (with backups).  
-   - Complexity: medium; touches initialization but conceptually simple.
-
-5. **Realign manual carousel flow (Issues 2 & 10)**  
-   - Decide on the source of truth: if manual ordering stays, revert `GET /cms/carousel` to load `carousel_layout` (with fallback to dynamic when empty) so the drag-and-drop UI shows the saved order.  
-   - Ensure `PUT /cms/carousel` updates the same dataset the UI renders.  
-   - Add integration tests (CMS API + widgets) that cover manual save/load plus fallback behavior; retire ad-hoc verification scripts once automated coverage exists.  
-   - Complexity: medium-high; affects CMS UI, API, and tests.
-
-6. **Merge navigation controllers (Issue 4)**  
-   - Extract the accessible behavior from `public/js/nav.js` into a shared module and load it on all pages.  
-   - Remove `mobile-menu.js`, or keep it as a thin wrapper until parity is confirmed.  
-   - Regression plan: cross-browser keyboard testing for both homepage and interior pages.  
-   - Complexity: medium-high; nav regressions affect every route.
-
-7. **Unify carousel controller/hydration (Issues 5 & 6)**  
-   - Create a single Carousel class that combines autoplay, touch gestures, and ad-refresh hooks, and have `HydrationEngine` instantiate it per widget.  
-   - Remove the `window.Carousel` call in hydration once the shared module is wired.  
-   - Delete the duplicate homepage-only script after refactor.  
-   - Complexity: high; requires careful refactor plus UI regression testing.
-
-8. **Re-evaluate homepage bundling & base-path handling (Issues 3, 7, 11 deep fix)**  
-   - After unifying controllers, revisit bundling strategy: either conditional-load modules within `base.njk` or ship a single deferred bundle.  
-   - Add smoke tests (Playwright/Cypress) that run with `BASE_PATH` set to ensure assets resolve correctly.  
-   - Complexity: high; spans templates, JS, and deployment configuration.
-
-9. **Implement true CMS Settings/Layout persistence (Issue 9 full solution)**  
-   - Create backing tables (e.g., `site_settings`, `layout_templates`) in SQLite; wire DataService getters/setters.  
-   - Update CMS UI to display last-updated metadata, optimistic saving, and error handling.  
-   - Add integration tests to assert persistence works end-to-end.  
-   - Complexity: high; new schema + UI/UX work.
-
-10. **Global asset/base-path audit (Issue 11 expansion)**  
-    - Systematically grep for `/static/`, `/uploads/`, `/cms/` hard-codes across `.njk`, `.js`, `.css` and replace with helpers (e.g., `asset()`, `config.getBasePath()`).  
-    - Add CI check that runs the app with a non-root base path to catch regressions early.  
-    - Complexity: high; touches many files and impacts all deployments.
-
-11. **Long-term carousel data strategy (Issues 2, 5, 10 combined)**  
-    - Decide whether to keep manual ordering as a first-class feature:  
-      - If keeping: modernize `carousel_layout` (store denormalized article snapshots, add auditing, expose via API) and ensure widgets consume manual vs dynamic sources consistently.  
-      - If dropping: migrate existing data to `targettedViews`, deprecate the `carousel_layout` table, remove related CMS UI, and simplify DataService/page routes.  
-    - Whichever path is chosen, update documentation/tests to describe the single flow.  
-    - Complexity: highest; requires product input, migrations, and extensive regression testing on both CMS and public site.

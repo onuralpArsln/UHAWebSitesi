@@ -4,6 +4,7 @@
 {% import "widgets/category-feed.njk" as categoryFeedWidget %}
 {% import "widgets/ad-placeholder.njk" as adPlaceholderWidget %}
 {% import "widgets/flashNews.njk" as flashNewsWidget %}
+{% import "widgets/four-article-band.njk" as fourArticleBandWidget %}
 
 {# Widget Renderer Macro - Dynamically renders widgets based on type #}
 {% macro render(widget) %}
@@ -36,6 +37,9 @@
   
   {% elif widget.type == 'flash-news' %}
     {{ flashNewsWidget.flashNews(widget.config.id, widget.data.articles, widget.config) }}
+  
+  {% elif widget.type == 'four-article-band' %}
+    {{ fourArticleBandWidget.fourArticleBand(widget.data.articles, widget.config.title) }}
   
   {% endif %}
 {% endmacro %}

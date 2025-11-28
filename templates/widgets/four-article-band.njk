@@ -1,0 +1,24 @@
+{% from "widgets/news-card.njk" import newsCard %}
+
+{% macro fourArticleBand(articles = [], title = '') %}
+<section class="four-article-band" data-widget="four-article-band">
+  <div class="container">
+    {% if title %}
+    <div class="section-header">
+      <h3 class="section-title">{{ title }}</h3>
+    </div>
+    {% endif %}
+
+    {% if articles and articles | length %}
+    <div class="four-article-band__grid">
+      {% for article in articles %}
+        {{ newsCard(article, 'default') }}
+      {% endfor %}
+    </div>
+    {% else %}
+    <p>Bu alanda henüz hedefli haber yok.</p>
+    {% endif %}
+  </div>
+</section>
+{% endmacro %}
+

@@ -1,4 +1,4 @@
-{% macro LayoutList(layout = []) %}
+{% macro LayoutList(layout = [], targetOptions = []) %}
 <section id="layout" class="cms-section" data-cms="layout-section" hidden>
   <div class="cms-section-heading">
     <div>
@@ -36,6 +36,7 @@
                   'hero-title': 'Manşet Başlığı',
                   'carousel': 'Manşet Slider',
                   'featured-news-grid': 'Öne Çıkanlar Izgarası',
+                  'four-article-band': '4\'lü Haber Bandı',
                   'category-feed': 'Kategori Akışı',
                   'flash-news': 'Son Dakika Bandı',
                   'ad-placeholder': 'Reklam Alanı'
@@ -83,6 +84,50 @@
                              value="{{ widget.config.limit or 6 }}" 
                              min="1" 
                              max="20"
+                             class="config-input-small">
+                    </label>
+                  
+                  {% elif widget.type == 'four-article-band' %}
+                    <label class="config-control">
+                      <span>Başlık:</span>
+                      <input type="text" 
+                             data-config="title" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.title or '' }}" 
+                             placeholder="Bant başlığı"
+                             class="config-input">
+                    </label>
+                    <label class="config-control">
+                      <span>Hedef etiketi:</span>
+                      {% if targetOptions and targetOptions | length %}
+                        <select data-config="target" 
+                                data-widget-index="{{ loop.index0 }}"
+                                class="config-select">
+                          <option value="">Hedef seçin</option>
+                          {% for target in targetOptions %}
+                            <option value="{{ target.value }}"
+                                    {% if target.value == widget.config.target %}selected{% endif %}>
+                              {{ target.label }}
+                            </option>
+                          {% endfor %}
+                        </select>
+                      {% else %}
+                        <input type="text" 
+                               data-config="target" 
+                               data-widget-index="{{ loop.index0 }}"
+                               value="{{ widget.config.target or '' }}" 
+                               placeholder="Örn. spotlight-hero"
+                               class="config-input">
+                      {% endif %}
+                    </label>
+                    <label class="config-control">
+                      <span>Haber sayısı:</span>
+                      <input type="number" 
+                             data-config="limit" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.limit or 4 }}" 
+                             min="1" 
+                             max="8"
                              class="config-input-small">
                     </label>
                   

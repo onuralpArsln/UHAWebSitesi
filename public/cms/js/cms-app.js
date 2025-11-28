@@ -94,7 +94,8 @@
         homepageLayout: initialState.homepageLayout || [],
         articleLayout: initialState.articleLayout || [],
         users: initialState.users || [],
-        cmsTabs: initialState.cmsTabs || []
+        cmsTabs: initialState.cmsTabs || [],
+        targetOptions: initialState.targetOptions || []
       };
 
       this.mediaLoaded = Array.isArray(this.state.media) && this.state.media.length > 0;
@@ -3177,6 +3178,12 @@
           defaultConfig: { limit: 6 }
         },
         {
+          type: 'four-article-band',
+          title: '4\'lü Haber Bandı',
+          desc: 'Hedeflenen 4 haberi tek satırda kart olarak gösterir.',
+          defaultConfig: { title: 'Öne Çıkanlar', target: 'four-article-band', limit: 4 }
+        },
+        {
           type: 'category-feed',
           title: 'Kategori Akışı',
           desc: 'Belirli bir kategoriden son haberler.',
@@ -3536,6 +3543,58 @@
                    value="${widget.config.limit || 6}" 
                    min="1" 
                    max="20"
+                   class="config-input-small">
+          </label>
+        `;
+      } else if (widget.type === 'four-article-band') {
+        const targetOptions = this.state.targetOptions || [];
+        const targetOptionsHtml = targetOptions.length
+          ? targetOptions.map(option => {
+            const value = option.value || '';
+            const label = option.label || option.value || '';
+            const selected = value === widget.config.target ? 'selected' : '';
+            return `<option value="${this.escapeHtml(value)}" ${selected}>${this.escapeHtml(label)}</option>`;
+          }).join('')
+          : '';
+        const targetControl = targetOptions.length
+          ? `
+            <select data-config="target" 
+                    data-widget-index="${index}"
+                    class="config-select">
+              <option value="">Hedef seçin</option>
+              ${targetOptionsHtml}
+            </select>
+          `
+          : `
+            <input type="text" 
+                   data-config="target" 
+                   data-widget-index="${index}"
+                   value="${this.escapeHtml(widget.config.target || '')}" 
+                   placeholder="Örn. spotlight-hero"
+                   class="config-input">
+          `;
+        configHtml = `
+          <label class="config-control">
+            <span>Başlık:</span>
+            <input type="text" 
+                   data-config="title" 
+                   data-widget-index="${index}"
+                   value="${this.escapeHtml(widget.config.title || '')}" 
+                   placeholder="Bant başlığı"
+                   class="config-input">
+          </label>
+          <label class="config-control">
+            <span>Hedef etiketi:</span>
+            ${targetControl}
+          </label>
+          <label class="config-control">
+            <span>Haber sayısı:</span>
+            <input type="number" 
+                   data-config="limit" 
+                   data-widget-index="${index}"
+                   value="${widget.config.limit || 4}" 
+                   min="1" 
+                   max="8"
                    class="config-input-small">
           </label>
         `;

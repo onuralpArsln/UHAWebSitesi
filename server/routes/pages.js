@@ -136,6 +136,29 @@ router.get('/', async (req, res) => {
           }
           break;
 
+        case 'four-article-band': {
+          const targetKey = widget.config.target || widget.config.source || widget.type;
+          const limit = parseInt(widget.config.limit) || 4;
+          const sortBy = widget.config.sortBy || 'publishedAt';
+          const sortOrder = (widget.config.sortOrder || 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+          const bandArticles = dataService.getArticles({
+            limit,
+            sortBy,
+            sortOrder,
+            targettedView: targetKey,
+            status: 'visible'
+          });
+
+          widgetData.data.articles = (bandArticles.articles || []).map(article => ({
+            ...article,
+            images: optimizeImageData(article.images),
+            slug: urlSlugService.getSlugById(article.id) ||
+              urlSlugService.generateSlug(article.title)
+          }));
+          break;
+        }
+
         case 'flash-news':
           // Fetch latest articles for flash news
           const flashNewsLimit = parseInt(widget.config.limit) || 10;

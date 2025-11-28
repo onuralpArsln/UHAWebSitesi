@@ -298,8 +298,13 @@ router.get('/', (req, res) => {
       adsenseSlotId: config.getFeatures().adsenseSlotId
     };
 
+    // to create targeted view tickers
     const targetOptions = [
       { value: 'carousel', label: 'Manşet Slider' },
+      { value: 'topfour', label: 'Üst Manşet' },
+      { value: 'flashfour', label: 'Flash Manşet' },
+      { value: 'editorfour', label: 'Editör Seçimi' },
+      { value: 'specialfour', label: 'Özel Haber' },
       { value: 'featured-news-grid', label: 'Öne Çıkanlar Izgarası' },
       { value: 'category-feed', label: 'Kategori Akışı' },
       { value: 'flash-news', label: 'Son Dakika Bandı' }
@@ -675,11 +680,11 @@ router.put('/articles/:id/targets', async (req, res) => {
     const normalizeTargets = (list) =>
       Array.isArray(list)
         ? list
-            .map((item) => {
-              if (item === null || item === undefined) return '';
-              return String(item).trim();
-            })
-            .filter(Boolean)
+          .map((item) => {
+            if (item === null || item === undefined) return '';
+            return String(item).trim();
+          })
+          .filter(Boolean)
         : [];
 
     const additions = normalizeTargets(targetsToAdd);
