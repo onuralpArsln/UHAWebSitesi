@@ -398,6 +398,33 @@
   background: rgba(49, 130, 206, 0.05);
 }
 
+.cms-table tr.is-over-limit {
+  opacity: 0.6;
+  position: relative;
+  cursor: not-allowed;
+}
+
+.cms-table tr.is-over-limit::after {
+  content: 'Limit dışı';
+  position: absolute;
+  top: 0.5rem;
+  right: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #d97706;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  pointer-events: none;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cms-table tr.is-over-limit .layout-drag-handle {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .cms-table-subline {
   color: #94a3b8;
   font-size: 0.85rem;

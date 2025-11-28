@@ -350,6 +350,8 @@ router.get('/', (req, res) => {
 
     const cmsTabs = config.getCmsTabs(); // Get cmsTabs here
 
+    const carouselLimit = getCarouselLimit();
+
     const initialState = {
       stats,
       articles: articleSummaries,
@@ -363,6 +365,7 @@ router.get('/', (req, res) => {
       users,
       cmsTabs, // Pass cmsTabs to initialState
       carouselArticles: carouselArticlesResult.articles || [], // Pass carouselArticles to initialState
+      carouselLimit,
       currentUser: {
         username: req.session.username,
         displayName: req.session.displayName,
@@ -381,7 +384,7 @@ router.get('/', (req, res) => {
       cmsTabs: config.getCmsTabs(),
       user: initialState.currentUser,
       carouselArticles: carouselArticlesResult.articles || [],
-      carouselLimit: getCarouselLimit()
+      carouselLimit
     });
   } catch (error) {
     console.error('CMS Dashboard route error:', error);

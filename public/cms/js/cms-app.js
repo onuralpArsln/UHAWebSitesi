@@ -95,7 +95,8 @@
         articleLayout: initialState.articleLayout || [],
         users: initialState.users || [],
         cmsTabs: initialState.cmsTabs || [],
-        targetOptions: initialState.targetOptions || []
+        targetOptions: initialState.targetOptions || [],
+        carouselLimit: initialState.carouselLimit || 5
       };
 
       this.mediaLoaded = Array.isArray(this.state.media) && this.state.media.length > 0;
@@ -4794,6 +4795,7 @@
       this.headlineTable = document.querySelector('[data-cms="headline-layout-table"]');
       this.saveHeadlineBtn = document.querySelector('[data-action="save-carousel-layout"]');
       this.headlineCountBadge = document.querySelector('[data-cms="carousel-count"]');
+      this.headlineLimitBadge = document.querySelector('[data-cms="carousel-limit"]');
 
       if (!this.headlineTable) return;
 
@@ -4815,6 +4817,7 @@
       this.headlineTable.addEventListener('drop', this.handleHeadlineDrop.bind(this));
       this.headlineTable.addEventListener('dragend', this.handleHeadlineDragEnd.bind(this));
 
+      this.setCarouselLimit(this.state.carouselLimit || 5);
     }
 
     async removeHeadlineArticle(row, triggerButton) {
@@ -4849,11 +4852,39 @@
       }
     }
 
+    setCarouselLimit(limit) {
+      const parsedLimit = parseInt(limit, 10);
+      if (!Number.isFinite(parsedLimit) || parsedLimit <= 0) {
+        return;
+      }
+      this.state.carouselLimit = parsedLimit;
+      this.updateHeadlineLimitBadge();
+      this.applyHeadlineLimitStyles();
+    }
+
+    updateHeadlineLimitBadge() {
+      if (this.headlineLimitBadge) {
+        this.headlineLimitBadge.textContent = this.state.carouselLimit || 5;
+      }
+    }
+
+    applyHeadlineLimitStyles() {
+      if (!this.headlineTable) return;
+      const limit = this.state.carouselLimit || 5;
+      const rows = this.headlineTable.querySelectorAll('tbody tr[data-article-id]');
+      rows.forEach((row, index) => {
+        const isOverLimit = index >= limit;
+        row.classList.toggle('is-over-limit', isOverLimit);
+        row.setAttribute('draggable', (!isOverLimit).toString());
+      });
+    }
+
     updateHeadlineCount() {
       const count = this.headlineTable.querySelectorAll('tbody tr[data-article-id]').length;
       if (this.headlineCountBadge) {
         this.headlineCountBadge.textContent = count;
       }
+      this.updateHeadlineLimitBadge();
     }
 
     updateHeadlineOrder() {
@@ -4864,12 +4895,19 @@
         row.dataset.index = index;
       });
       this.updateHeadlineCount();
+      this.applyHeadlineLimitStyles();
     }
 
     async saveHeadlineLayout() {
       try {
+        if (!this.headlineTable) return;
+
+        const limit = this.state.carouselLimit || 5;
         const rows = Array.from(this.headlineTable.querySelectorAll('tbody tr[data-article-id]'));
-        const articles = rows.map((row, index) => ({
+        const allowedRows = limit > 0 ? rows.slice(0, limit) : rows;
+        const overflowRows = limit > 0 ? rows.slice(limit) : [];
+
+        const articles = allowedRows.map((row, index) => ({
           articleId: row.dataset.articleId,
           order: index
         }));
@@ -4882,6 +4920,12 @@
 
         if (!response.ok) throw new Error('Failed to save layout');
 
+        if (overflowRows.length) {
+          overflowRows.forEach(row => row.remove());
+          this.showToast('Limit üzerindeki haberler otomatik kaldırıldı', 'warning');
+        }
+
+        this.updateHeadlineOrder();
         this.showToast('Manşet düzeni kaydedildi', 'success');
       } catch (error) {
         console.error('Save error:', error);
@@ -4896,6 +4940,9 @@
 
         const data = await response.json();
         const articles = data.populatedArticles || [];
+        if (data && data.maxArticles) {
+          this.setCarouselLimit(data.maxArticles);
+        }
 
         if (!this.headlineTable) return;
 
@@ -4971,6 +5018,7 @@
         tbody.innerHTML = rowsHtml;
 
         this.updateHeadlineCount();
+        this.applyHeadlineLimitStyles();
 
         // Re-attach drag events to new rows
         const rows = tbody.querySelectorAll('tr[draggable="true"]');
@@ -4990,7 +5038,10 @@
     // Drag and Drop Handlers (Simplified version of LayoutManager)
     handleHeadlineDragStart(e) {
       const row = e.target.closest('tr');
-      if (!row) return;
+      if (!row || row.classList.contains('is-over-limit')) {
+        e.preventDefault();
+        return;
+      }
       this.draggedHeadlineRow = row;
       e.dataTransfer.effectAllowed = 'move';
       row.classList.add('cms-dragging');
