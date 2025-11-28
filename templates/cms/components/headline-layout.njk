@@ -14,6 +14,7 @@
     <table class="cms-table" id="headline-layout-table" data-cms="headline-layout-table">
       <thead>
         <tr>
+          <th></th>
           <th>Sıra</th>
           <th>Haber</th>
           <th>Durum</th>
@@ -25,8 +26,16 @@
       <tbody>
         {% for article in carouselArticles %}
         <tr draggable="true" data-article-id="{{ article.id }}" data-index="{{ loop.index0 }}">
-          <td class="drag-handle-cell"><span class="drag-handle">☰</span></td>
+
+         <!-- 1. Drag Handle -->
+          <td class="layout-drag-handle" title="Sürükle">
+            <span class="drag-icon" aria-hidden="true">⋮⋮</span>
+          </td>
+  
+        <!-- 2. order -->
           <td class="layout-order">{{ loop.index }}</td>
+
+          <!-- 3. Article -->
           <td>
             <div class="article-title-cell">
               {% if article.images and article.images[0] %}
@@ -34,23 +43,36 @@
               {% endif %}
               <div class="article-info">
                 <span class="article-title">{{ article.header or article.title }}</span>
-                <span class="article-status {{ article.status }}">
-                  {{ 'Yayında' if article.status == 'published' else 'Taslak' }}
-                </span>
               </div>
             </div>
           </td>
-          <td>  <span class="cms-badge">{{ article.category or 'Genel' }}</span></td>
-          <td>{{ article.creationDate or article.publishedAt | date('DD.MM.YYYY') }}</td>
+
+          <!-- 4. Status -->
           <td>
-            <button class="cms-btn-icon danger" data-action="remove-carousel-article" title="Kaldır">
-              <i class="icon-trash"></i>
+            {% set isHidden = article.status == 'hidden' %}
+            <span class="article-status {{ 'hidden' if isHidden else 'visible' }}">
+              {{ 'Taslak' if isHidden else 'Yayında' }}
+                </span></td>
+
+
+          <!-- 5. Category -->
+          <td>  <span class="cms-badge">{{ article.category or 'Genel' }}</span></td>
+
+          <!-- 6. Date -->
+          <td>{{ article.creationDate or article.publishedAt | formatDate }}</td>
+
+          <!-- 7. Actions -->
+          <td>
+            <button class="cms-btn-icon cms-btn-icon--danger" data-action="remove-carousel-article" title="Kaldır" type="button">
+              <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                <path d="M7.5 2a1 1 0 0 0-.964.736L6.28 4H4a1 1 0 1 0 0 2h.197l.757 10.193A2 2 0 0 0 6.95 18h6.1a2 2 0 0 0 1.996-1.807L15.803 6H16a1 1 0 1 0 0-2h-2.28l-.256-1.264A1 1 0 0 0 12.5 2h-5zm1.264 2h2.472l.2 1H8.564l.2-1zM8 9a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-4a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-4a1 1 0 0 1 1-1z" fill="currentColor" />
+              </svg>
             </button>
           </td>
         </tr>
         {% else %}
         <tr class="empty-state">
-          <td colspan="6">
+          <td colspan="7">
             <div class="cms-empty-state">
               <p>Henüz manşet slider'ına eklenmiş haber bulunmuyor.</p>
             </div>

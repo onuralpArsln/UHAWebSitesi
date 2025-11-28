@@ -933,3 +933,49 @@ Widget Listesi:
 
 ========================================
 
+
+========================================
+📋 SAYFA DÜZENİ GÜNCELLENDİ
+⏰ Zaman: 2025-11-28T00:14:37.951Z
+========================================
+Widget Sayısı: 2
+
+Widget Listesi:
+
+1. Widget:
+   Tip: carousel
+   Config: {
+     "source": "featured"
+   }
+
+2. Widget:
+   Tip: featured-news-grid
+   Config: {
+     "title": "Featured"
+   }
+
+========================================
+
+
+========================================
+📋 SAYFA DÜZENİ GÜNCELLENDİ
+⏰ Zaman: 2025-11-28T00:33:45.844Z
+========================================
+Widget Sayısı: 2
+
+Widget Listesi:
+
+1. Widget:
+   Tip: carousel
+   Config: {
+     "source": "featured"
+   }
+
+2. Widget:
+   Tip: featured-news-grid
+   Config: {
+     "title": "Featured"
+   }
+
+========================================
+

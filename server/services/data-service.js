@@ -21,6 +21,8 @@ class DataService {
       // Ensure defaults exist
       this.ensureBrandingDefaults();
       this.ensureHomepageLayoutDefaults();
+      this.ensureArticleLayoutDefaults();
+      this.ensureCarouselDefaults();
       // Don't migrate mock data in test mode
     } else {
       // Safety check: Prevent using production database in test environment
@@ -515,6 +517,27 @@ class DataService {
     `).run(updated);
 
     return this.getCarouselLayout();
+  }
+
+  removeArticleFromCarouselLayout(articleId) {
+    if (!articleId) {
+      return this.getCarouselLayout();
+    }
+
+    const layout = this.getCarouselLayout();
+    const existingArticles = Array.isArray(layout.articles) ? layout.articles : [];
+    const filtered = existingArticles.filter((item) => item.articleId !== articleId);
+
+    if (filtered.length === existingArticles.length) {
+      return layout;
+    }
+
+    const reindexed = filtered.map((item, index) => ({
+      ...item,
+      order: index
+    }));
+
+    return this.updateCarouselLayout(reindexed);
   }
 
   /**

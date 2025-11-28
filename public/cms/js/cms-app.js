@@ -546,15 +546,13 @@
 
       // Hide all sections
       this.sections.forEach(section => {
-        section.classList.remove('active');
-        section.style.display = 'none';
+        this.setSectionVisibility(section, false);
       });
 
       // Show target section
       const targetSection = document.getElementById(sectionId);
       if (targetSection) {
-        targetSection.classList.add('active');
-        targetSection.style.display = 'block';
+        this.setSectionVisibility(targetSection, true);
       }
 
       // Update active nav link
@@ -1637,6 +1635,33 @@
       } catch (error) {
         this.showError('Haber silinemedi.');
       }
+    }
+
+    async updateArticleTargets(articleId, { add = [], remove = [] } = {}) {
+      if (!articleId) throw new Error('Geçersiz haber ID');
+
+      const targetsToAdd = Array.isArray(add) ? add.filter(Boolean) : [];
+      const targetsToRemove = Array.isArray(remove) ? remove.filter(Boolean) : [];
+
+      if (!targetsToAdd.length && !targetsToRemove.length) {
+        return { success: true, targets: [] };
+      }
+
+      const response = await fetch(`/cms/articles/${articleId}/targets`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetsToAdd,
+          targetsToRemove
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Hedef alan güncellenemedi');
+      }
+
+      return response.json();
     }
 
     async saveArticle() {
@@ -3044,18 +3069,26 @@
       });
     }
 
+    setSectionVisibility(section, isVisible) {
+      if (!section) return;
+      if (isVisible) {
+        section.classList.add('active');
+        section.removeAttribute('hidden');
+        section.style.removeProperty('display');
+      } else {
+        section.classList.remove('active');
+        section.setAttribute('hidden', '');
+        section.style.display = 'none';
+      }
+    }
+
     switchToEditorView() {
       if (!this.editorSection) return;
 
-      this.sections.forEach((section) => {
-        if (section === this.editorSection) {
-          section.classList.add('active');
-          section.removeAttribute('hidden');
-        } else if (section.dataset.cms === 'articles-section') {
-          section.classList.remove('active');
-          section.setAttribute('hidden', '');
-        }
-      });
+      this.setSectionVisibility(this.editorSection, true);
+      if (this.articleSection) {
+        this.setSectionVisibility(this.articleSection, false);
+      }
 
       this.navLinks.forEach((link) => {
         link.classList.toggle('active', link.getAttribute('href') === '#articles');
@@ -3071,15 +3104,10 @@
     switchToArticlesView() {
       if (!this.articleSection) return;
 
-      this.sections.forEach((section) => {
-        if (section === this.articleSection) {
-          section.classList.add('active');
-          section.removeAttribute('hidden');
-        } else if (section.dataset.cms === 'editor-section') {
-          section.classList.remove('active');
-          section.setAttribute('hidden', '');
-        }
-      });
+      this.setSectionVisibility(this.articleSection, true);
+      if (this.editorSection) {
+        this.setSectionVisibility(this.editorSection, false);
+      }
 
       this.navLinks.forEach((link) => {
         link.classList.toggle('active', link.getAttribute('href') === '#articles');
@@ -4434,7 +4462,7 @@
         const removeBtn = e.target.closest('[data-action="remove-carousel-article"]');
         if (removeBtn) {
           const row = removeBtn.closest('tr');
-          this.removeHeadlineArticle(row);
+          this.removeHeadlineArticle(row, removeBtn);
         }
       });
 
@@ -4446,19 +4474,36 @@
 
     }
 
-    async removeHeadlineArticle(row) {
-      if (!confirm('Bu haberi manşetten kaldırmak istediğinize emin misiniz?')) return;
+    async removeHeadlineArticle(row, triggerButton) {
+      if (!row) return;
+      const articleId = row.dataset.articleId;
+      if (!articleId) return;
 
-      row.remove();
-      this.updateHeadlineOrder();
+      if (!window.confirm('Bu haberi manşetten kaldırmak istediğinize emin misiniz?')) {
+        return;
+      }
 
-      // We need to save immediately or just update UI?
-      // The plan says "Save Button" saves the layout.
-      // But removing a row is a UI action.
-      // However, if we want to persist the removal, we should probably call save.
-      // Or just let the user click save.
-      // Let's let the user click save, but update the count.
-      this.updateHeadlineCount();
+      const button = triggerButton || row.querySelector('[data-action="remove-carousel-article"]');
+      if (button) {
+        button.disabled = true;
+      }
+
+      try {
+        await this.updateArticleTargets(articleId, { remove: ['carousel'] });
+        row.remove();
+        this.updateHeadlineOrder();
+        this.showSuccess('Haber manşetten kaldırıldı.');
+      } catch (error) {
+        console.error('Headline removal failed:', error);
+        this.showError('Haber manşetten kaldırılamadı.');
+      } finally {
+        if (button && row.isConnected) {
+          button.disabled = false;
+        }
+        if (row.isConnected) {
+          this.updateHeadlineCount();
+        }
+      }
     }
 
     updateHeadlineCount() {
@@ -4514,33 +4559,73 @@
         const tbody = this.headlineTable.querySelector('tbody');
         if (!tbody) return;
 
-        tbody.innerHTML = articles.map((article, index) => `
-          <tr data-article-id="${article.id}" data-index="${index}" draggable="true">
-            <td class="layout-order">${index + 1}</td>
-            <td>
-              <div class="article-title-cell">
-                ${article.images && article.images.length > 0
-            ? `<img src="${article.images[0].url}" alt="" class="article-thumb">`
-            : '<div class="article-thumb-placeholder"><i class="fas fa-image"></i></div>'
-          }
-                <div class="article-info">
-                  <span class="article-title">${article.header}</span>
-                  <span class="article-meta">${new Date(article.publishedAt).toLocaleDateString('tr-TR')}</span>
+        if (!articles.length) {
+          tbody.innerHTML = `
+            <tr class="empty-state">
+              <td colspan="7">
+                <div class="cms-empty-state">
+                  <p>Henüz manşet slider'ına eklenmiş haber bulunmuyor.</p>
                 </div>
-              </div>
-            </td>
-            <td>
-              <span class="status-badge status-${article.status}">${article.status === 'visible' ? 'Yayında' : 'Taslak'}</span>
-            </td>
-            <td>
-              <div class="action-buttons">
-                <button class="btn-icon text-danger" onclick="cms.removeHeadline('${article.id}')" title="Kaldır">
-                  <i class="fas fa-times"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        `).join('');
+              </td>
+            </tr>
+          `;
+          this.updateHeadlineCount();
+          return;
+        }
+
+        const rowsHtml = articles
+          .map((article, index) => {
+            const title = this.escapeHtml(article.header || article.title || 'Başlık Yok');
+            const isHidden = article.status === 'hidden';
+            const statusClass = isHidden ? 'hidden' : 'visible';
+            const statusLabel = isHidden ? 'Taslak' : 'Yayında';
+            const category = this.escapeHtml(article.category || 'Genel');
+            const formattedDate = this.formatDate(article.creationDate || article.publishedAt, '-');
+            const imageUrl = article.images && article.images[0] ? article.images[0].url : null;
+            const altText = this.escapeHtml(article.header || article.title || 'Manşet görseli');
+            const imageMarkup = imageUrl
+              ? `<img src="${this.escapeHtml(imageUrl)}" alt="${altText}" class="article-thumb">`
+              : '';
+
+            return `
+              <tr data-article-id="${this.escapeHtml(String(article.id))}" data-index="${index}" draggable="true">
+                <td class="layout-drag-handle" title="Sürükle">
+                  <span class="drag-icon" aria-hidden="true">⋮⋮</span>
+                </td>
+                <td class="layout-order">${index + 1}</td>
+                <td>
+                  <div class="article-title-cell">
+                    ${imageMarkup}
+                    <div class="article-info">
+                      <span class="article-title">${title}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="article-status ${statusClass}">${statusLabel}</span>
+                </td>
+                <td>
+                  <span class="cms-badge">${category}</span>
+                </td>
+                <td>${formattedDate}</td>
+                <td>
+                  <button
+                    type="button"
+                    class="cms-btn-icon cms-btn-icon--danger"
+                    data-action="remove-carousel-article"
+                    title="Kaldır"
+                  >
+                    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                      <path d="M7.5 2a1 1 0 0 0-.964.736L6.28 4H4a1 1 0 1 0 0 2h.197l.757 10.193A2 2 0 0 0 6.95 18h6.1a2 2 0 0 0 1.996-1.807L15.803 6H16a1 1 0 1 0 0-2h-2.28l-.256-1.264A1 1 0 0 0 12.5 2h-5zm1.264 2h2.472l.2 1H8.564l.2-1zM8 9a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-4a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-4a1 1 0 0 1 1-1z" fill="currentColor" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            `;
+          })
+          .join('');
+
+        tbody.innerHTML = rowsHtml;
 
         this.updateHeadlineCount();
 

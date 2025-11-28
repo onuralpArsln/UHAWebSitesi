@@ -660,6 +660,69 @@ router.put('/articles/:id', async (req, res) => {
 });
 
 /**
+ * Update article targetted views (add/remove)
+ */
+router.put('/articles/:id/targets', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { targetsToAdd = [], targetsToRemove = [] } = req.body || {};
+
+    const existingArticle = dataService.getArticleById(id);
+    if (!existingArticle) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
+    const normalizeTargets = (list) =>
+      Array.isArray(list)
+        ? list
+            .map((item) => {
+              if (item === null || item === undefined) return '';
+              return String(item).trim();
+            })
+            .filter(Boolean)
+        : [];
+
+    const additions = normalizeTargets(targetsToAdd);
+    const removals = normalizeTargets(targetsToRemove);
+
+    if (!additions.length && !removals.length) {
+      return res.status(400).json({ error: 'No targets specified' });
+    }
+
+    let updatedTargets = Array.isArray(existingArticle.targettedViews)
+      ? [...existingArticle.targettedViews]
+      : [];
+
+    if (removals.length) {
+      updatedTargets = updatedTargets.filter((target) => !removals.includes(target));
+    }
+
+    additions.forEach((target) => {
+      if (!updatedTargets.includes(target)) {
+        updatedTargets.push(target);
+      }
+    });
+
+    const updatedArticle = dataService.updateArticle(id, {
+      targettedViews: updatedTargets
+    });
+
+    if (removals.includes('carousel') && typeof dataService.removeArticleFromCarouselLayout === 'function') {
+      dataService.removeArticleFromCarouselLayout(id);
+    }
+
+    res.json({
+      success: true,
+      targets: updatedTargets,
+      article: updatedArticle
+    });
+  } catch (error) {
+    console.error('CMS Update article targets error:', error);
+    res.status(500).json({ error: 'Failed to update article targets' });
+  }
+});
+
+/**
  * Update article status
  */
 router.put('/articles/:id/status', async (req, res) => {
