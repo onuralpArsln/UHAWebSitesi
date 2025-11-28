@@ -853,9 +853,15 @@
     openUserEditor(userId = null) {
       if (!this.userEditorSection || !this.userForm) return;
 
-      this.sections.forEach(s => s.setAttribute('hidden', ''));
-      this.userEditorSection.removeAttribute('hidden');
-      this.userEditorSection.classList.add('active');
+      // Hide every other section using the shared helper so inline styles are cleaned up
+      this.sections.forEach(section => this.setSectionVisibility(section, false));
+      this.setSectionVisibility(this.userEditorSection, true);
+
+      this.navLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === '#users');
+      });
+
+      this.userEditorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
       this.userForm.reset();
       const idInput = this.userForm.querySelector('[name="id"]');
@@ -867,6 +873,9 @@
         if (!user) return;
 
         this.userEditorTitle.textContent = 'Kullanıcı Düzenle';
+        if (this.pageTitleElement) {
+          this.pageTitleElement.textContent = 'Kullanıcı Düzenle';
+        }
         idInput.value = user.id;
         usernameInput.value = user.username;
         usernameInput.disabled = true; // Cannot change username
@@ -883,6 +892,9 @@
         });
       } else {
         this.userEditorTitle.textContent = 'Yeni Kullanıcı';
+        if (this.pageTitleElement) {
+          this.pageTitleElement.textContent = 'Yeni Kullanıcı';
+        }
         idInput.value = '';
         usernameInput.value = '';
         usernameInput.disabled = false;
