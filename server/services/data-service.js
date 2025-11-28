@@ -177,6 +177,13 @@ class DataService {
         role TEXT DEFAULT 'editor',
         permissions TEXT,
         allowed_tabs TEXT,
+        visible_tabs TEXT,
+        article_created_count INTEGER DEFAULT 0,
+        recent_article_ids TEXT,
+        recent_actions TEXT,
+        last_action_at TEXT,
+        status TEXT DEFAULT 'active',
+        profile TEXT,
         created_at TEXT,
         last_login TEXT
       )
@@ -1677,14 +1684,60 @@ class DataService {
    * Create a new user
    */
   createUser(userData) {
-    const { username, password, displayName, role, permissions, allowedTabs } = userData;
+    const {
+      username,
+      password,
+      displayName,
+      role,
+      permissions,
+      allowedTabs,
+      visibleTabs,
+      articleCreatedCount,
+      recentArticleIds,
+      recentActions,
+      lastActionAt,
+      status,
+      profile
+    } = userData;
     const id = require('crypto').randomUUID();
     const passwordHash = require('bcrypt').hashSync(password, 10);
     const now = new Date().toISOString();
 
     this.db.prepare(`
-      INSERT INTO users (id, username, password_hash, display_name, role, permissions, allowed_tabs, created_at)
-      VALUES (@id, @username, @passwordHash, @displayName, @role, @permissions, @allowedTabs, @createdAt)
+      INSERT INTO users (
+        id,
+        username,
+        password_hash,
+        display_name,
+        role,
+        permissions,
+        allowed_tabs,
+        visible_tabs,
+        article_created_count,
+        recent_article_ids,
+        recent_actions,
+        last_action_at,
+        status,
+        profile,
+        created_at
+      )
+      VALUES (
+        @id,
+        @username,
+        @passwordHash,
+        @displayName,
+        @role,
+        @permissions,
+        @allowedTabs,
+        @visibleTabs,
+        @articleCreatedCount,
+        @recentArticleIds,
+        @recentActions,
+        @lastActionAt,
+        @status,
+        @profile,
+        @createdAt
+      )
     `).run({
       id,
       username,
@@ -1693,6 +1746,13 @@ class DataService {
       role: role || 'editor',
       permissions: JSON.stringify(permissions || []),
       allowedTabs: JSON.stringify(allowedTabs || []),
+      visibleTabs: JSON.stringify(visibleTabs || allowedTabs || []),
+      articleCreatedCount: Number.isFinite(articleCreatedCount) ? articleCreatedCount : 0,
+      recentArticleIds: JSON.stringify(recentArticleIds || []),
+      recentActions: JSON.stringify(recentActions || []),
+      lastActionAt: lastActionAt || null,
+      status: status || 'active',
+      profile: profile ? JSON.stringify(profile) : null,
       createdAt: now
     });
 
@@ -1732,7 +1792,20 @@ class DataService {
     const current = this.getUserById(id);
     if (!current) return null;
 
-    const { password, displayName, role, permissions, allowedTabs } = updates;
+    const {
+      password,
+      displayName,
+      role,
+      permissions,
+      allowedTabs,
+      visibleTabs,
+      articleCreatedCount,
+      recentArticleIds,
+      recentActions,
+      lastActionAt,
+      status,
+      profile
+    } = updates;
     let passwordHash;
 
     // We need to fetch the raw row to get the password hash if we aren't updating it
@@ -1750,15 +1823,29 @@ class DataService {
           display_name = @displayName,
           role = @role,
           permissions = @permissions,
-          allowed_tabs = @allowedTabs
+          allowed_tabs = @allowedTabs,
+          visible_tabs = @visibleTabs,
+          article_created_count = @articleCreatedCount,
+          recent_article_ids = @recentArticleIds,
+          recent_actions = @recentActions,
+          last_action_at = @lastActionAt,
+          status = @status,
+          profile = @profile
       WHERE id = @id
     `).run({
       id,
       passwordHash,
-      displayName: displayName || current.displayName,
+      displayName: displayName !== undefined ? displayName : current.displayName,
       role: role || current.role,
       permissions: JSON.stringify(permissions !== undefined ? permissions : current.permissions),
-      allowedTabs: JSON.stringify(allowedTabs !== undefined ? allowedTabs : (current.allowedTabs || []))
+      allowedTabs: JSON.stringify(allowedTabs !== undefined ? allowedTabs : (current.allowedTabs || [])),
+      visibleTabs: JSON.stringify(visibleTabs !== undefined ? visibleTabs : (current.visibleTabs || current.allowedTabs || [])),
+      articleCreatedCount: Number.isFinite(articleCreatedCount) ? articleCreatedCount : current.articleCreatedCount || 0,
+      recentArticleIds: JSON.stringify(recentArticleIds !== undefined ? recentArticleIds : (current.recentArticleIds || [])),
+      recentActions: JSON.stringify(recentActions !== undefined ? recentActions : (current.recentActions || [])),
+      lastActionAt: lastActionAt !== undefined ? lastActionAt : current.lastActionAt || null,
+      status: status || current.status || 'active',
+      profile: profile !== undefined ? (profile ? JSON.stringify(profile) : null) : (current.profile ? JSON.stringify(current.profile) : null)
     });
 
     return this.getUserById(id);
@@ -1793,6 +1880,13 @@ class DataService {
       role: row.role,
       permissions: row.permissions ? JSON.parse(row.permissions) : [],
       allowedTabs: row.allowed_tabs ? JSON.parse(row.allowed_tabs) : [],
+      visibleTabs: row.visible_tabs ? JSON.parse(row.visible_tabs) : [],
+      articleCreatedCount: row.article_created_count || 0,
+      recentArticleIds: row.recent_article_ids ? JSON.parse(row.recent_article_ids) : [],
+      recentActions: row.recent_actions ? JSON.parse(row.recent_actions) : [],
+      lastActionAt: row.last_action_at || null,
+      status: row.status || 'active',
+      profile: row.profile ? JSON.parse(row.profile) : null,
       createdAt: row.created_at,
       lastLogin: row.last_login
     };
