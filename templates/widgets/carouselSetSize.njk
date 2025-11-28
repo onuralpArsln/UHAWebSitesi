@@ -25,7 +25,7 @@
     <div class="carousel-set-size__viewport">
       <div class="carousel-track">
         {% for slide in slides %}
-        {% set image = slide.images and slide.images[0] %}
+        {% set image = slide.headlineImage or (slide.images and slide.images[0]) %}
         <article class="carousel-slide{% if loop.first %} active{% endif %}" data-article-id="{{ slide.id }}">
           <div class="carousel-set-size__media">
             {% if image %}

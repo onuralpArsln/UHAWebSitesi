@@ -7,7 +7,7 @@
   <div class="carousel-container">
     <div class="carousel-track">
       {% for slide in slides %}
-      {% set image = slide.images and slide.images[0] %}
+      {% set image = slide.headlineImage or (slide.images and slide.images[0]) %}
       <div class="carousel-slide{% if loop.first %} active{% endif %}">
         <a href="{{ asset('haber/' ~ slide.slug) }}" class="slide-link">
           <div class="slide-image">

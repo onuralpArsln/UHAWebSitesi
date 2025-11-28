@@ -20,6 +20,7 @@ function createTestDatabase() {
       tags TEXT,
       body TEXT,
       videoUrl TEXT,
+      headlineImage TEXT,
       images TEXT,
       writer TEXT,
       creationDate TEXT,
@@ -110,6 +111,7 @@ function createTestArticle(overrides = {}) {
         body: '<p>Test article body content</p>',
         videoUrl: '',
         images: [{ url: 'https://example.com/test.jpg', highRes: 'https://example.com/test-hd.jpg' }],
+        headlineImage: { url: 'https://example.com/headline.jpg', highRes: 'https://example.com/headline-hd.jpg' },
         writer: 'Test Author',
         creationDate: now,
         source: 'Test Source',
@@ -131,12 +133,12 @@ function createTestArticle(overrides = {}) {
 function insertArticle(db, article) {
     const stmt = db.prepare(`
     INSERT INTO articles (
-      id, header, summaryHead, summary, category, tags, body, videoUrl, images,
+      id, header, summaryHead, summary, category, tags, body, videoUrl, headlineImage, images,
       writer, creationDate, source, outlinks, targettedViews, updatedAt,
       relatedArticles, status, pressAnnouncementId, created_by,
       title, content, author, publishedAt, keywords
     ) VALUES (
-      @id, @header, @summaryHead, @summary, @category, @tags, @body, @videoUrl, @images,
+      @id, @header, @summaryHead, @summary, @category, @tags, @body, @videoUrl, @headlineImage, @images,
       @writer, @creationDate, @source, @outlinks, @targettedViews, @updatedAt,
       @relatedArticles, @status, @pressAnnouncementId, @created_by,
       @title, @content, @author, @publishedAt, @keywords
@@ -146,6 +148,7 @@ function insertArticle(db, article) {
     stmt.run({
         ...article,
         tags: JSON.stringify(article.tags || []),
+        headlineImage: article.headlineImage ? JSON.stringify(article.headlineImage) : null,
         images: JSON.stringify(article.images || []),
         outlinks: JSON.stringify(article.outlinks || []),
         targettedViews: JSON.stringify(article.targettedViews || []),

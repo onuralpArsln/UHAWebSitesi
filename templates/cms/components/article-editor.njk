@@ -103,6 +103,29 @@
               </div>
             </div>
           </div>
+          <div class="form-group form-group--full">
+            <label>Manşet Tasarımı</label>
+            <div class="article-media-manager article-media-manager--single" data-cms="headline-media-manager">
+              <input type="hidden" name="headlineImage" data-headline-image>
+              <input type="file" accept="image/*" hidden data-headline-media-input>
+
+              <div class="article-media-manager__actions">
+                <button type="button" class="cms-btn cms-btn-secondary" data-action="headline-media-upload">Bilgisayardan Yükle</button>
+                <button type="button" class="cms-btn cms-btn-secondary" data-action="headline-media-select">Medyadan Seç</button>
+                <button type="button" class="cms-btn cms-btn-danger" data-action="headline-media-remove" data-headline-remove disabled>Temizle</button>
+              </div>
+
+              <div class="article-media-manager__hint">
+                <p>Manşet tasarımı carousel ve haber kartlarında kullanılacak özel görseldir. Boş bırakırsanız ilk görsel kullanılmaya devam eder.</p>
+              </div>
+
+              <div class="article-media-manager__list" data-headline-media-list>
+                <div class="article-media-empty" data-headline-media-empty>
+                  Henüz manşet tasarımı eklemediniz. Yukarıdaki butonları kullanarak özel bir görsel belirleyebilir veya boş bırakabilirsiniz.
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="form-group">
             <label for="field-videoUrl">Video URL</label>
             <div class="cms-input-group">

@@ -143,6 +143,40 @@ function toImageArray(value) {
   return [];
 }
 
+function toImageObject(value) {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value === null) {
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      return toImageObject(parsed);
+    } catch (error) {
+      return { url: trimmed };
+    }
+  }
+
+  if (typeof value === 'object') {
+    const result = { ...value };
+    if (!result.url) {
+      const fallback = result.src || result.href || result.preview || result.original || '';
+      if (fallback) {
+        result.url = fallback;
+      }
+    }
+    return result.url || result.path ? result : null;
+  }
+
+  return null;
+}
+
 function normalizeStatus(value) {
   if (!value) return 'visible';
   const normalized = value.toLowerCase();
@@ -549,12 +583,15 @@ router.post('/articles', async (req, res) => {
       return res.status(400).json({ error: 'Başlık ve metin alanları zorunludur' });
     }
 
+    const normalizedHeadlineImage = toImageObject(articleData.headlineImage);
+
     const normalizedArticle = {
       header: articleData.header,
       summaryHead: articleData.summaryHead,
       summary: articleData.summary,
       category: articleData.category,
       tags: toArray(articleData.tags),
+      headlineImage: normalizedHeadlineImage ?? null,
       images: toImageArray(articleData.images),
       body: articleData.body,
       videoUrl: (articleData.videoUrl || articleData.video || '').toString().trim(),
@@ -608,6 +645,8 @@ router.put('/articles/:id', async (req, res) => {
       return res.status(400).json({ error: 'Başlık ve metin alanları zorunludur' });
     }
 
+    const normalizedHeadlineImage = toImageObject(articleData.headlineImage);
+
     const normalizedArticle = {
       header: articleData.header,
       summaryHead: articleData.summaryHead,
@@ -626,6 +665,10 @@ router.put('/articles/:id', async (req, res) => {
       status: normalizeStatus(articleData.status),
       pressAnnouncementId: (articleData.pressAnnouncementId || '').toString().trim()
     };
+
+    if (normalizedHeadlineImage !== undefined) {
+      normalizedArticle.headlineImage = normalizedHeadlineImage;
+    }
 
     // Enforce writer: Only admins can change the writer
     const isAdmin = req.session.isMaster || req.session.role === 'admin';

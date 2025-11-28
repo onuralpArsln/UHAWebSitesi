@@ -4,7 +4,7 @@
   <h3>İlgili Haberler</h3>
   <div class="related-articles">
     {% for article in articles %}
-    {% set image = article.images and article.images[0] %}
+    {% set image = article.headlineImage or (article.images and article.images[0]) %}
     <article class="related-article">
       <div class="related-image">
         {% if image %}

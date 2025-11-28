@@ -87,6 +87,7 @@ class DataService {
         tags TEXT,
         body TEXT NOT NULL,
         videoUrl TEXT,
+        headlineImage TEXT,
         images TEXT,
         writer TEXT,
         creationDate TEXT,
@@ -230,6 +231,21 @@ class DataService {
 
         console.log('✅ Schema migration completed');
       }
+
+      const ensureColumn = (name, type, defaultExpression = null) => {
+        if (!columnNames.includes(name)) {
+          try {
+            this.db.exec(`ALTER TABLE articles ADD COLUMN ${name} ${type}`);
+            if (defaultExpression) {
+              this.db.exec(`UPDATE articles SET ${name} = ${defaultExpression} WHERE ${name} IS NULL`);
+            }
+          } catch (err) {
+            console.log(`Column ${name} might already exist, skipping...`);
+          }
+        }
+      };
+
+      ensureColumn('headlineImage', 'TEXT');
     } catch (error) {
       console.error('⚠️ Schema migration error (might be expected on first run):', error.message);
     }
@@ -569,6 +585,14 @@ class DataService {
         article.images = JSON.parse(article.images);
       }
 
+      if (typeof article.headlineImage === 'string') {
+        try {
+          article.headlineImage = JSON.parse(article.headlineImage);
+        } catch (error) {
+          article.headlineImage = null;
+        }
+      }
+
       return article;
     }).filter(Boolean); // Remove any nulls (deleted articles)
 
@@ -611,8 +635,8 @@ class DataService {
 
       // Insert articles with new schema
       const insertArticle = this.db.prepare(`
-        INSERT INTO articles (id, header, summaryHead, summary, category, tags, body, images, writer, creationDate, source, outlinks, targettedViews, updatedAt, relatedArticles, status, pressAnnouncementId, created_by, title, content, author, publishedAt, keywords)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO articles (id, header, summaryHead, summary, category, tags, body, videoUrl, headlineImage, images, writer, creationDate, source, outlinks, targettedViews, updatedAt, relatedArticles, status, pressAnnouncementId, created_by, title, content, author, publishedAt, keywords)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       const insertArticleTransaction = this.db.transaction((articles) => {
@@ -625,6 +649,8 @@ class DataService {
             article.category || '',
             JSON.stringify(article.tags || article.keywords || []),
             article.body || article.content || '',
+            article.videoUrl || article.video || '',
+            article.headlineImage ? JSON.stringify(article.headlineImage) : null,
             JSON.stringify(article.images || []),
             article.writer || article.author || 'UHA News',
             article.creationDate || article.publishedAt || new Date().toISOString(),
@@ -1045,6 +1071,9 @@ class DataService {
     const creationDate = row.creationDate || row.publishedAt || '';
     const tags = row.tags ? (typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags) :
       (row.keywords ? (typeof row.keywords === 'string' ? JSON.parse(row.keywords) : row.keywords) : []);
+    const headlineImage = row.headlineImage
+      ? (typeof row.headlineImage === 'string' ? JSON.parse(row.headlineImage) : row.headlineImage)
+      : null;
 
     const status = row.status ? row.status.toLowerCase() : 'visible';
 
@@ -1058,6 +1087,7 @@ class DataService {
       tags: tags,
       body: body,
       images: row.images ? (typeof row.images === 'string' ? JSON.parse(row.images) : row.images) : [],
+      headlineImage,
       videoUrl: row.videoUrl || row.video || '',
       writer: writer,
       creationDate: creationDate,
@@ -1444,25 +1474,25 @@ class DataService {
    * Create article (for CMS)
    */
   createArticle(articleData) {
-    const id = Date.now().toString();
+    const id = randomUUID();
     const now = new Date().toISOString();
 
     const {
-      header, summaryHead, summary, category, tags, body, videoUrl, images,
+      header, summaryHead, summary, category, tags, body, videoUrl, images, headlineImage,
       writer, creationDate, source, outlinks, targettedViews, relatedArticles,
       status, pressAnnouncementId, created_by
     } = articleData;
 
     const stmt = this.db.prepare(`
       INSERT INTO articles (
-        id, header, summaryHead, summary, category, tags, body, videoUrl, images,
+        id, header, summaryHead, summary, category, tags, body, videoUrl, headlineImage, images,
         writer, creationDate, source, outlinks, targettedViews, relatedArticles,
         status, pressAnnouncementId, created_by,
         -- Legacy fields for backward compatibility
         title, content, author, publishedAt, keywords
       )
       VALUES (
-        @id, @header, @summaryHead, @summary, @category, @tags, @body, @videoUrl, @images,
+        @id, @header, @summaryHead, @summary, @category, @tags, @body, @videoUrl, @headlineImage, @images,
         @writer, @creationDate, @source, @outlinks, @targettedViews, @relatedArticles,
         @status, @pressAnnouncementId, @created_by,
         -- Legacy fields for backward compatibility
@@ -1479,6 +1509,7 @@ class DataService {
       tags: JSON.stringify(tags || articleData.keywords || []),
       body: body || articleData.content || '',
       videoUrl: videoUrl || articleData.video || '',
+      headlineImage: headlineImage ? JSON.stringify(headlineImage) : null,
       images: JSON.stringify(images || []),
       writer: writer || articleData.author || 'UHA News',
       creationDate: creationDate || articleData.publishedAt || now,
@@ -1526,6 +1557,10 @@ class DataService {
     const tags = articleData.tags !== undefined ? articleData.tags :
       (articleData.keywords !== undefined ? articleData.keywords : existing.tags);
 
+    const normalizedHeadlineImage = articleData.headlineImage !== undefined
+      ? articleData.headlineImage
+      : existing.headlineImage || null;
+
     const updatedArticle = {
       header,
       summaryHead: articleData.summaryHead !== undefined ? articleData.summaryHead : existing.summaryHead,
@@ -1535,6 +1570,7 @@ class DataService {
       body,
       videoUrl: articleData.videoUrl !== undefined ? articleData.videoUrl :
         (articleData.video !== undefined ? articleData.video : existing.videoUrl),
+      headlineImage: normalizedHeadlineImage ? JSON.stringify(normalizedHeadlineImage) : null,
       images: articleData.images !== undefined ? JSON.stringify(articleData.images) :
         (existing.images ? JSON.stringify(existing.images) : '[]'),
       writer,
@@ -1561,7 +1597,7 @@ class DataService {
 
     this.db.prepare(`
       UPDATE articles 
-      SET header = ?, summaryHead = ?, summary = ?, category = ?, tags = ?, body = ?, videoUrl = ?, images = ?, writer = ?, creationDate = ?, source = ?, outlinks = ?, targettedViews = ?, updatedAt = ?, relatedArticles = ?, status = ?, pressAnnouncementId = ?, title = ?, content = ?, author = ?, publishedAt = ?, keywords = ?
+      SET header = ?, summaryHead = ?, summary = ?, category = ?, tags = ?, body = ?, videoUrl = ?, headlineImage = ?, images = ?, writer = ?, creationDate = ?, source = ?, outlinks = ?, targettedViews = ?, updatedAt = ?, relatedArticles = ?, status = ?, pressAnnouncementId = ?, title = ?, content = ?, author = ?, publishedAt = ?, keywords = ?
       WHERE id = ?
     `).run(
       updatedArticle.header,
@@ -1571,6 +1607,7 @@ class DataService {
       updatedArticle.tags,
       updatedArticle.body,
       updatedArticle.videoUrl,
+      updatedArticle.headlineImage,
       updatedArticle.images,
       updatedArticle.writer,
       updatedArticle.creationDate,

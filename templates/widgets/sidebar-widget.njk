@@ -12,7 +12,7 @@
   <h3 class="sidebar-widget__title">{{ title }}</h3>
   <div class="sidebar-widget__articles">
     {% for article in articles %}
-    {% set image = article.images and article.images[0] %}
+    {% set image = article.headlineImage or (article.images and article.images[0]) %}
     <article class="sidebar-article">
       {% if image %}
       <div class="sidebar-article__image">

@@ -38,8 +38,9 @@
           <!-- 3. Article -->
           <td>
             <div class="article-title-cell">
-              {% if article.images and article.images[0] %}
-              <img src="{{ article.images[0].url }}" alt="{{ article.header or article.title }}" class="article-thumb">
+              {% set previewImage = article.headlineImage or (article.images and article.images[0]) %}
+              {% if previewImage %}
+              <img src="{{ previewImage.url }}" alt="{{ article.header or article.title }}" class="article-thumb">
               {% endif %}
               <div class="article-info">
                 <span class="article-title">{{ article.header or article.title }}</span>

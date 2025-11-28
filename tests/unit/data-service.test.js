@@ -28,6 +28,9 @@ class TestDataService {
         const writer = row.writer || row.author || '';
         const creationDate = row.creationDate || row.publishedAt || '';
         const tags = row.tags ? (typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags) : [];
+        const headlineImage = row.headlineImage
+            ? (typeof row.headlineImage === 'string' ? JSON.parse(row.headlineImage) : row.headlineImage)
+            : null;
         const status = row.status ? row.status.toLowerCase() : 'visible';
 
         return {
@@ -39,6 +42,7 @@ class TestDataService {
             tags: tags,
             body: body,
             images: row.images ? (typeof row.images === 'string' ? JSON.parse(row.images) : row.images) : [],
+            headlineImage,
             videoUrl: row.videoUrl || row.video || '',
             writer: writer,
             creationDate: creationDate,

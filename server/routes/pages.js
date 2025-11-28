@@ -6,7 +6,8 @@ const config = require('../services/config');
 const {
   buildMeta,
   buildNewsArticleSchema,
-  optimizeImageData
+  optimizeImageData,
+  optimizeSingleImage
 } = require('../services/view-helpers');
 
 const router = express.Router();
@@ -100,6 +101,7 @@ router.get('/', async (req, res) => {
             widgetData.data.articles = featuredArticles.articles.map(article => ({
               ...article,
               images: optimizeImageData(article.images),
+              headlineImage: optimizeSingleImage(article.headlineImage),
               slug: urlSlugService.getSlugById(article.id) ||
                 urlSlugService.generateSlug(article.title)
             }));
@@ -108,6 +110,7 @@ router.get('/', async (req, res) => {
             widgetData.data.articles = carouselArticles.map(article => ({
               ...article,
               images: optimizeImageData(article.images),
+              headlineImage: optimizeSingleImage(article.headlineImage),
               slug: urlSlugService.getSlugById(article.id) || urlSlugService.generateSlug(article.title)
             }));
           }
@@ -130,6 +133,7 @@ router.get('/', async (req, res) => {
             widgetData.data.articles = categoryArticles.articles.map(article => ({
               ...article,
               images: optimizeImageData(article.images),
+              headlineImage: optimizeSingleImage(article.headlineImage),
               slug: urlSlugService.getSlugById(article.id) ||
                 urlSlugService.generateSlug(article.title)
             }));
@@ -153,6 +157,7 @@ router.get('/', async (req, res) => {
           widgetData.data.articles = (bandArticles.articles || []).map(article => ({
             ...article,
             images: optimizeImageData(article.images),
+            headlineImage: optimizeSingleImage(article.headlineImage),
             slug: urlSlugService.getSlugById(article.id) ||
               urlSlugService.generateSlug(article.title)
           }));
@@ -302,7 +307,8 @@ router.get('/haber/:slug', async (req, res) => {
             ...related,
             slug: urlSlugService.getSlugById(related.id) ||
               urlSlugService.generateSlug(related.title),
-            images: optimizeImageData(related.images)
+        images: optimizeImageData(related.images),
+        headlineImage: optimizeSingleImage(related.headlineImage)
           }));
           break;
 
@@ -348,7 +354,8 @@ router.get('/haber/:slug', async (req, res) => {
             ...sidebar,
             slug: urlSlugService.getSlugById(sidebar.id) ||
               urlSlugService.generateSlug(sidebar.title),
-            images: optimizeImageData(sidebar.images)
+        images: optimizeImageData(sidebar.images),
+        headlineImage: optimizeSingleImage(sidebar.headlineImage)
           }));
           break;
 
@@ -383,6 +390,7 @@ router.get('/haber/:slug', async (req, res) => {
         ...article,
         slug,
         images: optimizeImageData(article.images),
+        headlineImage: optimizeSingleImage(article.headlineImage),
         categorySlug: articleCategorySlug,
         comments: article.comments || [],
         hasMoreComments: article.hasMoreComments || false
@@ -522,6 +530,7 @@ router.get('/kategori/:categorySlug', async (req, res) => {
       articles: articlesData.articles.map(article => ({
         ...article,
         images: optimizeImageData(article.images),
+        headlineImage: optimizeSingleImage(article.headlineImage),
         slug: urlSlugService.getSlugById(article.id) ||
           urlSlugService.generateSlug(article.title)
       })),
@@ -593,6 +602,7 @@ router.get('/arama', async (req, res) => {
       articles: searchResults.articles.map(article => ({
         ...article,
         images: optimizeImageData(article.images),
+        headlineImage: optimizeSingleImage(article.headlineImage),
         slug: urlSlugService.getSlugById(article.id) ||
           urlSlugService.generateSlug(article.title)
       })),

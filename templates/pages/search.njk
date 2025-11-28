@@ -20,7 +20,7 @@
   <section class="container">
     <div class="search-results">
       {% for article in articles %}
-      {% set image = article.images and article.images[0] %}
+      {% set image = article.headlineImage or (article.images and article.images[0]) %}
       <article class="search-result">
         {% if image %}
         <div class="search-result__media">

@@ -197,6 +197,50 @@ describe('DataService Comprehensive Tests', () => {
             const retrieved = dataService.getArticleById(created.id);
             expect(retrieved).toBeNull();
         });
+
+        test('should store and return headlineImage on create', () => {
+            const headlineImage = {
+                url: 'https://cdn.example.com/hero.jpg',
+                alt: 'Hero',
+                title: 'Hero Image'
+            };
+
+            const created = dataService.createArticle({
+                header: 'With Headline',
+                body: 'Content',
+                headlineImage
+            });
+
+            expect(created.headlineImage).toBeDefined();
+            expect(created.headlineImage.url).toBe(headlineImage.url);
+
+            const retrieved = dataService.getArticleById(created.id);
+            expect(retrieved.headlineImage).toBeDefined();
+            expect(retrieved.headlineImage.alt).toBe('Hero');
+        });
+
+        test('should update and clear headlineImage', () => {
+            const initialImage = { url: 'https://cdn.example.com/initial.jpg' };
+            const created = dataService.createArticle({
+                header: 'Update Headline',
+                body: 'Content',
+                headlineImage: initialImage
+            });
+
+            const updatedImage = { url: 'https://cdn.example.com/updated.jpg', alt: 'Updated' };
+            const updated = dataService.updateArticle(created.id, {
+                headlineImage: updatedImage
+            });
+
+            expect(updated.headlineImage.url).toBe(updatedImage.url);
+            expect(updated.headlineImage.alt).toBe('Updated');
+
+            const cleared = dataService.updateArticle(created.id, {
+                headlineImage: null
+            });
+
+            expect(cleared.headlineImage).toBeNull();
+        });
     });
 
     describe('Category CRUD Operations', () => {
@@ -267,7 +311,7 @@ describe('DataService Comprehensive Tests', () => {
             dataService.deleteCategory(category.id);
             
             const updated = dataService.getArticleById(article.id);
-            expect(updated.category).toBeNull();
+            expect(updated.category).toBe('');
         });
     });
 

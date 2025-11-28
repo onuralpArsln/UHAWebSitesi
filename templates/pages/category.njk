@@ -24,7 +24,7 @@
     {% if articles and articles | length %}
     <div class="articles-grid">
       {% for article in articles %}
-      {% set image = article.images and article.images[0] %}
+      {% set image = article.headlineImage or (article.images and article.images[0]) %}
       <article class="article-card">
         {% if image %}
         <div class="article-card__media">

@@ -80,21 +80,31 @@ function buildNewsArticleSchema(article = {}, req = null) {
   return JSON.stringify(schema);
 }
 
-function optimizeImageData(images) {
-  if (!images || !Array.isArray(images)) return [];
-
-  return images.map((img) => ({
+function normalizeImage(img) {
+  if (!img) return null;
+  return {
     ...img,
     lowRes: img.lowRes || img.url,
     width: img.width || 800,
     height: img.height || 600,
     alt: img.alt || img.title || 'News image'
-  }));
+  };
+}
+
+function optimizeImageData(images) {
+  if (!images || !Array.isArray(images)) return [];
+
+  return images.map((img) => normalizeImage(img)).filter(Boolean);
+}
+
+function optimizeSingleImage(image) {
+  return normalizeImage(image);
 }
 
 module.exports = {
   buildMeta,
   buildNewsArticleSchema,
-  optimizeImageData
+  optimizeImageData,
+  optimizeSingleImage
 };
 

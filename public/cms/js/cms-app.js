@@ -104,11 +104,13 @@
       this.currentArticleId = null;
       this.mediaSearchDebounce = null;
       this.articleImages = [];
+      this.headlineImage = null;
       this.mediaSelectModal = null;
       this.mediaSelectModalEscapeHandler = null;
       this.cacheDom();
       this.bindEvents();
       this.initializeArticleMediaManager();
+      this.initializeHeadlineMediaManager();
       this.initializeLayoutManager();
       this.initializeArticleLayoutManager();
       this.initializeHeadlineLayoutManager();
@@ -193,6 +195,14 @@
       this.articleMediaEmpty = this.articleMediaManager ? this.articleMediaManager.querySelector('[data-article-media-empty]') : null;
       this.articleMediaUploadBtn = this.articleMediaManager ? this.articleMediaManager.querySelector('[data-action="article-media-upload"]') : null;
       this.articleMediaSelectBtn = this.articleMediaManager ? this.articleMediaManager.querySelector('[data-action="article-media-select"]') : null;
+      this.headlineMediaManager = this.articleForm ? this.articleForm.querySelector('[data-cms="headline-media-manager"]') : null;
+      this.headlineImageField = this.headlineMediaManager ? this.headlineMediaManager.querySelector('[data-headline-image]') : null;
+      this.headlineMediaInput = this.headlineMediaManager ? this.headlineMediaManager.querySelector('[data-headline-media-input]') : null;
+      this.headlineMediaList = this.headlineMediaManager ? this.headlineMediaManager.querySelector('[data-headline-media-list]') : null;
+      this.headlineMediaEmpty = this.headlineMediaManager ? this.headlineMediaManager.querySelector('[data-headline-media-empty]') : null;
+      this.headlineUploadBtn = this.headlineMediaManager ? this.headlineMediaManager.querySelector('[data-action="headline-media-upload"]') : null;
+      this.headlineSelectBtn = this.headlineMediaManager ? this.headlineMediaManager.querySelector('[data-action="headline-media-select"]') : null;
+      this.headlineRemoveBtn = this.headlineMediaManager ? this.headlineMediaManager.querySelector('[data-action="headline-media-remove"]') : null;
       this.videoUploadInput = document.querySelector('#field-video-upload');
       this.uploadVideoBtn = document.querySelector('[data-action="upload-video"]');
       this.selectVideoBtn = document.querySelector('[data-action="select-video-media"]');
@@ -437,6 +447,26 @@
       if (this.articleMediaList) {
         this.articleMediaList.addEventListener('click', (event) => this.handleArticleMediaListClick(event));
         this.articleMediaList.addEventListener('input', (event) => this.handleArticleMediaListInput(event));
+      }
+
+      if (this.headlineUploadBtn && this.headlineMediaInput) {
+        this.headlineUploadBtn.addEventListener('click', () => this.headlineMediaInput.click());
+      }
+
+      if (this.headlineMediaInput) {
+        this.headlineMediaInput.addEventListener('change', (event) => this.handleHeadlineMediaUpload(event));
+      }
+
+      if (this.headlineSelectBtn) {
+        this.headlineSelectBtn.addEventListener('click', () => this.openHeadlineImageSelectModal());
+      }
+
+      if (this.headlineRemoveBtn) {
+        this.headlineRemoveBtn.addEventListener('click', () => this.clearHeadlineImage());
+      }
+
+      if (this.headlineMediaList) {
+        this.headlineMediaList.addEventListener('input', (event) => this.handleHeadlineFieldInput(event));
       }
 
       if (this.uploadVideoBtn && this.videoUploadInput) {
@@ -1373,6 +1403,7 @@
       this.articleForm.reset();
       this.clearTargetCheckboxes();
       this.resetArticleImages();
+      this.resetHeadlineImage();
       this.currentArticleId = null;
 
       if (article) {
@@ -1406,6 +1437,7 @@
       }
       this.clearTargetCheckboxes();
       this.resetArticleImages();
+    this.resetHeadlineImage();
       this.switchToArticlesView();
     }
 
@@ -1432,6 +1464,7 @@
       }
 
       this.setArticleImages(article.images || []);
+      this.setHeadlineImageFromArticle(article.headlineImage || null);
 
       const outlinksField = this.articleForm.querySelector('[name="outlinks"]');
       if (outlinksField) {
@@ -1459,6 +1492,7 @@
       payload.writer = payload.writer || '';
       payload.videoUrl = payload.videoUrl || '';
       payload.images = this.getArticleImagesPayload();
+      payload.headlineImage = this.getHeadlineImagePayload();
 
       return payload;
     }
@@ -2140,6 +2174,245 @@
       }));
     }
 
+    initializeHeadlineMediaManager() {
+      if (!this.headlineMediaManager) return;
+      this.renderHeadlineImage();
+    }
+
+    resetHeadlineImage() {
+      this.headlineImage = null;
+      this.renderHeadlineImage();
+    }
+
+    setHeadlineImage(image) {
+      this.headlineImage = image ? { ...image } : null;
+      this.renderHeadlineImage();
+    }
+
+    setHeadlineImageFromArticle(image) {
+      if (!image) {
+        this.setHeadlineImage(null);
+        return;
+      }
+      const normalized = this.normalizeArticleImageEntry(image);
+      this.setHeadlineImage(normalized);
+    }
+
+    renderHeadlineImage() {
+      if (!this.headlineMediaList) return;
+      this.headlineMediaList.innerHTML = '';
+
+      if (!this.headlineImage) {
+        if (this.headlineMediaEmpty) {
+          this.headlineMediaEmpty.hidden = false;
+          this.headlineMediaList.appendChild(this.headlineMediaEmpty);
+        }
+        this.toggleHeadlineRemoveButton(false);
+        this.syncHeadlineImageField();
+        return;
+      }
+
+      if (this.headlineMediaEmpty) {
+        this.headlineMediaEmpty.hidden = true;
+      }
+
+      const image = this.headlineImage;
+      const sizeText = image.size !== null && image.size !== undefined
+        ? this.formatFileSize(image.size)
+        : '-';
+      const escapedTitle = this.escapeHtml(image.title || '');
+      const escapedAlt = this.escapeHtml(image.alt || '');
+      const escapedPath = this.escapeHtml(image.path || '');
+      const escapedFilename = this.escapeHtml(image.filename || '');
+
+      const item = document.createElement('article');
+      item.className = 'article-media-item';
+      item.innerHTML = `
+        <div class="article-media-item__preview">
+          <img src="${image.url}" alt="${escapedAlt || escapedTitle || escapedFilename || 'Manşet tasarımı'}">
+        </div>
+        <div class="article-media-item__fields">
+          <label>
+            <span>Başlık</span>
+            <input type="text" value="${escapedTitle}" data-field="title" placeholder="Opsiyonel başlık">
+          </label>
+          <label>
+            <span>Alternatif Metin</span>
+            <input type="text" value="${escapedAlt}" data-field="alt" placeholder="Erişilebilirlik için tanımlayıcı metin">
+          </label>
+        </div>
+        <div class="article-media-item__meta">
+          <div class="article-media-item__meta-row" title="${escapedPath}">
+            <span class="article-media-item__meta-label">Dosya</span>
+            <span class="article-media-item__meta-value">${escapedFilename || '-'}</span>
+          </div>
+          <div class="article-media-item__meta-row" title="${escapedPath}">
+            <span class="article-media-item__meta-label">Yol</span>
+            <span class="article-media-item__meta-value">${escapedPath || '-'}</span>
+          </div>
+          <div class="article-media-item__meta-row">
+            <span class="article-media-item__meta-label">Boyut</span>
+            <span class="article-media-item__meta-value">${sizeText}</span>
+          </div>
+        </div>
+      `;
+
+      this.headlineMediaList.appendChild(item);
+      this.toggleHeadlineRemoveButton(true);
+      this.syncHeadlineImageField();
+    }
+
+    toggleHeadlineRemoveButton(enabled) {
+      if (!this.headlineRemoveBtn) return;
+      this.headlineRemoveBtn.disabled = !enabled;
+    }
+
+    syncHeadlineImageField() {
+      if (!this.headlineImageField) return;
+      const payload = this.getHeadlineImagePayload();
+      if (!payload) {
+        this.headlineImageField.value = '';
+        return;
+      }
+      this.headlineImageField.value = JSON.stringify(payload);
+    }
+
+    getHeadlineImagePayload() {
+      if (!this.headlineImage) return null;
+      return {
+        path: this.headlineImage.path || '',
+        url: this.headlineImage.url,
+        filename: this.headlineImage.filename || '',
+        title: this.headlineImage.title || '',
+        alt: this.headlineImage.alt || '',
+        size: this.headlineImage.size !== null && this.headlineImage.size !== undefined
+          ? this.headlineImage.size
+          : undefined,
+        uploadedAt: this.headlineImage.uploadedAt || undefined
+      };
+    }
+
+    async handleHeadlineMediaUpload(event) {
+      const input = event.currentTarget;
+      const file = (input.files || [])[0];
+      if (!file) return;
+
+      try {
+        const mediaItem = await this.uploadMediaFile(file);
+        if (mediaItem) {
+          const image = this.normalizeArticleImageEntry({
+            path: mediaItem.path || mediaItem.filename,
+            url: mediaItem.url,
+            filename: mediaItem.filename || '',
+            size: mediaItem.size !== undefined ? Number(mediaItem.size) : null,
+            uploadedAt: mediaItem.uploadedAt || null
+          });
+          if (image) {
+            this.setHeadlineImage(image);
+            this.showSuccess('Manşet tasarımı yüklendi.');
+          }
+        }
+      } catch (error) {
+        console.error('Headline media upload error:', error);
+        this.showError(error.message || 'Manşet tasarımı yüklenemedi.');
+      } finally {
+        input.value = '';
+      }
+    }
+
+    async openHeadlineImageSelectModal() {
+      try {
+        await this.ensureMediaLoaded();
+
+        const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
+        const currentFolder = this.state.mediaCurrentFolder || '';
+        const searchTerm = this.state.mediaSearchTerm || '';
+
+        let mediaItems = Array.isArray(this.state.media)
+          ? this.state.media.filter((item) =>
+            imageExtensions.includes((item.extension || '').toLowerCase())
+          )
+          : [];
+
+        if (!mediaItems.length) {
+          const params = new URLSearchParams();
+          if (currentFolder) {
+            params.set('folder', currentFolder);
+          }
+          if (searchTerm) {
+            params.set('search', searchTerm);
+          }
+
+          const result = await this.fetchJson(
+            `/cms/media${params.toString() ? `?${params.toString()}` : ''}`
+          );
+          const fetchedMedia = result.media || [];
+
+          if (fetchedMedia.length) {
+            this.state.media = fetchedMedia;
+            this.state.mediaFolders = result.folders || this.state.mediaFolders;
+            this.state.mediaTree = result.tree || this.state.mediaTree;
+            this.state.mediaBreadcrumbs =
+              result.breadcrumbs || this.state.mediaBreadcrumbs;
+            if (result.currentFolder !== undefined) {
+              this.state.mediaCurrentFolder = result.currentFolder;
+            }
+
+            mediaItems = fetchedMedia.filter((item) =>
+              imageExtensions.includes((item.extension || '').toLowerCase())
+            );
+          }
+        }
+
+        if (!mediaItems.length) {
+          this.showError('Seçilebilecek görsel bulunamadı. Önce bir görsel yükleyin.');
+          return;
+        }
+
+        const folderLabel = currentFolder ? currentFolder : 'Tüm Dosyalar';
+        this.buildMediaSelectModal(
+          mediaItems,
+          folderLabel,
+          searchTerm,
+          (selectedMedia) => {
+            const image = this.normalizeArticleImageEntry({
+              path: selectedMedia.path || selectedMedia.filename,
+              url: selectedMedia.url,
+              filename: selectedMedia.filename || '',
+              size: selectedMedia.size !== undefined ? Number(selectedMedia.size) : null,
+              uploadedAt: selectedMedia.uploadedAt || null
+            });
+            if (image) {
+              this.setHeadlineImage(image);
+              this.showSuccess('Manşet tasarımı seçildi.');
+            }
+          },
+          'Manşet Tasarımını Seç'
+        );
+      } catch (error) {
+        console.error('Headline media select modal error:', error);
+        this.showError('Manşet tasarımı seçilemedi.');
+      }
+    }
+
+    handleHeadlineFieldInput(event) {
+      const input = event.target.closest('input[data-field]');
+      if (!input || !this.headlineImage) return;
+      const field = input.dataset.field;
+      if (!field) return;
+      this.headlineImage[field] = input.value.trim();
+      this.syncHeadlineImageField();
+    }
+
+    clearHeadlineImage(showNotification = true) {
+      const hadImage = Boolean(this.headlineImage);
+      this.headlineImage = null;
+      this.renderHeadlineImage();
+      if (showNotification && hadImage) {
+        this.showSuccess('Manşet tasarımı kaldırıldı.');
+      }
+    }
+
     handleArticleMediaInput(event) {
       const input = event.currentTarget;
       const files = Array.from(input.files || []);
@@ -2210,9 +2483,8 @@
       try {
         const formData = new FormData();
         formData.append('file', file);
-        const params = new URLSearchParams({ folder: 'videos' });
 
-        const response = await fetch(`/cms/media/upload?${params.toString()}`, {
+        const response = await fetch('/cms/media/upload', {
           method: 'POST',
           body: formData
         });

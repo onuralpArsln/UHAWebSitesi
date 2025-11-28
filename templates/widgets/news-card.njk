@@ -1,5 +1,5 @@
 {% macro newsCard(article, variant='default') %}
-{% set image = article.images and article.images[0] %}
+{% set image = article.headlineImage or (article.images and article.images[0]) %}
 {% set articleUrl = asset('haber/' ~ article.slug) %}
 
 <article class="news-card news-card--{{ variant }}">

@@ -2,7 +2,7 @@
 {% if article %}
 {% set slug = article.slug or article.id %}
 {% set href = slug and asset('haber/' ~ slug) or '#' %}
-{% set image = article.images and article.images[0] %}
+{% set image = article.headlineImage or (article.images and article.images[0]) %}
 <article class="article-view-card" data-widget="article-view">
   <a class="article-view-media" href="{{ href }}" aria-hidden="{{ 'true' if not image }}">
     {% if image %}
