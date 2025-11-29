@@ -8,8 +8,21 @@ const path = require('path');
 const fs = require('fs');
 const { randomUUID } = require('crypto');
 const bcrypt = require('bcrypt');
+const {
+  LOGO_HEIGHT_DEFAULT,
+  LOGO_HEIGHT_MIN,
+  LOGO_HEIGHT_MAX
+} = require('../config/branding');
 
 const MEDIA_UPLOAD_WEB_PATH = '/uploads/media';
+
+const clampLogoHeight = (value) => {
+  const parsed = parseInt(value, 10);
+  if (Number.isFinite(parsed)) {
+    return Math.min(Math.max(parsed, LOGO_HEIGHT_MIN), LOGO_HEIGHT_MAX);
+  }
+  return LOGO_HEIGHT_DEFAULT;
+};
 
 class DataService {
   constructor(dbInstance = null) {
@@ -146,6 +159,7 @@ class DataService {
         headerLogo TEXT,
         footerLogo TEXT,
         favicon TEXT,
+        headerLogoHeight INTEGER,
         updatedAt TEXT
       )
     `);
@@ -286,6 +300,10 @@ class DataService {
       if (!columnNames.includes('favicon')) {
         this.db.exec("ALTER TABLE branding ADD COLUMN favicon TEXT");
       }
+      if (!columnNames.includes('headerLogoHeight')) {
+        this.db.exec("ALTER TABLE branding ADD COLUMN headerLogoHeight INTEGER");
+        this.db.exec(`UPDATE branding SET headerLogoHeight = ${LOGO_HEIGHT_DEFAULT} WHERE headerLogoHeight IS NULL`);
+      }
     } catch (error) {
       console.error('⚠️ Branding schema migration error:', error.message);
     }
@@ -299,8 +317,8 @@ class DataService {
     if (!existing || existing.count === 0) {
       const now = new Date().toISOString();
       this.db.prepare(`
-        INSERT INTO branding (id, siteName, primaryColor, secondaryColor, accentColor, logoTextColor, navTextColor, navBackgroundColor, headerLogo, footerLogo, favicon, updatedAt)
-        VALUES (@id, @siteName, @primaryColor, @secondaryColor, @accentColor, @logoTextColor, @navTextColor, @navBackgroundColor, @headerLogo, @footerLogo, @favicon, @updatedAt)
+        INSERT INTO branding (id, siteName, primaryColor, secondaryColor, accentColor, logoTextColor, navTextColor, navBackgroundColor, headerLogo, footerLogo, favicon, headerLogoHeight, updatedAt)
+        VALUES (@id, @siteName, @primaryColor, @secondaryColor, @accentColor, @logoTextColor, @navTextColor, @navBackgroundColor, @headerLogo, @footerLogo, @favicon, @headerLogoHeight, @updatedAt)
       `).run({
         id: 'branding',
         siteName: 'UHA News',
@@ -313,6 +331,7 @@ class DataService {
         headerLogo: '',
         footerLogo: '',
         favicon: '',
+        headerLogoHeight: LOGO_HEIGHT_DEFAULT,
         updatedAt: now
       });
     }
@@ -339,6 +358,7 @@ class DataService {
       headerLogo: row.headerLogo || '',
       footerLogo: row.footerLogo || '',
       favicon: row.favicon || '',
+      headerLogoHeight: clampLogoHeight(row.headerLogoHeight),
       updatedAt: row.updatedAt || new Date().toISOString()
     };
   }
@@ -351,6 +371,11 @@ class DataService {
     const updated = {
       ...current,
       ...brandingData,
+      headerLogoHeight: clampLogoHeight(
+        brandingData.headerLogoHeight !== undefined
+          ? brandingData.headerLogoHeight
+          : current.headerLogoHeight
+      ),
       updatedAt: new Date().toISOString()
     };
 
@@ -366,6 +391,7 @@ class DataService {
           headerLogo = @headerLogo,
           footerLogo = @footerLogo,
           favicon = @favicon,
+          headerLogoHeight = @headerLogoHeight,
           updatedAt = @updatedAt
       WHERE id = 'branding'
     `).run(updated);

@@ -9,12 +9,25 @@ const {
   optimizeImageData,
   optimizeSingleImage
 } = require('../services/view-helpers');
+const {
+  LOGO_HEIGHT_DEFAULT,
+  LOGO_HEIGHT_MIN,
+  LOGO_HEIGHT_MAX
+} = require('../config/branding');
 
 const router = express.Router();
 const dataService = new DataService();
 const urlSlugService = URLSlugService;
 const sitemapService = new SitemapService(dataService, urlSlugService);
 const BRANDING_WEB_PATH = '/uploads/branding';
+
+function clampLogoHeight(value) {
+  const parsed = parseInt(value, 10);
+  if (Number.isFinite(parsed)) {
+    return Math.min(Math.max(parsed, LOGO_HEIGHT_MIN), LOGO_HEIGHT_MAX);
+  }
+  return LOGO_HEIGHT_DEFAULT;
+}
 
 function formatBranding(raw) {
   const defaults = {
@@ -27,7 +40,8 @@ function formatBranding(raw) {
     navBackgroundColor: '#1a365d',
     headerLogo: '',
     footerLogo: '',
-    favicon: ''
+    favicon: '',
+    headerLogoHeight: LOGO_HEIGHT_DEFAULT
   };
 
   const branding = { ...defaults, ...(raw || {}) };
@@ -39,6 +53,7 @@ function formatBranding(raw) {
   branding.headerLogo = ensurePath(branding.headerLogo);
   branding.footerLogo = ensurePath(branding.footerLogo);
   branding.favicon = ensurePath(branding.favicon);
+  branding.headerLogoHeight = clampLogoHeight(branding.headerLogoHeight);
 
   return branding;
 }

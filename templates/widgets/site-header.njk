@@ -1,8 +1,10 @@
 {% macro siteHeader(branding = {}, categories = []) %}
 {% set siteName = branding.siteName or 'UHA News' %}
 {% set headerLogo = branding.headerLogo %}
+{% set headerLogoHeight = (branding.headerLogoHeight | default(44)) | int %}
 {% set navId = 'primary-navigation' %}
 <header class="site-header" data-site-header>
+{# 
   <!-- Top Bar: Socials & Date -->
   <div class="header-top hidden-mobile">
     <div class="container d-flex justify-content-between align-items-center">
@@ -20,7 +22,7 @@
       </div>
     </div>
   </div>
-
+#}
   <!-- Main Header: Logo & Actions -->
   <div class="header-main">
     <div class="container d-flex justify-content-between align-items-center">
@@ -30,7 +32,7 @@
       </button>
 
       <!-- Logo -->
-      <a class="site-logo" href="{{ asset('/') }}" aria-label="{{ siteName }}">
+      <a class="site-logo" href="{{ asset('/') }}" aria-label="{{ siteName }}" style="--header-logo-height: {{ headerLogoHeight }}px;">
         {% if headerLogo %}
         <img src="{{ headerLogo }}" alt="{{ siteName }}">
         {% else %}

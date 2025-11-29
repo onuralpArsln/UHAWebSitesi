@@ -93,7 +93,7 @@ body {
 }
 
 .site-logo img {
-  height: 44px;
+  height: var(--header-logo-height, 44px);
   width: auto;
   object-fit: contain;
 }
@@ -367,12 +367,6 @@ body {
 @media (min-width: 768px) {
   .hero__title {
     font-size: var(--font-size-3xl);
-  }
-}
-
-@media (max-width: 768px) {
-  .site-logo img {
-    height: 36px;
   }
 }
 

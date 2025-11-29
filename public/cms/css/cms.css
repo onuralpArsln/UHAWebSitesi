@@ -1611,7 +1611,9 @@
 }
 
 .branding-preview__logo-img {
-  max-height: 40px;
+  height: var(--branding-logo-height, 40px);
+  max-height: none;
+  width: auto;
   object-fit: contain;
 }
 

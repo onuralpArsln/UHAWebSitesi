@@ -98,6 +98,20 @@
           </div>
         </div>
 
+        <div class="form-group">
+          <label for="branding-logo-height">Logo Yüksekliği (px)</label>
+          <input
+            id="branding-logo-height"
+            name="headerLogoHeight"
+            type="number"
+            min="24"
+            max="160"
+            step="1"
+            value="{{ branding.headerLogoHeight | default(44, true) }}"
+            data-branding-logo-height>
+          <small>Header logosunun yüksekliğini belirleyin. Minimum 24px, maksimum 160px.</small>
+        </div>
+
         <div class="cms-form__grid cms-form__grid--two">
           <div class="form-group">
             <label for="branding-header-logo">Üst Menü Logosu</label>
@@ -151,7 +165,7 @@
         <div class="branding-preview__header-main" data-cms="branding-preview-header-main">
           <div class="branding-preview__header-content">
             {% if branding.headerLogo %}
-            <img src="{{ branding.headerLogo }}" alt="Logo önizleme" data-cms="branding-preview-header-logo" class="branding-preview__logo-img">
+            <img src="{{ branding.headerLogo }}" alt="Logo önizleme" data-cms="branding-preview-header-logo" class="branding-preview__logo-img" style="--branding-logo-height: {{ branding.headerLogoHeight | default(44, true) }}px;">
             {% else %}
             <span class="branding-preview__site-name" data-cms="branding-preview-site-name" style="color: {{ branding.logoTextColor or '#3182ce' }};">{{ branding.siteName or 'UHA News' }}</span>
             {% endif %}

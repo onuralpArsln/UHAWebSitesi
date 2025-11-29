@@ -7,6 +7,11 @@ const URLSlugService = require('../services/url-slug');
 const config = require('../services/config');
 const { requireAuth, requirePermission } = require('../middleware/auth');
 const cmsTabs = require('../config/cms-tabs');
+const {
+  LOGO_HEIGHT_DEFAULT,
+  LOGO_HEIGHT_MIN,
+  LOGO_HEIGHT_MAX
+} = require('../config/branding');
 
 const router = express.Router();
 
@@ -197,6 +202,18 @@ function normalizeColor(value, fallback) {
   return fallback;
 }
 
+function normalizeLogoHeight(value, fallback = LOGO_HEIGHT_DEFAULT) {
+  const parsed = parseInt(value, 10);
+  if (Number.isFinite(parsed)) {
+    return Math.min(Math.max(parsed, LOGO_HEIGHT_MIN), LOGO_HEIGHT_MAX);
+  }
+  const fallbackParsed = parseInt(fallback, 10);
+  if (Number.isFinite(fallbackParsed)) {
+    return Math.min(Math.max(fallbackParsed, LOGO_HEIGHT_MIN), LOGO_HEIGHT_MAX);
+  }
+  return LOGO_HEIGHT_DEFAULT;
+}
+
 function mapArticleToSummary(article) {
   if (!article) return null;
   const summary = {
@@ -227,7 +244,8 @@ function buildBrandingResponse(raw) {
     navBackgroundColor: '#1a365d',
     headerLogo: '',
     footerLogo: '',
-    favicon: ''
+    favicon: '',
+    headerLogoHeight: LOGO_HEIGHT_DEFAULT
   };
   return {
     ...defaults,
@@ -246,7 +264,8 @@ function formatBrandingForClient(raw) {
     ...branding,
     headerLogo: normalizePath(branding.headerLogo),
     footerLogo: normalizePath(branding.footerLogo),
-    favicon: normalizePath(branding.favicon)
+    favicon: normalizePath(branding.favicon),
+    headerLogoHeight: normalizeLogoHeight(branding.headerLogoHeight)
   };
 }
 
@@ -455,6 +474,7 @@ router.post('/branding', requirePermission('manage_settings'), (req, res, next) 
       logoTextColor: normalizeColor(body.logoTextColor, current.logoTextColor),
       navTextColor: normalizeColor(body.navTextColor, current.navTextColor),
       navBackgroundColor: normalizeColor(body.navBackgroundColor, current.navBackgroundColor),
+      headerLogoHeight: normalizeLogoHeight(body.headerLogoHeight, current.headerLogoHeight),
       headerLogo: current.headerLogo,
       footerLogo: current.footerLogo,
       favicon: current.favicon

@@ -5,6 +5,9 @@
     timeStyle: 'short'
   });
   const MEDIA_BASE_PATH = '/uploads/media/';
+  const LOGO_HEIGHT_DEFAULT = 44;
+  const LOGO_HEIGHT_MIN = 24;
+  const LOGO_HEIGHT_MAX = 160;
 
   class ColorUtils {
     static hexToHsl(hex) {
@@ -176,6 +179,7 @@
       this.brandingFileInputs = this.brandingForm ? this.brandingForm.querySelectorAll('[data-branding-upload]') : [];
       this.brandingSuggestionButtons = this.brandingForm ? this.brandingForm.querySelectorAll('[data-action="suggest-color"]') : [];
       this.brandingSiteNameInput = this.brandingForm ? this.brandingForm.querySelector('#branding-site-name') : null;
+      this.brandingLogoHeightInput = this.brandingForm ? this.brandingForm.querySelector('[data-branding-logo-height]') : null;
       this.brandingFaviconPreviewImg = this.brandingForm ? this.brandingForm.querySelector('[data-branding-favicon-preview-img]') : null;
       this.brandingFaviconPlaceholder = this.brandingForm ? this.brandingForm.querySelector('[data-branding-favicon-placeholder]') : null;
 
@@ -350,6 +354,12 @@
       if (this.brandingSiteNameInput) {
         this.brandingSiteNameInput.addEventListener('input', (event) => {
           this.handleBrandingSiteNameInput(event);
+        });
+      }
+
+      if (this.brandingLogoHeightInput) {
+        ['input', 'change'].forEach((eventName) => {
+          this.brandingLogoHeightInput.addEventListener(eventName, () => this.handleBrandingLogoHeightInput());
         });
       }
 
@@ -1022,7 +1032,8 @@
         accentColor: '#3182ce',
         headerLogo: '',
         footerLogo: '',
-        favicon: ''
+        favicon: '',
+        headerLogoHeight: LOGO_HEIGHT_DEFAULT
       };
 
       const current = { ...defaults, ...(branding || {}) };
@@ -1041,6 +1052,10 @@
         input.value = value;
         this.updateBrandingColorValue(key, value);
       });
+
+      if (this.brandingLogoHeightInput) {
+        this.brandingLogoHeightInput.value = current.headerLogoHeight;
+      }
 
       this.updateBrandingPreview(current);
       this.updateFaviconPreview(current.favicon);
@@ -1149,6 +1164,8 @@
       const navTextColor = branding.navTextColor || '#ffffff';
       const navBackgroundColor = branding.navBackgroundColor || '#1a365d';
       const siteName = branding.siteName || 'UHA News';
+      const headerLogoHeight = this.normalizeLogoHeight(branding.headerLogoHeight);
+      branding.headerLogoHeight = headerLogoHeight;
 
       // Top Bar (Primary Color)
       if (this.brandingPreviewTopBar) {
@@ -1210,12 +1227,14 @@
         if (this.brandingPreviewHeaderLogo) {
           if (this.brandingPreviewHeaderLogo.tagName === 'IMG') {
             this.brandingPreviewHeaderLogo.src = branding.headerLogo;
+            this.applyPreviewLogoHeight(this.brandingPreviewHeaderLogo, headerLogoHeight);
           } else {
             const img = document.createElement('img');
             img.src = branding.headerLogo;
             img.alt = 'Logo önizleme';
             img.className = 'branding-preview__logo-img';
             img.dataset.cms = 'branding-preview-header-logo';
+            this.applyPreviewLogoHeight(img, headerLogoHeight);
             this.brandingPreviewHeaderLogo.replaceWith(img);
             this.brandingPreviewHeaderLogo = img;
           }
@@ -1231,6 +1250,7 @@
             img.alt = 'Logo önizleme';
             img.className = 'branding-preview__logo-img';
             img.dataset.cms = 'branding-preview-header-logo';
+            this.applyPreviewLogoHeight(img, headerLogoHeight);
             headerContent.appendChild(img);
             this.brandingPreviewHeaderLogo = img;
           }
@@ -1319,16 +1339,19 @@
       if (!target) return;
 
       const url = URL.createObjectURL(file);
+      const logoHeight = this.getCurrentLogoHeight();
       if (target === 'header') {
         if (this.brandingPreviewHeaderLogo) {
           if (this.brandingPreviewHeaderLogo.tagName === 'IMG') {
             this.brandingPreviewHeaderLogo.src = url;
+            this.applyPreviewLogoHeight(this.brandingPreviewHeaderLogo, logoHeight);
           } else {
             const img = document.createElement('img');
             img.src = url;
             img.alt = 'Logo önizleme';
             img.className = 'branding-preview__logo-img';
             img.dataset.cms = 'branding-preview-header-logo';
+            this.applyPreviewLogoHeight(img, logoHeight);
             this.brandingPreviewHeaderLogo.replaceWith(img);
             this.brandingPreviewHeaderLogo = img;
           }
@@ -1344,6 +1367,7 @@
             img.alt = 'Logo önizleme';
             img.className = 'branding-preview__logo-img';
             img.dataset.cms = 'branding-preview-header-logo';
+            this.applyPreviewLogoHeight(img, logoHeight);
             headerContent.appendChild(img);
             this.brandingPreviewHeaderLogo = img;
           }
@@ -1399,6 +1423,39 @@
       if (this.state.branding) {
         this.state.branding.siteName = siteName;
       }
+    }
+
+    handleBrandingLogoHeightInput() {
+      if (!this.brandingLogoHeightInput || !this.state.branding) return;
+      const value = this.normalizeLogoHeight(this.brandingLogoHeightInput.value);
+      this.brandingLogoHeightInput.value = value;
+      this.state.branding.headerLogoHeight = value;
+      this.updateBrandingPreview(this.state.branding);
+    }
+
+    normalizeLogoHeight(value) {
+      const parsed = parseInt(value, 10);
+      if (Number.isFinite(parsed)) {
+        return Math.min(Math.max(parsed, LOGO_HEIGHT_MIN), LOGO_HEIGHT_MAX);
+      }
+      return LOGO_HEIGHT_DEFAULT;
+    }
+
+    getCurrentLogoHeight() {
+      if (this.state.branding && this.state.branding.headerLogoHeight !== undefined) {
+        return this.normalizeLogoHeight(this.state.branding.headerLogoHeight);
+      }
+      if (this.brandingLogoHeightInput) {
+        return this.normalizeLogoHeight(this.brandingLogoHeightInput.value);
+      }
+      return LOGO_HEIGHT_DEFAULT;
+    }
+
+    applyPreviewLogoHeight(element, height) {
+      if (!element || element.tagName !== 'IMG') return;
+      const value = `${height}px`;
+      element.style.setProperty('--branding-logo-height', value);
+      element.style.height = value;
     }
 
     async saveBranding() {
