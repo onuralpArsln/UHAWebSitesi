@@ -2495,3 +2495,290 @@ Widget Listesi:
 
 ========================================
 
+
+========================================
+📋 MAKALE DÜZENİ GÜNCELLENDİ
+⏰ Zaman: 2025-11-29T09:33:29.506Z
+========================================
+Widget Sayısı: 9
+
+Widget Listesi:
+
+1. Widget:
+   Tip: article-hero-image
+   Config: {}
+
+2. Widget:
+   Tip: article-header
+   Config: {}
+
+3. Widget:
+   Tip: article-meta
+   Config: {}
+
+4. Widget:
+   Tip: article-summary
+   Config: {}
+
+5. Widget:
+   Tip: article-image
+   Config: {
+     "showCaption": true
+   }
+
+6. Widget:
+   Tip: article-content
+   Config: {}
+
+7. Widget:
+   Tip: article-tags
+   Config: {}
+
+8. Widget:
+   Tip: related-articles
+   Config: {
+     "limit": 4,
+     "sameCategory": true
+   }
+
+9. Widget:
+   Tip: social-share
+   Config: {
+     "showFacebook": true,
+     "showTwitter": true,
+     "showWhatsapp": true
+   }
+
+========================================
+
+
+========================================
+📋 MAKALE DÜZENİ GÜNCELLENDİ
+⏰ Zaman: 2025-11-29T09:33:50.155Z
+========================================
+Widget Sayısı: 9
+
+Widget Listesi:
+
+1. Widget:
+   Tip: article-header
+   Config: {}
+
+2. Widget:
+   Tip: article-hero-image
+   Config: {}
+
+3. Widget:
+   Tip: article-meta
+   Config: {}
+
+4. Widget:
+   Tip: article-summary
+   Config: {}
+
+5. Widget:
+   Tip: article-image
+   Config: {
+     "showCaption": true
+   }
+
+6. Widget:
+   Tip: article-content
+   Config: {}
+
+7. Widget:
+   Tip: article-tags
+   Config: {}
+
+8. Widget:
+   Tip: related-articles
+   Config: {
+     "limit": 4,
+     "sameCategory": true
+   }
+
+9. Widget:
+   Tip: social-share
+   Config: {
+     "showFacebook": true,
+     "showTwitter": true,
+     "showWhatsapp": true
+   }
+
+========================================
+
+
+========================================
+📋 MAKALE DÜZENİ GÜNCELLENDİ
+⏰ Zaman: 2025-11-29T09:40:24.490Z
+========================================
+Widget Sayısı: 9
+
+Widget Listesi:
+
+1. Widget:
+   Tip: article-header
+   Config: {}
+
+2. Widget:
+   Tip: article-hero-image
+   Config: {}
+
+3. Widget:
+   Tip: article-meta
+   Config: {}
+
+4. Widget:
+   Tip: article-summary
+   Config: {}
+
+5. Widget:
+   Tip: article-image
+   Config: {
+     "showCaption": true,
+     "skipFirst": true
+   }
+
+6. Widget:
+   Tip: article-content
+   Config: {}
+
+7. Widget:
+   Tip: article-tags
+   Config: {}
+
+8. Widget:
+   Tip: related-articles
+   Config: {
+     "limit": 4,
+     "sameCategory": true
+   }
+
+9. Widget:
+   Tip: social-share
+   Config: {
+     "showFacebook": true,
+     "showTwitter": true,
+     "showWhatsapp": true
+   }
+
+========================================
+
+
+========================================
+📋 MAKALE DÜZENİ GÜNCELLENDİ
+⏰ Zaman: 2025-11-29T09:41:20.403Z
+========================================
+Widget Sayısı: 9
+
+Widget Listesi:
+
+1. Widget:
+   Tip: article-hero-image
+   Config: {}
+
+2. Widget:
+   Tip: article-header
+   Config: {}
+
+3. Widget:
+   Tip: article-meta
+   Config: {}
+
+4. Widget:
+   Tip: article-summary
+   Config: {}
+
+5. Widget:
+   Tip: article-image
+   Config: {
+     "showCaption": true,
+     "skipFirst": true
+   }
+
+6. Widget:
+   Tip: article-content
+   Config: {}
+
+7. Widget:
+   Tip: article-tags
+   Config: {}
+
+8. Widget:
+   Tip: related-articles
+   Config: {
+     "limit": 4,
+     "sameCategory": true
+   }
+
+9. Widget:
+   Tip: social-share
+   Config: {
+     "showFacebook": true,
+     "showTwitter": true,
+     "showWhatsapp": true
+   }
+
+========================================
+
+
+========================================
+📋 MAKALE DÜZENİ GÜNCELLENDİ
+⏰ Zaman: 2025-11-29T09:46:51.530Z
+========================================
+Widget Sayısı: 10
+
+Widget Listesi:
+
+1. Widget:
+   Tip: article-category
+   Config: {}
+
+2. Widget:
+   Tip: article-hero-image
+   Config: {}
+
+3. Widget:
+   Tip: article-header
+   Config: {}
+
+4. Widget:
+   Tip: article-meta
+   Config: {}
+
+5. Widget:
+   Tip: article-summary
+   Config: {}
+
+6. Widget:
+   Tip: article-image
+   Config: {
+     "showCaption": true,
+     "skipFirst": true
+   }
+
+7. Widget:
+   Tip: article-content
+   Config: {}
+
+8. Widget:
+   Tip: article-tags
+   Config: {}
+
+9. Widget:
+   Tip: related-articles
+   Config: {
+     "limit": 4,
+     "sameCategory": true
+   }
+
+10. Widget:
+   Tip: social-share
+   Config: {
+     "showFacebook": true,
+     "showTwitter": true,
+     "showWhatsapp": true
+   }
+
+========================================
+

@@ -4169,6 +4169,18 @@
       // Available article widgets
       this.availableArticleWidgets = [
         {
+          type: 'article-hero-image',
+          title: 'Ana Görsel',
+          desc: 'Başlık öncesi ana görsel',
+          defaultConfig: {}
+        },
+        {
+          type: 'article-category',
+          title: 'Kategori Adı',
+          desc: 'Kategori rozeti',
+          defaultConfig: {}
+        },
+        {
           type: 'article-header',
           title: 'Makale Başlığı',
           desc: 'Makale başlığı ve meta bilgileri',
@@ -4182,9 +4194,9 @@
         },
         {
           type: 'article-image',
-          title: 'Öne Çıkan Görsel',
+          title: 'Görsel Galerisi',
           desc: 'Makale ana görseli',
-          defaultConfig: { showCaption: true }
+          defaultConfig: { showCaption: true, skipFirst: false }
         },
         {
           type: 'article-content',
@@ -4612,7 +4624,7 @@
       const widgetTitles = {
         'article-header': 'Makale Başlığı',
         'article-meta': 'Makale Bilgileri',
-        'article-image': 'Öne Çıkan Görsel',
+        'article-image': 'Görsel Galerisi',
         'article-content': 'Makale İçeriği',
         'article-tags': 'Etiketler',
         'article-summary': 'Özet Bloğu',

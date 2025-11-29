@@ -1,0 +1,9 @@
+{% macro articleCategory(article) %}
+{% if article and article.category %}
+<div class="article-view__header article-category-block">
+  <span class="badge badge--category">{{ article.category }}</span>
+</div>
+{% endif %}
+{% endmacro %}
+
+

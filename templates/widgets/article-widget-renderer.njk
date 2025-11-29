@@ -1,3 +1,5 @@
+{% import "widgets/article-hero-image.njk" as articleHeroImageWidget %}
+{% import "widgets/article-category.njk" as articleCategoryWidget %}
 {% import "widgets/article-header.njk" as articleHeaderWidget %}
 {% import "widgets/article-meta.njk" as articleMetaWidget %}
 {% import "widgets/article-image.njk" as articleImageWidget %}
@@ -13,7 +15,13 @@
 
 {# Article Widget Renderer Macro - Dynamically renders widgets based on type #}
 {% macro render(widget, article, pageUrl, relatedArticles = [], sidebarArticles = [], comments = [], hasMoreComments = false) %}
-  {% if widget.type == 'article-header' %}
+  {% if widget.type == 'article-hero-image' %}
+    {{ articleHeroImageWidget.articleHeroImage(article, widget.config or {}) }}
+  
+  {% elif widget.type == 'article-category' %}
+    {{ articleCategoryWidget.articleCategory(article) }}
+  
+  {% elif widget.type == 'article-header' %}
     {{ articleHeaderWidget.articleHeader(article) }}
   
   {% elif widget.type == 'article-meta' %}

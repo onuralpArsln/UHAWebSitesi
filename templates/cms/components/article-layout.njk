@@ -33,9 +33,11 @@
               <td class="layout-order">{{ loop.index }}</td>
               <td>
                 {% set widgetTitles = {
+                  'article-hero-image': 'Ana Görsel',
+                  'article-category': 'Kategori Adı',
                   'article-header': 'Makale Başlığı',
                   'article-meta': 'Makale Bilgileri',
-                  'article-image': 'Öne Çıkan Görsel',
+                  'article-image': 'Görsel Galerisi',
                   'article-content': 'Makale İçeriği',
                   'article-tags': 'Etiketler',
                   'article-summary': 'Özet Bloğu',
@@ -98,6 +100,13 @@
                              data-widget-index="{{ loop.index0 }}"
                              {% if widget.config.showCaption %}checked{% endif %}>
                       Altyazı göster
+                    </label>
+                    <label class="config-control">
+                      <input type="checkbox" 
+                             data-config="skipFirst" 
+                             data-widget-index="{{ loop.index0 }}"
+                             {% if widget.config.skipFirst %}checked{% endif %}>
+                      İlk görseli atla
                     </label>
                     <label class="config-control">
                       <span>Maks. yükseklik (px):</span>

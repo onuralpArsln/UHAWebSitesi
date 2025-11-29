@@ -1,17 +1,23 @@
 {% macro articleImage(article, config = {}) %}
 {% if article %}
   {% if article.images and article.images.length > 0 %}
-  {% set heroImage = article.images[0] %}
+  {% set skipFirst = config.skipFirst %}
+  {% set hasSecondImage = article.images.length > 1 %}
+  {% set shouldRenderImage = (not skipFirst) or (skipFirst and hasSecondImage) %}
+  {% if shouldRenderImage %}
+  {% set imageIndex = 1 if (skipFirst and hasSecondImage) else 0 %}
+  {% set displayImage = article.images[imageIndex] %}
   {% set maxHeight = config.maxHeight %}
   <figure class="article-view__media" {% if maxHeight %}style="max-height: {{ maxHeight }}px; overflow: hidden; display: flex; align-items: center; justify-content: center;"{% endif %}>
     <img
-      src="{{ heroImage.lowRes }}"
-      alt="{{ heroImage.alt or article.title }}"
-      data-high-res="{{ heroImage.highRes }}"
+      src="{{ displayImage.lowRes }}"
+      alt="{{ displayImage.alt or article.title }}"
+      data-high-res="{{ displayImage.highRes }}"
       loading="eager"
       {% if maxHeight %}style="max-height: {{ maxHeight }}px; width: 100%; height: auto; object-fit: contain; display: block;"{% endif %}
     >
   </figure>
+  {% endif %}
   {% endif %}
   
   {% if article.videoUrl %}

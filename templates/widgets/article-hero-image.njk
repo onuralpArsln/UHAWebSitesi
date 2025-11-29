@@ -1,0 +1,17 @@
+{% macro articleHeroImage(article, config = {}) %}
+{% if article and article.images and article.images.length > 0 %}
+  {% set heroImage = article.images[0] %}
+  {% set maxHeight = config.maxHeight %}
+  <figure class="article-view__media" {% if maxHeight %}style="max-height: {{ maxHeight }}px; overflow: hidden; display: flex; align-items: center; justify-content: center;"{% endif %}>
+    <img
+      src="{{ heroImage.lowRes }}"
+      alt="{{ heroImage.alt or article.title }}"
+      data-high-res="{{ heroImage.highRes }}"
+      loading="eager"
+      {% if maxHeight %}style="max-height: {{ maxHeight }}px; width: 100%; height: auto; object-fit: contain; display: block;"{% endif %}
+    >
+  </figure>
+{% endif %}
+{% endmacro %}
+
+

@@ -16,7 +16,7 @@
 
 <main class="site-main">
   {% if layout and layout.length > 0 %}
-    {% set contentWidgetTypes = ['article-header', 'article-meta', 'article-image', 'article-content', 'article-tags', 'article-summary'] %}
+    {% set contentWidgetTypes = ['article-category', 'article-header', 'article-meta', 'article-image', 'article-content', 'article-tags', 'article-summary'] %}
 
     {% for widget in layout %}
       {% set isContentWidget = widget.type in contentWidgetTypes %}
@@ -40,6 +40,23 @@
   {% else %}
     {# Fallback to default hardcoded layout if no layout is configured #}
     <article class="article-view container">
+      {% if article.category %}
+      <div class="article-view__header article-category-block">
+        <span class="badge badge--category">{{ article.category }}</span>
+      </div>
+      {% endif %}
+      {% if article.images and article.images.length > 0 %}
+      {% set heroImage = article.images[0] %}
+      <figure class="article-view__media">
+        <img
+          src="{{ heroImage.lowRes }}"
+          alt="{{ heroImage.alt or article.title }}"
+          data-high-res="{{ heroImage.highRes }}"
+          loading="eager"
+        >
+      </figure>
+      {% endif %}
+
       <header class="article-view__header">
         <span class="badge badge--category">{{ article.category }}</span>
         <h1 class="article-view__title">{{ article.title }}</h1>
@@ -52,13 +69,13 @@
         </div>
       </header>
 
-      {% if article.images and article.images.length > 0 %}
-      {% set heroImage = article.images[0] %}
+      {% if article.images and article.images.length > 1 %}
+      {% set secondaryImage = article.images[1] %}
       <figure class="article-view__media">
         <img
-          src="{{ heroImage.lowRes }}"
-          alt="{{ heroImage.alt }}"
-          data-high-res="{{ heroImage.highRes }}"
+          src="{{ secondaryImage.lowRes }}"
+          alt="{{ secondaryImage.alt or article.title }}"
+          data-high-res="{{ secondaryImage.highRes }}"
           loading="eager"
         >
       </figure>

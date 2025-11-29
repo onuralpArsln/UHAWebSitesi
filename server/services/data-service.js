@@ -446,9 +446,11 @@ class DataService {
       const now = new Date().toISOString();
       // Default layout matching the widget types we implemented
       const defaultLayout = [
+        { type: 'article-hero-image', config: {} },
+        { type: 'article-category', config: {} },
         { type: 'article-header', config: {} },
         { type: 'article-meta', config: {} },
-        { type: 'article-image', config: { showCaption: true } },
+        { type: 'article-image', config: { showCaption: true, skipFirst: true } },
         { type: 'article-content', config: {} },
         { type: 'article-tags', config: {} },
         { type: 'related-articles', config: { limit: 4, sameCategory: true } },
