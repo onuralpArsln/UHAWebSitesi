@@ -1,6 +1,6 @@
 {% macro articleSummary(article) %}
 {% if article %}
-  {% set summaryText = article.summaryHead or article.summary %}
+  {% set summaryText = article.summary or article.summaryHead %}
   {% if summaryText %}
   <div class="article-summary-block" data-widget="article-summary">
     <p class="article-summary-block__text">{{ summaryText }}</p>
