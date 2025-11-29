@@ -1,3 +1,11 @@
+news-card template uses these article fields:
+- title (shown in <h3>)
+- summary (optional paragraph)
+- category (badge over image)
+- author (meta line)
+- publishedAt (formatted date)
+- headlineImage or first image (card image)
+URL uses slug: asset('haber/' ~ article.slug)
 This file documents the redundancy of the `carousel_layout` table and the manual sorting mechanism for the Manşet (Headline) slider.
 
 As of the latest update to fix the Manşet refresh issue:

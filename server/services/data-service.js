@@ -145,9 +145,11 @@ class DataService {
         navBackgroundColor TEXT,
         headerLogo TEXT,
         footerLogo TEXT,
+        favicon TEXT,
         updatedAt TEXT
       )
     `);
+    this.ensureBrandingSchema();
 
     // Create homepage layout table
     this.db.exec(`
@@ -276,6 +278,19 @@ class DataService {
     }
   }
 
+  ensureBrandingSchema() {
+    try {
+      const tableInfo = this.db.prepare("PRAGMA table_info(branding)").all();
+      const columnNames = tableInfo.map(col => col.name);
+
+      if (!columnNames.includes('favicon')) {
+        this.db.exec("ALTER TABLE branding ADD COLUMN favicon TEXT");
+      }
+    } catch (error) {
+      console.error('⚠️ Branding schema migration error:', error.message);
+    }
+  }
+
   /**
    * Ensure branding defaults exist
    */
@@ -284,8 +299,8 @@ class DataService {
     if (!existing || existing.count === 0) {
       const now = new Date().toISOString();
       this.db.prepare(`
-        INSERT INTO branding (id, siteName, primaryColor, secondaryColor, accentColor, logoTextColor, navTextColor, navBackgroundColor, headerLogo, footerLogo, updatedAt)
-        VALUES (@id, @siteName, @primaryColor, @secondaryColor, @accentColor, @logoTextColor, @navTextColor, @navBackgroundColor, @headerLogo, @footerLogo, @updatedAt)
+        INSERT INTO branding (id, siteName, primaryColor, secondaryColor, accentColor, logoTextColor, navTextColor, navBackgroundColor, headerLogo, footerLogo, favicon, updatedAt)
+        VALUES (@id, @siteName, @primaryColor, @secondaryColor, @accentColor, @logoTextColor, @navTextColor, @navBackgroundColor, @headerLogo, @footerLogo, @favicon, @updatedAt)
       `).run({
         id: 'branding',
         siteName: 'UHA News',
@@ -297,6 +312,7 @@ class DataService {
         navBackgroundColor: '#1a365d',
         headerLogo: '',
         footerLogo: '',
+        favicon: '',
         updatedAt: now
       });
     }
@@ -322,6 +338,7 @@ class DataService {
       navBackgroundColor: row.navBackgroundColor || '#1a365d',
       headerLogo: row.headerLogo || '',
       footerLogo: row.footerLogo || '',
+      favicon: row.favicon || '',
       updatedAt: row.updatedAt || new Date().toISOString()
     };
   }
@@ -348,6 +365,7 @@ class DataService {
           navBackgroundColor = @navBackgroundColor,
           headerLogo = @headerLogo,
           footerLogo = @footerLogo,
+          favicon = @favicon,
           updatedAt = @updatedAt
       WHERE id = 'branding'
     `).run(updated);

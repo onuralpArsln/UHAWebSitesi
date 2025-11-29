@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ pageTitle or 'UHA CMS' }}</title>
+  <title>{{ pageTitle or 'BGrup Yazılım CMS' }}</title>
+  {% set cmsBrand = branding or (initialState and initialState.branding) or {} %}
+  {% if cmsBrand.favicon %}
+  <link rel="icon" href="{{ cmsBrand.favicon }}" type="image/x-icon">
+  {% endif %}
   <link rel="stylesheet" href="{{ asset('css/variables.css') }}">
   <link rel="stylesheet" href="{{ asset('css/main.css') }}">
   <link rel="stylesheet" href="{{ asset('cms/css/cms.css') }}?v=2">

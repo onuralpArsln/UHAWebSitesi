@@ -56,7 +56,9 @@ const allowedImageMimeTypes = new Set([
   'image/png',
   'image/jpeg',
   'image/webp',
-  'image/svg+xml'
+  'image/svg+xml',
+  'image/x-icon',
+  'image/vnd.microsoft.icon'
 ]);
 
 const storage = multer.diskStorage({
@@ -224,7 +226,8 @@ function buildBrandingResponse(raw) {
     navTextColor: '#ffffff',
     navBackgroundColor: '#1a365d',
     headerLogo: '',
-    footerLogo: ''
+    footerLogo: '',
+    favicon: ''
   };
   return {
     ...defaults,
@@ -242,7 +245,8 @@ function formatBrandingForClient(raw) {
   return {
     ...branding,
     headerLogo: normalizePath(branding.headerLogo),
-    footerLogo: normalizePath(branding.footerLogo)
+    footerLogo: normalizePath(branding.footerLogo),
+    favicon: normalizePath(branding.favicon)
   };
 }
 
@@ -378,7 +382,7 @@ router.get('/', (req, res) => {
     const initialStateJson = JSON.stringify(initialState).replace(/</g, '\\u003c');
 
     res.render('cms/pages/dashboard.njk', {
-      pageTitle: 'UHA CMS',
+      pageTitle: 'BGrup Yazılım CMS',
       initialState,
       initialStateJson,
       cmsTabs: config.getCmsTabs(),
@@ -427,7 +431,8 @@ router.get('/branding', (req, res) => {
 router.post('/branding', requirePermission('manage_settings'), (req, res, next) => {
   const handleUpload = upload.fields([
     { name: 'headerLogo', maxCount: 1 },
-    { name: 'footerLogo', maxCount: 1 }
+    { name: 'footerLogo', maxCount: 1 },
+    { name: 'favicon', maxCount: 1 }
   ]);
 
   handleUpload(req, res, (err) => {
@@ -451,11 +456,13 @@ router.post('/branding', requirePermission('manage_settings'), (req, res, next) 
       navTextColor: normalizeColor(body.navTextColor, current.navTextColor),
       navBackgroundColor: normalizeColor(body.navBackgroundColor, current.navBackgroundColor),
       headerLogo: current.headerLogo,
-      footerLogo: current.footerLogo
+      footerLogo: current.footerLogo,
+      favicon: current.favicon
     };
 
     const uploadedHeader = req.files?.headerLogo?.[0];
     const uploadedFooter = req.files?.footerLogo?.[0];
+    const uploadedFavicon = req.files?.favicon?.[0];
 
     if (uploadedHeader) {
       removeOldBrandingAsset(current.headerLogo);
@@ -465,6 +472,11 @@ router.post('/branding', requirePermission('manage_settings'), (req, res, next) 
     if (uploadedFooter) {
       removeOldBrandingAsset(current.footerLogo);
       brandingUpdate.footerLogo = `${BRANDING_WEB_PATH}/${uploadedFooter.filename}`;
+    }
+
+    if (uploadedFavicon) {
+      removeOldBrandingAsset(current.favicon);
+      brandingUpdate.favicon = `${BRANDING_WEB_PATH}/${uploadedFavicon.filename}`;
     }
 
     const updatedBranding = dataService.updateBranding(brandingUpdate);

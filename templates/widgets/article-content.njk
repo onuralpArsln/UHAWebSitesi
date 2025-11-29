@@ -5,24 +5,9 @@
 </div>
 {% endif %}
 
-{% if article %}
+{% if article and article.pressAnnouncementId %}
 <div class="article-info">
-  {% if article.source %}
-  <div class="article-info__item"><strong>Kaynak:</strong> {{ article.source }}</div>
-  {% endif %}
-  {% if article.pressAnnouncementId %}
   <div class="article-info__item"><strong>Basın İlan ID:</strong> {{ article.pressAnnouncementId }}</div>
-  {% endif %}
-  {% if article.outlinks and article.outlinks.length > 0 %}
-  <div class="article-info__item">
-    <strong>Referanslar:</strong>
-    <ul class="article-info__links">
-      {% for link in article.outlinks %}
-      <li><a href="{{ link }}" target="_blank" rel="noopener">{{ link }}</a></li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
 </div>
 {% endif %}
 {% endmacro %}

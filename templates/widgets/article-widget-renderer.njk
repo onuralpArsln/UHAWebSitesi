@@ -3,6 +3,8 @@
 {% import "widgets/article-image.njk" as articleImageWidget %}
 {% import "widgets/article-content.njk" as articleContentWidget %}
 {% import "widgets/article-tags.njk" as articleTagsWidget %}
+{% import "widgets/article-summary.njk" as articleSummaryWidget %}
+{% import "widgets/article-citation.njk" as articleCitationWidget %}
 {% import "widgets/related-news.njk" as relatedNewsWidget %}
 {% import "widgets/sidebar-widget.njk" as sidebarWidget %}
 {% import "widgets/social-share.njk" as socialShareWidget %}
@@ -25,6 +27,12 @@
   
   {% elif widget.type == 'article-tags' %}
     {{ articleTagsWidget.articleTags(article) }}
+  
+  {% elif widget.type == 'article-summary' %}
+    {{ articleSummaryWidget.articleSummary(article) }}
+  
+  {% elif widget.type == 'article-citation' %}
+    {{ articleCitationWidget.articleCitation(article) }}
   
   {% elif widget.type == 'related-articles' %}
     {% if widget.data and widget.data.articles and widget.data.articles.length > 0 %}

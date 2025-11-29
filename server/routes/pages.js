@@ -26,7 +26,8 @@ function formatBranding(raw) {
     navTextColor: '#ffffff',
     navBackgroundColor: '#1a365d',
     headerLogo: '',
-    footerLogo: ''
+    footerLogo: '',
+    favicon: ''
   };
 
   const branding = { ...defaults, ...(raw || {}) };
@@ -37,6 +38,7 @@ function formatBranding(raw) {
 
   branding.headerLogo = ensurePath(branding.headerLogo);
   branding.footerLogo = ensurePath(branding.footerLogo);
+  branding.favicon = ensurePath(branding.favicon);
 
   return branding;
 }

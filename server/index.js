@@ -288,7 +288,7 @@ cmsAuthRouter.get('/login', (req, res) => {
   if (req.session && req.session.userId) {
     return res.redirect('/cms');
   }
-  res.render('cms/pages/login.njk', { pageTitle: 'Giriş Yap - UHA CMS' });
+  res.render('cms/pages/login.njk', { pageTitle: 'Giriş Yap - BGrup Yazılım CMS' });
 });
 mountRoutesBoth('/cms', cmsAuthRouter);
 

@@ -176,6 +176,8 @@
       this.brandingFileInputs = this.brandingForm ? this.brandingForm.querySelectorAll('[data-branding-upload]') : [];
       this.brandingSuggestionButtons = this.brandingForm ? this.brandingForm.querySelectorAll('[data-action="suggest-color"]') : [];
       this.brandingSiteNameInput = this.brandingForm ? this.brandingForm.querySelector('#branding-site-name') : null;
+      this.brandingFaviconPreviewImg = this.brandingForm ? this.brandingForm.querySelector('[data-branding-favicon-preview-img]') : null;
+      this.brandingFaviconPlaceholder = this.brandingForm ? this.brandingForm.querySelector('[data-branding-favicon-placeholder]') : null;
 
       this.mediaSection = document.querySelector('[data-cms="media-section"]');
       this.mediaListContainer = this.mediaSection ? this.mediaSection.querySelector('[data-cms="media-list"]') : null;
@@ -1019,7 +1021,8 @@
         secondaryColor: '#2d3748',
         accentColor: '#3182ce',
         headerLogo: '',
-        footerLogo: ''
+        footerLogo: '',
+        favicon: ''
       };
 
       const current = { ...defaults, ...(branding || {}) };
@@ -1040,6 +1043,7 @@
       });
 
       this.updateBrandingPreview(current);
+      this.updateFaviconPreview(current.favicon);
 
       if (this.pageSubtitleElement) {
         this.pageSubtitleElement.textContent = current.siteName || 'UHA News';
@@ -1356,6 +1360,27 @@
           img.dataset.cms = 'branding-preview-footer-logo';
           this.brandingPreviewFooterLogo.replaceWith(img);
           this.brandingPreviewFooterLogo = img;
+        }
+      }
+
+      if (target === 'favicon') {
+        this.updateFaviconPreview(url);
+      }
+    }
+
+    updateFaviconPreview(src) {
+      if (this.brandingFaviconPreviewImg) {
+        if (src) {
+          this.brandingFaviconPreviewImg.src = src;
+          this.brandingFaviconPreviewImg.hidden = false;
+          if (this.brandingFaviconPlaceholder) {
+            this.brandingFaviconPlaceholder.hidden = true;
+          }
+        } else {
+          this.brandingFaviconPreviewImg.hidden = true;
+          if (this.brandingFaviconPlaceholder) {
+            this.brandingFaviconPlaceholder.hidden = false;
+          }
         }
       }
     }
@@ -4174,6 +4199,18 @@
           defaultConfig: {}
         },
         {
+          type: 'article-summary',
+          title: 'Makale Özeti',
+          desc: 'Başlık altında özet metni',
+          defaultConfig: {}
+        },
+        {
+          type: 'article-citation',
+          title: 'Kaynakça',
+          desc: 'Kaynak ve referans linkleri',
+          defaultConfig: {}
+        },
+        {
           type: 'related-articles',
           title: 'İlgili Haberler',
           desc: 'Benzer veya ilgili haberler listesi',
@@ -4578,6 +4615,8 @@
         'article-image': 'Öne Çıkan Görsel',
         'article-content': 'Makale İçeriği',
         'article-tags': 'Etiketler',
+        'article-summary': 'Özet Bloğu',
+        'article-citation': 'Kaynakça',
         'related-articles': 'İlgili Haberler',
         'sidebar-widget': 'Yan Menü',
         'social-share': 'Sosyal Medya Paylaşım',

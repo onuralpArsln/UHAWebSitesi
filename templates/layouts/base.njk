@@ -20,6 +20,9 @@
   <meta property="twitter:description" content="{{ meta.description }}">
   <meta property="twitter:image" content="{{ meta.image }}">
   <meta name="theme-color" content="{{ primary_color }}">
+  {% if brand.favicon %}
+  <link rel="icon" href="{{ brand.favicon }}" type="image/x-icon">
+  {% endif %}
   <link rel="stylesheet" href="{{ asset('css/modern-variables.css') }}">
   <link rel="stylesheet" href="{{ asset('css/modern-layout.css') }}">
   <link rel="stylesheet" href="{{ asset('css/layout-utilities.css') }}">

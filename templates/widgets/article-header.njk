@@ -7,6 +7,10 @@
   {% if article.title %}
   <h1 class="article-view__title">{{ article.title }}</h1>
   {% endif %}
+  {% set summaryHighlight = article.summaryHead or article.summary %}
+  {% if summaryHighlight %}
+  <p class="article-view__summary-highlight">{{ summaryHighlight }}</p>
+  {% endif %}
 </header>
 {% endif %}
 {% endmacro %}

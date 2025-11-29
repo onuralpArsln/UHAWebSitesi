@@ -16,19 +16,22 @@
 
 <main class="site-main">
   {% if layout and layout.length > 0 %}
-    {# Dynamic widget rendering based on saved layout #}
-    <article class="article-view container">
-      {# Render article content widgets (within article tag) #}
-      {% for widget in layout %}
-        {% if widget.type in ['article-header', 'article-meta', 'article-image', 'article-content', 'article-tags'] %}
-          {{ widgetRenderer.render(widget, article, pageUrl) }}
-        {% endif %}
-      {% endfor %}
-    </article>
+    {% set contentWidgetTypes = ['article-header', 'article-meta', 'article-image', 'article-content', 'article-tags', 'article-summary'] %}
 
-    {# Render supplementary widgets (outside article tag) #}
     {% for widget in layout %}
-      {% if widget.type not in ['article-header', 'article-meta', 'article-image', 'article-content', 'article-tags'] %}
+      {% set isContentWidget = widget.type in contentWidgetTypes %}
+      {% set prevIsContent = loop.previtem and (loop.previtem.type in contentWidgetTypes) %}
+      {% set nextIsContent = loop.nextitem and (loop.nextitem.type in contentWidgetTypes) %}
+
+      {% if isContentWidget %}
+        {% if not prevIsContent %}
+        <article class="article-view container">
+        {% endif %}
+        {{ widgetRenderer.render(widget, article, pageUrl) }}
+        {% if not nextIsContent %}
+        </article>
+        {% endif %}
+      {% else %}
         <section class="container article-supplement">
           {{ widgetRenderer.render(widget, article, pageUrl) }}
         </section>

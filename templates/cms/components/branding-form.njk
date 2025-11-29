@@ -111,6 +111,27 @@
             <small>İsteğe bağlı. Eğer boşsa üst logo kullanılır.</small>
           </div>
         </div>
+
+        <div class="form-group">
+          <label for="branding-favicon">Tarayıcı İkonu (Favicon)</label>
+          <div class="branding-favicon-field">
+            <input id="branding-favicon" type="file" name="favicon" accept="image/png, image/webp, image/svg+xml, image/x-icon, image/vnd.microsoft.icon" data-branding-upload="favicon">
+            <div class="branding-favicon-preview">
+              <img
+                src="{{ branding.favicon }}"
+                alt="Favicon önizleme"
+                width="32"
+                height="32"
+                class="branding-favicon-preview__image"
+                data-branding-favicon-preview-img
+                {% if not branding.favicon %}hidden{% endif %}>
+              <span class="branding-favicon-preview__placeholder" data-branding-favicon-placeholder {% if branding.favicon %}hidden{% endif %}>
+                Henüz ikon yüklenmedi
+              </span>
+            </div>
+          </div>
+          <small>Tarayıcı sekmesinde görüntülenmek için 32x32 PNG, WEBP, SVG veya ICO dosyası yükleyin.</small>
+        </div>
       </form>
 
       <div class="cms-branding-preview" data-cms="branding-preview">
