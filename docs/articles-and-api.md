@@ -15,20 +15,25 @@ Table: `articles` (created in `server/services/data-service.js`)
 | `tags` | TEXT | JSON array string |
 | `body` | TEXT | Full HTML article |
 | `images` | TEXT | JSON array string with `{ url, alt, lowRes, highRes }` |
+| `headlineImage` | TEXT | JSON object for hero image |
+| `videoUrl` | TEXT | Stored video url/embed |
 | `writer` | TEXT | Author |
 | `creationDate` | TEXT | ISO date string |
 | `source` | TEXT | External source |
 | `outlinks` | TEXT | JSON array string |
 | `targettedViews` | TEXT | JSON array string (homepage, breaking-news, etc.) |
-| `updatedAt` | TEXT | Last modified |
+| `status` | TEXT | `visible` or `hidden` |
+| `pressAnnouncementId` | TEXT | Optional BİK id |
 | `relatedArticles` | TEXT | JSON array string of article IDs |
-| Legacy fields (`title`, `content`, `author`, `publishedAt`, `keywords`) still exist for backward compatibility. |
+| `created_by` | TEXT | CMS user who saved the article |
+| `updatedAt` | TEXT | Last modified |
+| Legacy fields (`title`, `content`, `author`, `publishedAt`, `keywords`, `video`) still exist for backward compatibility. |
 
 ## 2. Data Service Helpers
 Location: `server/services/data-service.js`
 
 - `getArticles(filters)` – fetch list with optional filters such as `category`, `limit`, `featured`.
-- `getArticleBySlug(slug)` / `getArticleById(id)` – single article.
+- `getArticleById(id)` – single article (slugs are handled by `url-slug` service).
 - `createArticle(articlePayload)` – inserts new row (handles JSON stringify).
 - `updateArticle(id, articlePayload)` – updates row.
 - `deleteArticle(id)` – removes row.
@@ -45,10 +50,15 @@ File: `server/routes/cms.js`
 | `POST /cms/articles` | Create article | Body parsed from JSON; server generates slug |
 | `PUT /cms/articles/:id` | Update article | Accepts same payload as POST |
 | `DELETE /cms/articles/:id` | Delete article | Removes DB row |
+| `PUT /cms/articles/:id/targets` | Add/remove `targettedViews` entries | Updates layout placement (carousel, flash-news, etc.) |
+| `PUT /cms/articles/:id/status` | Toggle `visible/hidden` | Editors can hide without deleting |
+| `POST /cms/carousel/add` | Include article in manual carousel | Respects carousel limit |
+| `PUT /cms/carousel` | Update manual carousel config/order | Uses `dataService.updateCarouselLayout()` |
 
 Public APIs (`server/routes/api.js`) expose read-only endpoints such as:
 - `GET /api/articles` – paginated list.
 - `GET /api/breaking-news` – subset flagged for ticker.
+- `GET /api/trending`, `GET /api/related/:id`, etc.
 
 ## 4. Adding Articles Programmatically
 1. Send `POST /cms/articles` with JSON:
@@ -87,5 +97,6 @@ Public APIs (`server/routes/api.js`) expose read-only endpoints such as:
 ## Related Docs
 - `add-widget.md` – use article fields inside new widgets.
 - `widget-rendering.md` – how article data reaches templates.
+- `layout-manager.md` – widget placement (homepage/article layouts + carousel).
 - `troubleshooting.md` – general fixes for CMS/API issues.
 

@@ -1,9 +1,14 @@
-# Widget List
+# Widget List (Agent View)
 
-This document provides a short explanation for each Nunjucks widget available in the `templates/widgets` directory.
+## Quick Use
+- Read this when you need a fast reminder of which Nunjucks macro renders which UI block.
+- Each entry links the widget type → file path → macro → quick purpose; pair it with `docs/add-widget.md` when creating new widgets.
+- Widgets live in `templates/widgets/`; CSS usually sits in `public/css/widgets.css` or `public/css/main.css`.
+
+---
 
 ## 1. Ad Placeholder
-**File:** `ad-placeholder.njk`  
+**File:** `templates/widgets/ad-placeholder.njk`  
 **Macro:** `adPlaceholder(slot='main', label='Reklam Alanı', size='300x250')`
 
 Renders a placeholder box for advertisements. It accepts a slot name, a display label, and dimensions.
@@ -11,7 +16,7 @@ Renders a placeholder box for advertisements. It accepts a slot name, a display 
 ---
 
 ## 2. Article View
-**File:** `article-view.njk`  
+**File:** `templates/widgets/article-view.njk`  
 **Macro:** `articleView(article)`
 
 Displays a detailed card for a single news article. It includes the article's image, category, title, summary, and publication date. It handles image resolution switching (low/high res).
@@ -19,7 +24,7 @@ Displays a detailed card for a single news article. It includes the article's im
 ---
 
 ## 3. Carousel
-**File:** `carousel.njk`  
+**File:** `templates/widgets/carousel.njk`  
 **Macro:** `carousel(id, slides)`
 
 Renders a standard image carousel for a list of slides (articles). Features include:
@@ -30,7 +35,7 @@ Renders a standard image carousel for a list of slides (articles). Features incl
 ---
 
 ## 4. Carousel Set Size
-**File:** `carouselSetSize.njk`  
+**File:** `templates/widgets/carouselSetSize.njk`  
 **Macro:** `carouselSetSize(id, slides, config)`
 
 A more advanced carousel with configurable dimensions and behavior.
@@ -46,7 +51,7 @@ A more advanced carousel with configurable dimensions and behavior.
 ---
 
 ## 5. Category Feed
-**File:** `category-feed.njk`  
+**File:** `templates/widgets/category-feed.njk`  
 **Macro:** `categoryFeed(categoryName, slug, articles)`
 
 Renders a section for a specific news category. It includes a header with the category name and a "View All" link, followed by a grid of articles using the `newsCard` widget in compact mode.
@@ -54,7 +59,7 @@ Renders a section for a specific news category. It includes a header with the ca
 ---
 
 ## 6. Comment Section
-**File:** `comment-section.njk`  
+**File:** `templates/widgets/comment-section.njk`  
 **Macro:** `commentSection(articleId, comments=[], hasMore=false)`
 
 Renders a full comment system for an article.
@@ -69,7 +74,7 @@ Renders a full comment system for an article.
 ---
 
 ## 7. Featured News Grid
-**File:** `featured-news-grid.njk`  
+**File:** `templates/widgets/featured-news-grid.njk`  
 **Macro:** `featuredNewsGrid(articles, title='Öne Çıkan Haberler')`
 
 Displays a grid of featured news articles. It includes a section title and a responsive grid layout using the `newsCard` widget.
@@ -77,7 +82,7 @@ Displays a grid of featured news articles. It includes a section title and a res
 ---
 
 ## 8. Flash News
-**File:** `flashNews.njk`  
+**File:** `templates/widgets/flashNews.njk`  
 **Macro:** `flashNews(id, items, config)`
 
 Displays a breaking news ticker (marquee) at the top of the page.
@@ -90,7 +95,7 @@ Displays a breaking news ticker (marquee) at the top of the page.
 ---
 
 ## 9. Footer
-**File:** `footer.njk`  
+**File:** `templates/widgets/footer.njk`  
 **Macro:** `siteFooter(branding={}, categories=[])`
 
 Renders the global site footer.
@@ -105,7 +110,7 @@ Renders the global site footer.
 ---
 
 ## 10. Hero Title
-**File:** `hero-title.njk`  
+**File:** `templates/widgets/hero-title.njk`  
 **Macro:** `heroTitle(title)`
 
 Renders a simple, styled title section, typically used for the "Son Dakika Haberleri" or similar hero headings.
@@ -113,7 +118,7 @@ Renders a simple, styled title section, typically used for the "Son Dakika Haber
 ---
 
 ## 11. News Card
-**File:** `news-card.njk`  
+**File:** `templates/widgets/news-card.njk`  
 **Macro:** `newsCard(article, variant='default')`
 
 A reusable component to display a news article summary.
@@ -125,7 +130,7 @@ A reusable component to display a news article summary.
 ---
 
 ## 12. Related News
-**File:** `related-news.njk`  
+**File:** `templates/widgets/related-news.njk`  
 **Macro:** `relatedNews(articles)`
 
 Displays a section titled "İlgili Haberler" (Related News) containing a grid/list of `related-article` items. Each item shows a thumbnail, title, summary, and date.
@@ -133,7 +138,7 @@ Displays a section titled "İlgili Haberler" (Related News) containing a grid/li
 ---
 
 ## 13. Site Header
-**File:** `site-header.njk`  
+**File:** `templates/widgets/site-header.njk`  
 **Macro:** `siteHeader(navCategories, branding)`
 
 Renders the global site header with top bar, logo, and navigation menus (both desktop and mobile). Includes social links, date display, and responsive mobile menu toggle.
@@ -141,7 +146,7 @@ Renders the global site header with top bar, logo, and navigation menus (both de
 ---
 
 ## 14. Widget Renderer
-**File:** `widget-renderer.njk`  
+**File:** `templates/widgets/widget-renderer.njk`  
 **Macro:** `render(widget)`
 
 Dynamically renders widgets based on their type configuration. Used for the dynamic homepage layout system. Accepts a widget object with `type`, `config`, and `data` properties and delegates to the appropriate widget macro.
@@ -152,3 +157,4 @@ Dynamically renders widgets based on their type configuration. Used for the dyna
 - `featured-news-grid`: Renders a grid of featured news
 - `category-feed`: Renders a category-specific news feed
 - `ad-placeholder`: Renders an advertisement placeholder
+

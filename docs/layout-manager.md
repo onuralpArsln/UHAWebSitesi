@@ -53,6 +53,29 @@ Use this when you must change the drag-and-drop “Sayfa Düzeni” tab or add n
 - If dropdowns show wrong categories, ensure `updateLayoutCategorySelects()` runs when switching to the layout tab.
 - If widgets render empty, confirm the homepage route is still mapping config → data before calling the renderer.
 
+## 8. Article Layout Manager (Makale Düzeni)
+- **UI**: `templates/cms/components/article-layout.njk`
+- **Client JS**: Same `public/cms/js/cms-app.js` instance (`initializeArticleLayoutManager`, `saveArticleLayout`, etc.).
+- **API Route**: `PUT /cms/layouts/article`
+- **Database**: `article_layout` table (`getArticleLayout()`, `updateArticleLayout()` in `data-service.js`).
+
+Flow = identical to homepage: drag rows → `saveArticleLayout()` → server logs update → `server/routes/pages.js` uses `getArticleLayout()` when rendering `/haber/:slug`.
+
+Tips:
+- Widget types include `article-hero-image`, `article-content`, `related-articles`, `comment-section`, etc. Inputs live in `article-layout.njk`.
+- If you add a new article widget, update this config UI, `availableArticleWidgets` in `cms-app.js`, and `templates/widgets/article-widget-renderer.njk` (if present) or direct usage in `pages/article.njk`.
+
+## 9. Carousel Manager
+- **UI**: buttons/sections within the CMS dashboard (carousel table).
+- **Client JS**: `cms-app.js` carousel helpers (`loadCarouselArticles`, `addArticleToCarousel`, etc.).
+- **API Routes**:
+  - `GET /cms/carousel` – fetch manual carousel config + articles.
+  - `PUT /cms/carousel` – save ordering/config.
+  - `POST /cms/carousel/add` – add article id (auto-enforces max).
+- **Database**: handled via `dataService.getCarouselLayout()`, `updateCarouselLayout()`, and `getCarouselArticles()`.
+
+Manual source widgets (`carousel` with `config.source === 'manual'`) pull from this layout; featured/automatic carousels still rely on `targettedViews`.
+
 ## Related Docs
 - `add-widget.md` – build the widget you wish to expose.
 - `widget-rendering.md` – learn how the renderer consumes layout entries.

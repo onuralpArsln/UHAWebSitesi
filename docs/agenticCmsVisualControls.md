@@ -1,5 +1,10 @@
 # CMS Visual Controls - Technical Documentation
 
+## Quick Use
+- Start here when updating the CMS branding form (`/cms` → Marka Ayarları) or wiring new color/logo variables.
+- Workflow recap: CMS form → `/cms/branding` → `data-service updateBranding()` → `/templates/layouts/base.njk` CSS variables → `public/css/*`.
+- See `docs/branding.md` for the short checklist; this file provides the deep dive and troubleshooting notes.
+
 ## Overview
 This document maps how the CMS branding system (`id="cms-branding-form"`) controls visual elements across the UHA News website. The system allows administrators to customize site name, colors, and logos through a centralized interface.
 

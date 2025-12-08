@@ -1,4 +1,9 @@
 # Agentic UI Map - UHA News Website
+## Quick Use
+- Open this when you need a “what renders where” cheat sheet for the homepage screenshot.
+- Pairs visual sections (header, flash news, hero carousel, grids, footer) with the template/CSS/JS files that power them.
+- Combine with `docs/widget-rendering.md` (logic flow) and `docs/widget-data-flow.md` (data pipeline) for full context.
+
 **Generated:** 2025-11-20  
 **URL:** http://localhost:3000/  
 **Purpose:** Visual-to-Code mapping for AI agents to understand UI structure and implementation

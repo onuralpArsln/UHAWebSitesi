@@ -1,5 +1,10 @@
 # Page Order Management System
 
+## Quick Use
+- Use this doc when editing the homepage or article layout drag-and-drop UI or when adding new widget types to those managers.
+- TL;DR: CMS drag/drop (`public/cms/js/cms-app.js`) → `/cms/layouts/{homepage|article}` route → `data-service` → `server/routes/pages.js` (renders `layout` array).
+- For a lighter checklist see `docs/layout-manager.md`; keep this file open when diving into implementation details or troubleshooting.
+
 ## Overview
 
 The UHA News CMS includes a comprehensive page layout management system that allows administrators to control the order and arrangement of widgets on the homepage through an intuitive drag-and-drop interface.

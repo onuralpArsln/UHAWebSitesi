@@ -23,9 +23,9 @@ Goal: explain how a widget receives data and shows up on the site. Follow this o
    ```nunjucks
    {% from "widgets/news-card.njk" import newsCard %}
    ```
-3. Loops through data and renders widget macros:
+3. Loops through `layout` (the array built in `pages.js`) and renders widget macros:
    ```nunjucks
-   {% for widget in layoutWidgets %}
+   {% for widget in layout %}
      {{ render(widget) }}
    {% endfor %}
    ```
@@ -36,9 +36,10 @@ Goal: explain how a widget receives data and shows up on the site. Follow this o
 3. Keep macros pure—no DB calls, only formatting.
 
 ## 6. Widget Renderer
-1. `templates/widgets/widget-renderer.njk` routes a layout item to the correct macro using `widget.type`.
+1. `templates/widgets/widget-renderer.njk` routes each entry to the correct macro using `widget.type`.
 2. Supported types are documented in `agenticWidgetlist.md`.
-3. Add a new branch there whenever you introduce a widget that should be selectable from the CMS layout.
+3. `server/routes/pages.js` is where layout entries are enriched with data (e.g., fetching category articles) before they reach the renderer—mirror that pattern for new widget types.
+4. Add a new branch in the renderer whenever you introduce a widget that should be selectable from the CMS layout.
 
 ## 7. Styling & Scripts
 1. CSS lives in `public/css/`; widgets usually rely on `widgets.css`, `main.css`, or a dedicated file.
@@ -52,7 +53,8 @@ Goal: explain how a widget receives data and shows up on the site. Follow this o
 
 ## Related Docs
 - `add-widget.md` – create new widgets safely.
-- `layout-manager.md` – how CMS chooses which widget renders.
+- `layout-manager.md` – how CMS chooses which widget renders (homepage + article layout + carousel sections).
 - `articles-and-api.md` – understand article payloads.
+- `widget-data-flow.md` – deeper dive into the fetch → config → macro pipeline.
 - `troubleshooting.md` – common symptoms/fixes.
 

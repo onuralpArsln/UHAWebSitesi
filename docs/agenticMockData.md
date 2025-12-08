@@ -1,5 +1,10 @@
 # Agentic Mock Data Documentation
 
+## Quick Use
+- Read this if the site boots with sample articles or if you need to adjust the default content created on an empty DB.
+- Flow: `data-service.js` constructor → `migrateMockDataIfNeeded()` → inserts six seed articles + categories.
+- Tip: keep `data/news.db` backed up; delete it to regenerate mock content.
+
 This document describes the automatic mock data generation process in the UHA News CMS.
 
 ## Source Code location
