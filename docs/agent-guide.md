@@ -56,3 +56,4 @@ Use this file first. It links to everything else you need.
 - `docs/widget-data-flow.md` – detailed fetch/config steps.
 - Legacy deep dives (`agentic*.md`) now live under `docs/` for topic-specific context.
 
+

@@ -20,25 +20,31 @@
 
 ### Technology Stack
 - **Backend:** Node.js + Express
-- **Template Engine:** Nunjucks (Server-Side Rendering)
+- **Template Engine:** Nunjucks (SSR)
 - **Database:** SQLite3
-- **Styling:** Vanilla CSS with CSS Variables
-- **JavaScript:** Vanilla JS for interactivity
+- **Styling:** Vanilla CSS + branding-driven CSS variables
+- **JavaScript:** Vanilla modules for carousel/flash news/nav
 
 ### File Structure
 ```
 UHAWebSitesi/
-├── templates/          # Nunjucks templates
-│   ├── layouts/        # Base layouts
-│   ├── pages/          # Page templates
-│   └── widgets/        # Reusable UI components
+├── templates/
+│   ├── layouts/        # base.njk, shared head/body
+│   ├── pages/          # home.njk, article.njk, ...
+│   └── widgets/        # reusable macros (carousel, news-card…)
 ├── public/
-│   ├── css/            # Stylesheets
-│   └── js/             # Client-side scripts
+│   ├── css/            # widgets.css, header.css, etc.
+│   └── js/             # carousel.js, flash-news.js, nav.js
 └── server/
-    ├── routes/         # Express routes
-    └── services/       # Business logic
+    ├── routes/         # pages.js, cms.js, api.js
+    └── services/       # data-service, url-slug, config, view helpers
 ```
+
+### Dynamic Layout Pipeline (Homepage)
+1. Editors maintain the homepage via the CMS layout manager (`/cms` → Sayfa Düzeni). Saved entries live inside the `homepage_layout` table as `{ type, config }` objects.
+2. `server/routes/pages.js` loads that JSON, filters hidden widgets, and for each entry populates `widget.data` (e.g., fetching articles for `carousel`, `category-feed`, `flash-news`).
+3. `templates/pages/home.njk` loops over the processed layout and delegates rendering to `templates/widgets/widget-renderer.njk`, which in turn calls the concrete widget macros.
+4. Adding/removing widgets therefore requires **no hard-coded changes** inside the page template—everything flows through layout data + widget renderer.
 
 ---
 
@@ -233,24 +239,19 @@ UHAWebSitesi/
 ```
 1. User requests "/"
    ↓
-2. pages.js route handler
+2. pages.js loads homepage_layout JSON via DataService.getHomepageLayout()
    ↓
-3. Data Service queries:
-   - getBranding()
-   - getCategories()
-   - getArticles(featured=true)
-   - getArticles(breaking=true)
+3. For each widget entry:
+     - fetches data via DataService.getArticles(...) or getCarouselArticles()
+     - enriches the entry to { type, config, data }
    ↓
-4. Nunjucks renders home.njk
+4. home.njk iterates over layout and calls widgetRenderer.render(widget)
    ↓
-5. Widgets receive data:
-   - siteHeader(branding, categories)
-   - flashNews(flashNewsItems)
-   - carousel(featuredArticles)
-   - newsCard(article, variant)
-   - siteFooter(branding, categories)
+5. widget-renderer dispatches to the concrete macro (carousel, featured-news-grid, category-feed, flash-news…)
    ↓
-6. HTML sent to browser
+6. siteHeader/siteFooter receive branding + categories independently of layout
+   ↓
+7. HTML returned to browser
 ```
 
 ### Key Route Handlers
@@ -455,44 +456,68 @@ graph LR
 
 ---
 
-## 🗂️ Database Schema
+## 🗂️ Database Schema (Current)
 
-### Articles Table
+### Articles (`server/services/data-service.js`)
 ```sql
-CREATE TABLE articles (
-  id INTEGER PRIMARY KEY,
-  title TEXT NOT NULL,
-  slug TEXT UNIQUE NOT NULL,
+CREATE TABLE IF NOT EXISTS articles (
+  id TEXT PRIMARY KEY,
+  header TEXT NOT NULL,
+  summaryHead TEXT,
   summary TEXT,
-  body TEXT,
   category TEXT,
-  author TEXT,
+  tags TEXT,            -- JSON string
+  body TEXT NOT NULL,
+  videoUrl TEXT,
+  headlineImage TEXT,   -- JSON string
+  images TEXT,          -- JSON string
+  writer TEXT,
+  creationDate TEXT,
+  source TEXT,
+  outlinks TEXT,        -- JSON string
+  targettedViews TEXT,  -- JSON string
+  updatedAt TEXT,
+  relatedArticles TEXT, -- JSON string
+  status TEXT DEFAULT 'visible',
+  pressAnnouncementId TEXT,
+  title TEXT,           -- legacy compat
+  content TEXT,         -- legacy compat
+  author TEXT,          -- legacy compat
   publishedAt TEXT,
-  images TEXT,          -- JSON array
-  tags TEXT,            -- JSON array
-  featured BOOLEAN,
-  breaking BOOLEAN
-)
+  keywords TEXT,
+  created_by TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_articles_targettedViews ON articles(targettedViews);
 ```
 
-### Categories Table
+### Categories
 ```sql
-CREATE TABLE categories (
-  id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL,
-  slug TEXT UNIQUE NOT NULL,
-  description TEXT
-)
+CREATE TABLE IF NOT EXISTS categories (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  description TEXT,
+  slug TEXT,
+  articleCount INTEGER DEFAULT 0
+);
 ```
 
-### Branding Table
+### Branding
 ```sql
-CREATE TABLE branding (
-  id INTEGER PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS branding (
+  id TEXT PRIMARY KEY,
   siteName TEXT,
+  primaryColor TEXT,
+  secondaryColor TEXT,
+  accentColor TEXT,
+  logoTextColor TEXT,
+  navTextColor TEXT,
+  navBackgroundColor TEXT,
   headerLogo TEXT,
-  footerLogo TEXT
-)
+  footerLogo TEXT,
+  favicon TEXT,
+  headerLogoHeight INTEGER,
+  updatedAt TEXT
+);
 ```
 
 ---

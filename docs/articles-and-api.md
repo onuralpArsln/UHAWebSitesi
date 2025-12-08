@@ -32,12 +32,12 @@ Table: `articles` (created in `server/services/data-service.js`)
 ## 2. Data Service Helpers
 Location: `server/services/data-service.js`
 
-- `getArticles(filters)` – fetch list with optional filters such as `category`, `limit`, `featured`.
+- `getArticles(filters)` – fetch list with optional filters such as `category`, `limit`, `targettedView`, sorting, etc.
 - `getArticleById(id)` – single article (slugs are handled by `url-slug` service).
-- `createArticle(articlePayload)` – inserts new row (handles JSON stringify).
+- `createArticle(articlePayload)` – inserts new row (stringifies JSON fields automatically).
 - `updateArticle(id, articlePayload)` – updates row.
 - `deleteArticle(id)` – removes row.
-- `ensureArticlesTable()` + `generateMockArticles()` – bootstrap mock data for empty DBs.
+- `initializeDatabase()` + `migrateMockDataIfNeeded()` / `generateMockArticles()` – create tables and populate demo data on empty installs.
 
 Whenever you pass arrays/objects, convert them to JSON strings before saving (these helpers already do this if you stick to them).
 

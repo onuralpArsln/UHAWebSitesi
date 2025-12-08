@@ -52,9 +52,9 @@ A more advanced carousel with configurable dimensions and behavior.
 
 ## 5. Category Feed
 **File:** `templates/widgets/category-feed.njk`  
-**Macro:** `categoryFeed(categoryName, slug, articles)`
+**Macro:** `categoryFeed(section)`
 
-Renders a section for a specific news category. It includes a header with the category name and a "View All" link, followed by a grid of articles using the `newsCard` widget in compact mode.
+Pass a single `section` object shaped like `{ name, slug, articles }`. The macro renders the category title + “Tümünü Gör” link and then maps `section.articles` through the compact `newsCard` variant.
 
 ---
 
@@ -157,4 +157,5 @@ Dynamically renders widgets based on their type configuration. Used for the dyna
 - `featured-news-grid`: Renders a grid of featured news
 - `category-feed`: Renders a category-specific news feed
 - `ad-placeholder`: Renders an advertisement placeholder
+
 

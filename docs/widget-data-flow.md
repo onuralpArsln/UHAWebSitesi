@@ -57,3 +57,4 @@ This doc follows a single widget from stored data → rendered HTML. Use it when
 - `add-widget.md` – steps to introduce a new widget.
 - `articles-and-api.md` – all fields available when fetching articles.
 
+
