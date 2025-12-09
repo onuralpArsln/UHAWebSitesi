@@ -3,6 +3,7 @@ const compression = require('compression');
 const cors = require('cors');
 const path = require('path');
 const nunjucks = require('nunjucks');
+const { spawn } = require('child_process');
 // Import Helmet middleware only for HTTPS
 const helmet = require('helmet');
 const session = require('express-session');
@@ -22,6 +23,19 @@ const serverConfig = config.getServerConfig();
 const paths = config.getPaths();
 const PORT = serverConfig.port;
 const BASE_PATH = serverConfig.basePath;
+const workerSchedulerConfig = {
+  enabled: process.env.WORKER_SCHEDULER_ENABLED !== 'false',
+  rssWorker: {
+    enabled: process.env.WORKER_RSS_ENABLED !== 'false',
+    intervalMs: parseInt(process.env.WORKER_RSS_INTERVAL_MS || '', 10) || 4 * 60 * 1000,
+    command: process.env.WORKER_RSS_CMD || `node ${path.join(__dirname, '../workers/dha-rss-worker.js')}`,
+    reloadSlugs: process.env.WORKER_RSS_RELOAD_SLUGS !== 'false'
+  }
+};
+const childProcesses = [];
+const workerIntervals = [];
+const activeWorkers = new Map();
+let slugServiceInstance = null;
 
 // Trust proxy for accurate protocol detection (important for reverse proxies like nginx)
 // This allows req.secure and req.protocol to work correctly when behind a proxy
@@ -296,6 +310,66 @@ mountRoutesBoth('/cms', cmsAuthRouter);
 mountRoutesBoth('/cms', requireAuth, require('./routes/cms'));
 mountRoutesBoth('/', require('./routes/pages'));
 
+function startWorker(command, label, { reloadSlugs } = {}) {
+  if (!command) {
+    return;
+  }
+  if (activeWorkers.get(label)) {
+    console.log(`⏸️ Worker "${label}" is already running. Skipping new launch.`);
+    return;
+  }
+
+  console.log(`🧵 Starting worker "${label}" with command: ${command}`);
+  const child = spawn(command, {
+    shell: true,
+    stdio: 'inherit'
+  });
+  childProcesses.push(child);
+  activeWorkers.set(label, true);
+
+  child.on('close', (code) => {
+    console.log(`🧵 Worker "${label}" exited with code ${code}`);
+    activeWorkers.set(label, false);
+    const idx = childProcesses.indexOf(child);
+    if (idx >= 0) {
+      childProcesses.splice(idx, 1);
+    }
+    if (reloadSlugs && code === 0) {
+      try {
+        if (!slugServiceInstance) {
+          slugServiceInstance = require('./services/url-slug');
+        }
+        if (typeof slugServiceInstance.loadSlugCache === 'function') {
+          slugServiceInstance.loadSlugCache();
+          console.log('🔁 Slug cache reloaded after worker run.');
+        }
+      } catch (error) {
+        console.error('❌ Failed to reload slug cache:', error);
+      }
+    }
+  });
+}
+
+function setupWorkerScheduler() {
+  if (!workerSchedulerConfig.enabled) {
+    console.log('🛑 Worker scheduler disabled.');
+    return;
+  }
+
+  if (workerSchedulerConfig.rssWorker.enabled) {
+    const { command, intervalMs, reloadSlugs } = workerSchedulerConfig.rssWorker;
+
+    // Immediate run after startup
+    startWorker(command, 'rss-worker', { reloadSlugs });
+
+    const intervalId = setInterval(() => {
+      startWorker(command, 'rss-worker', { reloadSlugs });
+    }, intervalMs);
+
+    workerIntervals.push(intervalId);
+    console.log(`⏱️ RSS worker scheduled every ${intervalMs / 1000}s.`);
+  }
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -334,6 +408,31 @@ app.listen(PORT, () => {
   console.log(`   - Base Path: ${BASE_PATH || '(root)'}`);
   console.log(`   - Frontend: http://localhost:${PORT}${BASE_PATH}/`);
   console.log(`   - CMS: http://localhost:${PORT}${BASE_PATH}/cms`);
+
+  setupWorkerScheduler();
 });
 
 module.exports = app;
+
+function shutdownScheduler() {
+  workerIntervals.forEach((intervalId) => clearInterval(intervalId));
+  workerIntervals.length = 0;
+
+  childProcesses.forEach((child) => {
+    if (!child.killed) {
+      child.kill();
+    }
+  });
+}
+
+process.on('SIGINT', () => {
+  console.log('🔻 SIGINT received, shutting down worker scheduler...');
+  shutdownScheduler();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('🔻 SIGTERM received, shutting down worker scheduler...');
+  shutdownScheduler();
+  process.exit(0);
+});

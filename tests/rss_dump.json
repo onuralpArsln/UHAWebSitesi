@@ -1,109 +1,399 @@
-[
-  {
-    "id": "312783",
-    "title": "İstanbul - Futbolcular Mert Hakan Yandaş ve Metehan Baltacı'nın savcılık ifadeleri ortaya çıktı",
-    "date": "2025-12-08 20:39:50",
-    "textLength": 4795,
-    "imageCount": 0,
-    "videoCount": 0,
-    "images": []
+{
+  "fetchedAt": "2025-12-08T21:35:53.619Z",
+  "itemCount": 15,
+  "categoryCounts": {
+    "Flaş Haber": 3,
+    "Güvenlik": 4,
+    "Spor": 6,
+    "Gündem": 2
   },
-  {
-    "id": "312777",
-    "title": "Mardin - Tamire getirilen cep telefonu alev aldı; o anlar kamerada",
-    "date": "2025-12-08 20:32:49",
-    "textLength": 613,
-    "imageCount": 0,
-    "videoCount": 1,
-    "images": []
+  "mediaTotals": {
+    "images": 30,
+    "videos": 11,
+    "total": 41
   },
-  {
-    "id": "312780",
-    "title": "Kütahya’da zincirleme kaza: 1’i çocuk 4 yaralı",
-    "date": "2025-12-08 20:26:11",
-    "textLength": 1025,
-    "imageCount": 0,
-    "videoCount": 1,
-    "images": []
-  },
-  {
-    "id": "312771",
-    "title": "Akgül: Federasyonumuzun asıl hedefi altyapıyı canlandırmak / Video eklendi",
-    "date": "2025-12-08 20:23:07",
-    "textLength": 4994,
-    "imageCount": 5,
-    "videoCount": 1,
-    "images": [
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/--j8Y_DcDx5vreVBs6xqI7fcg1GNteUsUilldWWnVnziYSKBAOatN_b2DH5hM3n3G3mlh8hGk4yzNIEmEUAmGOXi8nf242PXpM5fimVsp_fEhXiDvQ7uwP7x_Q1rQfFV",
-        "resolution": "1920x1080"
-      },
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/5hH28etq_mt2d3QH869yYxw4TFpjLUh5xpqQMG454N1EZxEI1vX4LzyhtFDtCJntEz5ImHo_FQbyAINNfmxA5poKI9hjr9gqj3yZdSBzmAR4_Po5wTmAFDOGP9IElETp",
-        "resolution": "Not Checked"
-      },
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/8ldEwVebVr8VxmLxCXQawzd7mVmu-PYk6Xa7TYiWAQKjKhXFtY_6tnJStNRENFDp9xJjBZbXmZD7PMfTzXMg6BnnDnNEZfJ0hU8SnrR2dy009-RRsjMmxBZ5zGAw-6Wi",
-        "resolution": "Not Checked"
-      },
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/Sz7NB48rPR_eSZRApTPJh39NPT30PhwX3UMvQeCr7gzbNejJFdHFZNs0ROHT6g9Ki1ibHq0J0tTNcAkzheGZ4e0W2rACeleFirJmoWdTA5fPvSc703jQAaIdngselxik",
-        "resolution": "Not Checked"
-      },
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/NYFwLkZtY7WJM_h43Go-MXj-igzaLCD2OkGLN87iKO1dVtxsFyk1kSHSgMo3iQ3Sz8OIrkVo0WBSQTJoWzyWEfTb6VZicED7X_QIXd5KR85lJDQJr2YNO6q9dPnqpJ3-",
-        "resolution": "Not Checked"
+  "topItems": [
+    {
+      "newsId": "312821",
+      "title": "Flaş",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312821",
+      "category": "Flaş Haber",
+      "author": "",
+      "location": "İstanbul",
+      "district": "",
+      "pubDate": "2025-12-09 00:31:05",
+      "descriptionLength": 134,
+      "descriptionPreview": "DHA: Futbolda 'Bahis' ve 'Şike' operasyonunda gözaltına alınan Fenerbahçe oyuncusu Mert Hakan Yandaş çıkarıldığı mahkemece tutuklandı.",
+      "media": {
+        "total": 0,
+        "images": 0,
+        "videos": 0,
+        "firstImage": null,
+        "firstVideo": null
       }
-    ]
-  },
-  {
-    "id": "312779",
-    "title": "Kütahya’da zincirleme kaza: 1’i çocuk 4 yaralı",
-    "date": "2025-12-08 20:22:51",
-    "textLength": 1026,
-    "imageCount": 10,
-    "videoCount": 0,
-    "images": [
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/Ozu7qUbzZccJSA98LDxdJ9EXVlZaAG1uKUUggwa5gDy00lskwmz8FIFIqCTajBX45sf1xV_4ORzzpXTWMjB5t-DOiAIpPeP7IDgADexnbUNyB64y657-wbQjvSYCoL7jwEVh",
-        "resolution": "3520x1980"
-      },
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/qObmJxaolINmomfHfKIvjWcgjQhttcl6r_g8xTBN6vxseMa7Z1hWCdvrzKU9p-4cXICGK5Cesd5avm31Q9_3ADNWvjtpISnZbSyskHLGcnu9ss95cL5b1MUQ726SzYE2CkgY",
-        "resolution": "Not Checked"
-      },
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/SNXNAS7PcPvbdcSU0T8h1u2uPBcAkeL4IYHnvIMnTicxHeu7Sne1g8N8kON4p6g-UUCbjJD_yxE4zYTMlF4joAXe5yBTPR5u3w2asBBC7ahYo7tx5sv7IbI8uRwD34b2Y61O",
-        "resolution": "Not Checked"
-      },
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/bJp6BVkr5BpkvNo8Fry-EpUFJOMwjVRQz9YbdFOrqmY4AQ8U4GfFp-8PbDo9rr9eX5n9eIdoiXu66mEUnt8-jYaNT1is9IE65lVYrX7omjpi3IvHWJ1Pl5NqVTbkSbYUOwhX",
-        "resolution": "Not Checked"
-      },
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/5gz-wmlV7Rs17ub_Vezs30EuL3HInQPxqbruFJKVwf9fpAs0QNgP0JJf3fTqIk2nRw6z4mISlqKbSkQuoKrd2YCEpORw7ctK9qh7--APLeDmSJWUctZV5k3bui9O70biwtlA",
-        "resolution": "Not Checked"
-      },
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/Cus_EVHYZcHQ_0T3jO9lMu7PJXsJZV2nyKQBCftu3I7WR5l0futKnnk1v1yCjkTuvr_IevsvFr2-CnH7Qw1QQi_AzMS2U6Vj4idIBv8FCRTVZxYOn71yGVyhIRiQ7z74snLf",
-        "resolution": "Not Checked"
-      },
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/16MEnUrUOuDwBtLAKEq5W_itQT2-mRCHwRWPQ5kV4gf1N_Bg-egqKzMu2JR5bfuauDCyFH3Ez4F-5J9ectoV4sh2Fn4qsos2lznvwi74ZDCWI6opffSn7vAZZspcxCZ85oJY",
-        "resolution": "Not Checked"
-      },
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/44_N8sBW1VQ_a2zBg-BmpQRBPN9YrGD1uLf4B5YdZovy2n4xY-gV46-rPPaWox54KrDYyZkG-aWW5qKvrAyoKNklMhaPxyk5dXFJogAhWXWX6lZPgncLnJLG3-iFOWnkLPHa",
-        "resolution": "Not Checked"
-      },
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/axyKMDbWJxHnZw6wlqmj7nZNv9aSqmRceMs5PDReZDe8_xsTlE37_6yfjDAPUa_qgmbpr4fjfq4-r9S7myp4oNViwKOi9pPivaJdexRzbnkC4R28cLFJuWZsj9YaCPUG5v-K",
-        "resolution": "Not Checked"
-      },
-      {
-        "url": "https://dhaabone.dha.com.tr/rss/download/1loINMXXcPBkw8wAlfkD_Pk80tFA2HLBYyLxZ-yfxQYIclpIu79hajnN_MWHfDR-XyryZVuWGo515lwWAE2WMZHqbHgqiFZR_5i3MfRAHJwgZp9IPHOAO9FnmtcczmTswVXE",
-        "resolution": "Not Checked"
+    },
+    {
+      "newsId": "312819",
+      "title": "Engelsiz yaşam merkezinden kaçan 15 yaşındaki yiğit için arama çalışması başlatıldı",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312819",
+      "category": "Güvenlik",
+      "author": "",
+      "location": "Bursa",
+      "district": "İnegöl",
+      "pubDate": "2025-12-09 00:22:14",
+      "descriptionLength": 869,
+      "descriptionPreview": "Yavuz YILMAZ/ İNEGÖL(Bursa), (DHA)- BURSA'nın İnegöl ilçesinde engelsiz Yaşam Merkezi’nden kaçan 15 yaşındaki zihinsel engelli Yiğit Dağ için 100 kişilik ekip arama çalışması başlattı.Bursa’nın İnegöl ilçesindeki Engelsiz Yaşam Merkezi’nde kalan ve saat 18.00 sıralarında kurumdan",
+      "media": {
+        "total": 6,
+        "images": 5,
+        "videos": 1,
+        "firstImage": "https://dhaabone.dha.com.tr/rss/download/CFnso-ayx4P5KASxT5gdYeK5173jpXofgqd-QnfPVWG3RyZNa2ei1Kkt6Rwpseb_YEnGXOnIlmP0TIdgSzdU11Fcdij22J8GXJGeSeeggZpG0YUxavdWyrC-KPOPaVmE",
+        "firstVideo": "https://dhaabone.dha.com.tr/rss/download/a_C__Y_QDaVOudq9kvsHwM8q5unwg65LNN2l1nKpf7OmIXed0EKalCSYUyKq8ZD-mxX8s_OBI93FQrMGJOZGcYj3k2j193voD2dBWr147pVK_vUKzLoiayZyGUOUaSxKQg=="
       }
-    ]
-  }
-]
+    },
+    {
+      "newsId": "312811",
+      "title": "Yunus Akgün: Şampiyonlar Ligi bizim için çok önemli / Haber eklendi",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312811",
+      "category": "Spor",
+      "author": "",
+      "location": "Monaco ",
+      "district": "",
+      "pubDate": "2025-12-09 00:13:04",
+      "descriptionLength": 2679,
+      "descriptionPreview": "Serhan TÜRK / MONACO, (DHA)- Galatasaraylı Yunus Akgün, “Şampiyonlar Ligi bizim için çok önemli. Oyuncular olarak bunu konuştuğumuzda da çok önemli olduğunu biliyoruz. Taraftarlarımızın, camiamızın beklentisini de biliyoruz. Biz de onları mutlu etmek için, sevindirmek için elimiz",
+      "media": {
+        "total": 1,
+        "images": 0,
+        "videos": 1,
+        "firstImage": null,
+        "firstVideo": "https://dhaabone.dha.com.tr/rss/download/SnfeyKH7zq90XV_NirIk3v1-wT-keCSGlVVAISb9F8jXkyluuKz-GiH8NvimWhv_iTtAcyJ-hxeqGZ6seuzmYXRJWE3mYoa_s0phXCwb7iDuZOxqOOif_LaFito1FxLJ"
+      }
+    },
+    {
+      "newsId": "312816",
+      "title": "Sergen Yalçın: Masaya yumruğumuzu vuracağımız zaman gelirse vururuz / Video eklendi",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312816",
+      "category": "Spor",
+      "author": "",
+      "location": "İstanbul",
+      "district": "",
+      "pubDate": "2025-12-08 23:56:37",
+      "descriptionLength": 4563,
+      "descriptionPreview": "‘Bugün oynanan oyun olumluydu’‘Jota ve Cengiz önümüzdeki hafta zor’‘Nasıl oynamamız gerekiyorsa öyle oynayacağız’‘VAR futbolun bütün doğallığını ortadan kaldırdı’Olgucan KALKAN – Ali DANAŞ / İSTANBUL,(DHA)- BEŞİKTAŞ Teknik Direktörü Sergen Yalçın, “Bugün yapılabilecek çok şeyi ya",
+      "media": {
+        "total": 1,
+        "images": 0,
+        "videos": 1,
+        "firstImage": null,
+        "firstVideo": "https://dhaabone.dha.com.tr/rss/download/i--gNeUQOUsqWlVNOFTSdhgqDt9gtUmJUb31vt8jZr-JMt1OU1M33T2zLW-epnOn6JT1uKkl7cBI-KnHbhLjqitFj0-Y1RX6JRStKx6DQrvzkwy4ovpG8jrt8_zfYNDT"
+      }
+    },
+    {
+      "newsId": "312818",
+      "title": "DHA Görüntülü Yurt Haber Bülteni - 13",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312818",
+      "category": "Gündem",
+      "author": "",
+      "location": "",
+      "district": "",
+      "pubDate": "2025-12-08 23:55:01",
+      "descriptionLength": 7907,
+      "descriptionPreview": "1) ŞEHİT POLİS MEMURUNUN CENAZESİ, SAMSUN'A GETİRİLDİİSTANBUL Çekmeköy'de düzenlenen uyuşturucu operasyonunda şüphelilerin açtığı ateş sonucu şehit olan polis memuru Emre Albayrak'ın (27) cenazesi, memleketi Samsun'a getirildi.İstanbul Çekmeköy'de düzenlenen uyuşturucu operasyonu",
+      "media": {
+        "total": 0,
+        "images": 0,
+        "videos": 0,
+        "firstImage": null,
+        "firstVideo": null
+      }
+    }
+  ],
+  "items": [
+    {
+      "newsId": "312821",
+      "title": "Flaş",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312821",
+      "category": "Flaş Haber",
+      "author": "",
+      "location": "İstanbul",
+      "district": "",
+      "pubDate": "2025-12-09 00:31:05",
+      "descriptionLength": 134,
+      "descriptionPreview": "DHA: Futbolda 'Bahis' ve 'Şike' operasyonunda gözaltına alınan Fenerbahçe oyuncusu Mert Hakan Yandaş çıkarıldığı mahkemece tutuklandı.",
+      "media": {
+        "total": 0,
+        "images": 0,
+        "videos": 0,
+        "firstImage": null,
+        "firstVideo": null
+      }
+    },
+    {
+      "newsId": "312819",
+      "title": "Engelsiz yaşam merkezinden kaçan 15 yaşındaki yiğit için arama çalışması başlatıldı",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312819",
+      "category": "Güvenlik",
+      "author": "",
+      "location": "Bursa",
+      "district": "İnegöl",
+      "pubDate": "2025-12-09 00:22:14",
+      "descriptionLength": 869,
+      "descriptionPreview": "Yavuz YILMAZ/ İNEGÖL(Bursa), (DHA)- BURSA'nın İnegöl ilçesinde engelsiz Yaşam Merkezi’nden kaçan 15 yaşındaki zihinsel engelli Yiğit Dağ için 100 kişilik ekip arama çalışması başlattı.Bursa’nın İnegöl ilçesindeki Engelsiz Yaşam Merkezi’nde kalan ve saat 18.00 sıralarında kurumdan",
+      "media": {
+        "total": 6,
+        "images": 5,
+        "videos": 1,
+        "firstImage": "https://dhaabone.dha.com.tr/rss/download/CFnso-ayx4P5KASxT5gdYeK5173jpXofgqd-QnfPVWG3RyZNa2ei1Kkt6Rwpseb_YEnGXOnIlmP0TIdgSzdU11Fcdij22J8GXJGeSeeggZpG0YUxavdWyrC-KPOPaVmE",
+        "firstVideo": "https://dhaabone.dha.com.tr/rss/download/a_C__Y_QDaVOudq9kvsHwM8q5unwg65LNN2l1nKpf7OmIXed0EKalCSYUyKq8ZD-mxX8s_OBI93FQrMGJOZGcYj3k2j193voD2dBWr147pVK_vUKzLoiayZyGUOUaSxKQg=="
+      }
+    },
+    {
+      "newsId": "312811",
+      "title": "Yunus Akgün: Şampiyonlar Ligi bizim için çok önemli / Haber eklendi",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312811",
+      "category": "Spor",
+      "author": "",
+      "location": "Monaco ",
+      "district": "",
+      "pubDate": "2025-12-09 00:13:04",
+      "descriptionLength": 2679,
+      "descriptionPreview": "Serhan TÜRK / MONACO, (DHA)- Galatasaraylı Yunus Akgün, “Şampiyonlar Ligi bizim için çok önemli. Oyuncular olarak bunu konuştuğumuzda da çok önemli olduğunu biliyoruz. Taraftarlarımızın, camiamızın beklentisini de biliyoruz. Biz de onları mutlu etmek için, sevindirmek için elimiz",
+      "media": {
+        "total": 1,
+        "images": 0,
+        "videos": 1,
+        "firstImage": null,
+        "firstVideo": "https://dhaabone.dha.com.tr/rss/download/SnfeyKH7zq90XV_NirIk3v1-wT-keCSGlVVAISb9F8jXkyluuKz-GiH8NvimWhv_iTtAcyJ-hxeqGZ6seuzmYXRJWE3mYoa_s0phXCwb7iDuZOxqOOif_LaFito1FxLJ"
+      }
+    },
+    {
+      "newsId": "312816",
+      "title": "Sergen Yalçın: Masaya yumruğumuzu vuracağımız zaman gelirse vururuz / Video eklendi",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312816",
+      "category": "Spor",
+      "author": "",
+      "location": "İstanbul",
+      "district": "",
+      "pubDate": "2025-12-08 23:56:37",
+      "descriptionLength": 4563,
+      "descriptionPreview": "‘Bugün oynanan oyun olumluydu’‘Jota ve Cengiz önümüzdeki hafta zor’‘Nasıl oynamamız gerekiyorsa öyle oynayacağız’‘VAR futbolun bütün doğallığını ortadan kaldırdı’Olgucan KALKAN – Ali DANAŞ / İSTANBUL,(DHA)- BEŞİKTAŞ Teknik Direktörü Sergen Yalçın, “Bugün yapılabilecek çok şeyi ya",
+      "media": {
+        "total": 1,
+        "images": 0,
+        "videos": 1,
+        "firstImage": null,
+        "firstVideo": "https://dhaabone.dha.com.tr/rss/download/i--gNeUQOUsqWlVNOFTSdhgqDt9gtUmJUb31vt8jZr-JMt1OU1M33T2zLW-epnOn6JT1uKkl7cBI-KnHbhLjqitFj0-Y1RX6JRStKx6DQrvzkwy4ovpG8jrt8_zfYNDT"
+      }
+    },
+    {
+      "newsId": "312818",
+      "title": "DHA Görüntülü Yurt Haber Bülteni - 13",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312818",
+      "category": "Gündem",
+      "author": "",
+      "location": "",
+      "district": "",
+      "pubDate": "2025-12-08 23:55:01",
+      "descriptionLength": 7907,
+      "descriptionPreview": "1) ŞEHİT POLİS MEMURUNUN CENAZESİ, SAMSUN'A GETİRİLDİİSTANBUL Çekmeköy'de düzenlenen uyuşturucu operasyonunda şüphelilerin açtığı ateş sonucu şehit olan polis memuru Emre Albayrak'ın (27) cenazesi, memleketi Samsun'a getirildi.İstanbul Çekmeköy'de düzenlenen uyuşturucu operasyonu",
+      "media": {
+        "total": 0,
+        "images": 0,
+        "videos": 0,
+        "firstImage": null,
+        "firstVideo": null
+      }
+    },
+    {
+      "newsId": "312805",
+      "title": "Antalya - Kamyonetle çarpışan motosikletin sürücüsü hayatını kaybetti",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312805",
+      "category": "Güvenlik",
+      "author": "",
+      "location": "Antalya",
+      "district": "Muratpaşa",
+      "pubDate": "2025-12-08 23:46:40",
+      "descriptionLength": 1266,
+      "descriptionPreview": "ANTALYA'da kamyonetle çarpışan motosikletin sürücüsü Batuhan Çakmak (17), hayatını kaybetti. Kaza haberi üzerine olay yerine gelen genç sürücünün ailesi gözyaşlarına boğuldu.Kaza, saat 21.00 sıralarında Muratpaşa ilçesi Yüksekalan Mahallesi Adnan Menderes Bulvarı üzerinde meydana",
+      "media": {
+        "total": 1,
+        "images": 0,
+        "videos": 1,
+        "firstImage": null,
+        "firstVideo": "https://dhaabone.dha.com.tr/rss/download/6mb67JfLY7dbfRalRDcvOf_i_5eDR_xUPouVqhO-akf2MnqgVR_GXrIt7wIgLKgedyM4BTgwiiO7fWWvlTzpJEHRzCuWeAmXLbKyhiQn-skdfSzd6HzUXQRh_yonlmddyA=="
+      }
+    },
+    {
+      "newsId": "312817",
+      "title": "Flaş",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312817",
+      "category": "Flaş Haber",
+      "author": "",
+      "location": "İstanbul",
+      "district": "",
+      "pubDate": "2025-12-08 23:46:24",
+      "descriptionLength": 179,
+      "descriptionPreview": "Flaş DHA : Futbolda 'Bahis' ve 'Şike' operasyonunda gözaltına alınan Konyasporlu futbolcu Alassane Ndao çıkarıldığı mahkemece tutuklandı. Diğer şüphelilerin sorgusu sürüyor. (DHA)",
+      "media": {
+        "total": 0,
+        "images": 0,
+        "videos": 0,
+        "firstImage": null,
+        "firstVideo": null
+      }
+    },
+    {
+      "newsId": "312815",
+      "title": "Flaş",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312815",
+      "category": "Flaş Haber",
+      "author": "",
+      "location": "İstanbul",
+      "district": "",
+      "pubDate": "2025-12-08 23:42:13",
+      "descriptionLength": 242,
+      "descriptionPreview": "Flaş DHA : Futbolda 'Bahis' ve 'Şike' operasyonunda gözaltına alınan Galatasaraylı futbolcu Metehan Baltacı, Adana Demirspor Eski Başkanı Murat Sancak ve Ahmet Okatan çıkarıldığı mahkemece tutuklandı. Diğer şüphelilerin sorgusu sürüyor. (DHA)",
+      "media": {
+        "total": 0,
+        "images": 0,
+        "videos": 0,
+        "firstImage": null,
+        "firstVideo": null
+      }
+    },
+    {
+      "newsId": "312812",
+      "title": "Burak Yılmaz: Bir puan için mutluyuz / Video eklendi",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312812",
+      "category": "Spor",
+      "author": "",
+      "location": "İstanbul",
+      "district": "",
+      "pubDate": "2025-12-08 23:40:05",
+      "descriptionLength": 4191,
+      "descriptionPreview": "Olgucan KALKAN – Ali DANAŞ / İSTANBUL,(DHA)- GAZİANTEP FK Teknik Direktörü Burak Yılmaz, “Kamara bugün gününde olsa 3 puanı alırdık. Beşiktaş için üzücü bir akşam. Biz bir puan için mutluyuz” dedi.Süper Lig’in 15’inci haftasında Gaziantep FK deplasmanda Beşiktaş ile 2-2 berabere ",
+      "media": {
+        "total": 1,
+        "images": 0,
+        "videos": 1,
+        "firstImage": null,
+        "firstVideo": "https://dhaabone.dha.com.tr/rss/download/rze_xWpmkkc3E1ztWkFHy0cg1ZqJ5qQ9chaZDZLe2dGVhD6WNvnNAPfCtygF70Z4rRVgTXlCLcoElyZh2fu8rEE3cW98yMPpV6On8yRW5bv5upvyqOmXCDvzI5otiBR5"
+      }
+    },
+    {
+      "newsId": "312813",
+      "title": "Beşiktaş’tan Gaziantep FK maçının hakemlerine tepki",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312813",
+      "category": "Spor",
+      "author": "",
+      "location": "İstanbul",
+      "district": "",
+      "pubDate": "2025-12-08 23:38:23",
+      "descriptionLength": 1559,
+      "descriptionPreview": "İSTANBUL,(DHA) - SÜPER Lig’in 15’inci haftasında Beşiktaş, sahasında ağırladığı Gaziantep FK ile 2-2 berabere kaldığı maçın ardından hakemleri eleştiren bir açıklama yayınladı. .Tüpraş Stadyumu’nda oynanan ve Kadir Sağlam’ın yönettiği maçın ardından Beşiktaş Kulübü’nden yapılan a",
+      "media": {
+        "total": 0,
+        "images": 0,
+        "videos": 0,
+        "firstImage": null,
+        "firstVideo": null
+      }
+    },
+    {
+      "newsId": "312808",
+      "title": "Kamyonetle çarpışan motosikletin sürücüsü hayatını kaybetti",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312808",
+      "category": "Güvenlik",
+      "author": "",
+      "location": "Antalya",
+      "district": "Muratpaşa",
+      "pubDate": "2025-12-08 23:30:15",
+      "descriptionLength": 1263,
+      "descriptionPreview": "Tunahan KIR/ ANTALYA, (DHA)- ANTALYA'da kamyonetle çarpışan motosikletin sürücüsü Batuhan Çakmak (17), hayatını kaybetti. Kaza haberi üzerine olay yerine gelen genç sürücünün ailesi gözyaşlarına boğuldu.Kaza, saat 21.00 sıralarında Muratpaşa ilçesi Yüksekalan Mahallesi Adnan Mend",
+      "media": {
+        "total": 10,
+        "images": 10,
+        "videos": 0,
+        "firstImage": "https://dhaabone.dha.com.tr/rss/download/K8-spE3mSYewKC86VTTIhPSVIKk57Nzg90bHRurQ2ofHeEYWoVZoiTD72uvNCylDljJuvtACq5REzdULliKJ5UnOuBUoXwQbTEzhEhhu220tK4paNzFhBcq0qdXWDiI=",
+        "firstVideo": null
+      }
+    },
+    {
+      "newsId": "312459",
+      "title": "İstanbul - Futbolda 'Bahis' ve 'Şike' operasyonu: 29 şüpheliye tutuklama talebi - 8 / Zorbay Küçük'ün adliyeden çıkış görüntüsü eklendi",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312459",
+      "category": "Gündem",
+      "author": "",
+      "location": "İstanbul",
+      "district": "Bayrampaşa",
+      "pubDate": "2025-12-08 23:25:57",
+      "descriptionLength": 2934,
+      "descriptionPreview": "Emre KURT - Ceyda BIYIKLIOĞLU - Ayşe GÜREL- Soner HASIRCIOĞLU /İSTANBUL,(DHA) - İSTANBUL Cumhuriyet Başsavcılığı’nca yürütülen futbolda 'Bahis' ve 'Şike' soruşturması kapsamında gözaltına alınan aralarında futbolcular, kulüp yöneticileri ve hakemlerin de bulunduğu 39 şüpheli sağl",
+      "media": {
+        "total": 15,
+        "images": 11,
+        "videos": 4,
+        "firstImage": "https://dhaabone.dha.com.tr/rss/download/bpcOcLucKiRZCLKONFliHFtP6twQxNX5NZHomzK4EFXtitFMRx9G2Ha7F6DdfpsbgtPaeo77BP4-MMyQf9MHBsA7vTiwVit0MzdSmVAC8AAAaPUNUGJAE87ucYU=",
+        "firstVideo": "https://dhaabone.dha.com.tr/rss/download/yHIaNx74rEpyISku0xPJGRMZkMLCHgX1rVUNHCzoR4IO0pn4eXDc-7PnPbmHQbw797jIFmODPR7tk-TdtClc91XFrYpOVWwONSfAfduKN8OybTw1eybABvyHGenLVXf4"
+      }
+    },
+    {
+      "newsId": "312809",
+      "title": "Corendon Alanyaspor – Antalyaspor maçının ardından",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312809",
+      "category": "Spor",
+      "author": "",
+      "location": "Antalya",
+      "district": "Alanya",
+      "pubDate": "2025-12-08 23:24:27",
+      "descriptionLength": 4715,
+      "descriptionPreview": "Alkın BİRİCİK / ALANYA(Antalya), (DHA) - SÜPER Lig’in 15’inci haftasında Corendon Alanyaspor sahasında karşılaştığı Hesap.com Antalyaspor ile berabere kaldı. 0-0'lık karşılaşmanın ardından düzenlenen basın toplantısında Alanyaspor Teknik Direktörü Joao Pereira ve Antalyaspor Tekn",
+      "media": {
+        "total": 3,
+        "images": 2,
+        "videos": 1,
+        "firstImage": "https://dhaabone.dha.com.tr/rss/download/bhnhHhn5cWT4P8U_skPavedzARqlZpyIhxGvimgxuCm4Q2IkSZsWrlke5tCDfS0V6KVDDN2836Aek4TSu_svStN1z-gdhwIEFOfwr_D2aVU_67_unGoup3spGB69XKtDXw==",
+        "firstVideo": "https://dhaabone.dha.com.tr/rss/download/mzc7IZeavpiEtnyn0IXbhX75_WChvTo79dK-Zen5q7Y2AYGs3Ix9Uxw58WSJFHXl_QK8UMMAHk-tbokSlkh_EaWuUtDEPfqhDftbrxKe_7ERo3kIONuPxXHkRuM7L1dJ0w=="
+      }
+    },
+    {
+      "newsId": "312803",
+      "title": "Beton bariyere çarpan otomobil sürücüsünün cansız bedeni, viyadüğün altında bulundu",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312803",
+      "category": "Güvenlik",
+      "author": "",
+      "location": "Mersin",
+      "district": "Yenişehir",
+      "pubDate": "2025-12-08 23:14:45",
+      "descriptionLength": 943,
+      "descriptionPreview": "Soner AYDIN/ MERSİN, (DHA)- MERSİN’de otoyolda kontrolden çıkıp, beton bariyere çarpan otomobilin sürücüsü Gökhan Belşen’in (43) cansız bedeni, 30 metre yükseklikteki viyadüğün altında bulundu.Kaza, akşam saatlerinde Mersin-Adana Otoyolu Müftü Viyadüğü'nde meydana geldi. Gökhan B",
+      "media": {
+        "total": 2,
+        "images": 2,
+        "videos": 0,
+        "firstImage": "https://dhaabone.dha.com.tr/rss/download/SDlof4_ITZh0K9rcY4IHauuUzN3pbLmdGJackUM9AQ9xvLZwVzA68ffxPxb1QVinriTTIhDR8bzqWgzMqvCMvR7zvTc0m2bIVgYn8at3CNQZsVxVXccDjXIR0MxsJJyyOPSC",
+        "firstVideo": null
+      }
+    },
+    {
+      "newsId": "312810",
+      "title": "Galatasaray Teknik Direktörü Okan Buruk'un açıklamaları",
+      "link": "https://dhaabone.dha.com.tr/news/detail/312810",
+      "category": "Spor",
+      "author": "",
+      "location": "İstanbul",
+      "district": "",
+      "pubDate": "2025-12-08 23:11:10",
+      "descriptionLength": 0,
+      "descriptionPreview": "",
+      "media": {
+        "total": 1,
+        "images": 0,
+        "videos": 1,
+        "firstImage": null,
+        "firstVideo": "https://dhaabone.dha.com.tr/rss/download/gKpJR6o6OuhkDPepSkqr4VgB-JZ21wLvN2sWU3i2ulJgQ5artp--JXsxa6WVYWyS9ko3_uv9iAS5Pn9Miv1iKHEvBxSpHCol9oXWgokJw-rw9o2dBsR9j0XWqNHeHwGR"
+      }
+    }
+  ]
+}
