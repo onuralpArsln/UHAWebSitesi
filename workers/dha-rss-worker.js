@@ -362,6 +362,17 @@ async function buildArticlePayload(item, downloadAssets) {
   if (item.category) tags.push(item.category);
   if (item.location) tags.push(item.location);
   if (item.district) tags.push(item.district);
+  const incomingCategory = (item.category || '').trim();
+  const fallbackCategory = SETTINGS.fallbackCategory || 'Gündem';
+  const categoryLookup = new Set(
+    dataService
+      .getCategories()
+      .map((cat) => (cat.name || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
+  const category = incomingCategory && categoryLookup.has(incomingCategory.toLowerCase())
+    ? incomingCategory
+    : fallbackCategory;
   const videoUrl = await processVideoEntry(item, media.videos[0], downloadAssets);
   const targettedViews = ['category-feed'];
   if (item.category === 'Flaş Haber') {
@@ -372,7 +383,7 @@ async function buildArticlePayload(item, downloadAssets) {
     header: stripHtml(item.title || 'DHA Haberi'),
     summaryHead: summarizeHead(descriptionText),
     summary: summarizeBody(descriptionText),
-    category: item.category || 'Genel',
+    category,
     tags,
     body: descriptionHtml,
     images: safeImages,
