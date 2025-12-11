@@ -1,6 +1,5 @@
 {% macro articleImage(article, config = {}) %}
 {% if article %}
-  {% set placeholder = '/uploads/media/placeHolder.png' %}
   {% if article.images and article.images.length > 0 %}
   {% set skipFirst = config.skipFirst %}
   {% set hasSecondImage = article.images.length > 1 %}

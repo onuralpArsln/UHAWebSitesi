@@ -39,6 +39,7 @@ class DataService {
       this.ensureHomepageLayoutDefaults();
       this.ensureArticleLayoutDefaults();
       this.ensureCarouselDefaults();
+      this.ensureDefaultCategories();
       // Don't migrate mock data in test mode
     } else {
       // Safety check: Prevent using production database in test environment
@@ -82,6 +83,8 @@ class DataService {
       this.ensureArticleLayoutDefaults();
       // Ensure carousel defaults exist
       this.ensureCarouselDefaults();
+      // Ensure we have starter categories even if articles are empty
+      this.ensureDefaultCategories();
 
       // Migrate mock data if database is empty
       if (ENABLE_MOCK_MIGRATION) {
@@ -661,6 +664,41 @@ class DataService {
   }
 
   /**
+   * Seed initial categories if none exist. Does NOT create articles.
+   */
+  ensureDefaultCategories() {
+    const categoryCount = this.db.prepare('SELECT COUNT(*) as count FROM categories').get();
+    if (categoryCount.count > 0) {
+      return;
+    }
+
+    try {
+      const mockCategories = this.generateMockCategories();
+      const insertCategory = this.db.prepare(`
+        INSERT INTO categories (id, name, description, slug, articleCount)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+
+      const insertCategoryTransaction = this.db.transaction((categories) => {
+        for (const category of categories) {
+          insertCategory.run(
+            category.id,
+            category.name,
+            category.description || '',
+            category.slug || '',
+            category.articleCount || 0
+          );
+        }
+      });
+
+      insertCategoryTransaction(mockCategories);
+      console.log('✅ Seeded default categories');
+    } catch (error) {
+      console.error('Failed to seed default categories:', error);
+    }
+  }
+
+  /**
    * Migrate mock data if database is empty
    */
   migrateMockDataIfNeeded() {
@@ -760,7 +798,7 @@ class DataService {
         outlinks: ['https://www.afad.gov.tr'],
         targettedViews: ['homepage', 'flash-news', 'carousel'],
         updatedAt: now,
-        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
+        images: [],
         relatedArticles: ['2', '3'],
         created_by: 'mock_user_1'
       },
@@ -777,7 +815,7 @@ class DataService {
         source: 'TBMM',
         targettedViews: ['homepage', 'featured-news-grid'],
         updatedAt: new Date(Date.now() - 3600000).toISOString(),
-        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
+        images: [],
         relatedArticles: ['1'],
         created_by: 'mock_user_1'
       },
@@ -794,7 +832,7 @@ class DataService {
         source: 'İBB',
         targettedViews: ['category-feed'],
         updatedAt: new Date(Date.now() - 7200000).toISOString(),
-        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
+        images: [],
         relatedArticles: [],
         created_by: 'mock_user_2'
       },
@@ -811,7 +849,7 @@ class DataService {
         source: 'MGM',
         targettedViews: ['flash-news'],
         updatedAt: new Date(Date.now() - 10800000).toISOString(),
-        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
+        images: [],
         relatedArticles: ['1'],
         created_by: 'mock_user_1'
       },
@@ -831,7 +869,7 @@ class DataService {
         outlinks: ['https://www.tuik.gov.tr'],
         targettedViews: ['homepage', 'carousel', 'category-feed'],
         updatedAt: new Date(Date.now() - 86400000).toISOString(),
-        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
+        images: [],
         relatedArticles: ['6', '7'],
         created_by: 'mock_user_3'
       },
@@ -848,7 +886,7 @@ class DataService {
         source: 'Borsa İstanbul',
         targettedViews: ['featured-news-grid', 'flash-news'],
         updatedAt: new Date(Date.now() - 90000000).toISOString(),
-        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
+        images: [],
         relatedArticles: ['5'],
         created_by: 'mock_user_3'
       },
@@ -865,7 +903,7 @@ class DataService {
         source: 'Piyasalar',
         targettedViews: ['category-feed'],
         updatedAt: new Date(Date.now() - 95000000).toISOString(),
-        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
+        images: [],
         relatedArticles: ['5'],
         created_by: 'mock_user_3'
       },
@@ -882,7 +920,7 @@ class DataService {
         source: 'Ticaret Bakanlığı',
         targettedViews: ['category-feed'],
         updatedAt: new Date(Date.now() - 100000000).toISOString(),
-        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
+        images: [],
         relatedArticles: ['5'],
         created_by: 'mock_user_3'
       },
@@ -902,7 +940,7 @@ class DataService {
         outlinks: [],
         targettedViews: ['homepage', 'carousel', 'featured-news-grid'],
         updatedAt: new Date(Date.now() - 172800000).toISOString(),
-        images: [{ url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' }],
+        images: [],
         relatedArticles: ['10', '11'],
         created_by: 'mock_user_4'
       },

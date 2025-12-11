@@ -44,7 +44,6 @@ const RSS_MEDIA_WEB_PATH = '/uploads/media/rss';
 const RSS_VIDEO_DIR = path.join(RSS_MEDIA_DIR, 'videos');
 const RSS_VIDEO_WEB_PATH = `${RSS_MEDIA_WEB_PATH}/videos`;
 const MAX_VIDEO_BYTES = SETTINGS.maxVideoBytes;
-const PLACEHOLDER_IMAGE_PATH = '/uploads/media/placeHolder.png';
 const REQUEST_HEADERS = {
   'User-Agent': 'UHA-RSS-Worker/1.0 (+uha)',
   Accept: 'image/*,*/*;q=0.8'
@@ -53,15 +52,6 @@ const MAX_IMAGE_REDIRECTS = 3;
 const IMAGE_DOWNLOAD_RETRIES = 3;
 
 const isLocalPath = (url) => typeof url === 'string' && url.startsWith('/uploads/');
-
-const buildPlaceholderImage = (item) => ({
-  url: PLACEHOLDER_IMAGE_PATH,
-  lowRes: PLACEHOLDER_IMAGE_PATH,
-  highRes: PLACEHOLDER_IMAGE_PATH,
-  width: 800,
-  height: 600,
-  alt: stripHtml(item?.title || 'Haber görseli')
-});
 
 function processArgs(argv) {
   const options = {
@@ -368,15 +358,15 @@ async function buildArticlePayload(item, downloadAssets) {
       highRes: img.highRes || img.lowRes || img.url
     }));
 
-  if (!safeImages.length) {
-    safeImages.push(buildPlaceholderImage(item));
-  }
-
   const tags = [];
   if (item.category) tags.push(item.category);
   if (item.location) tags.push(item.location);
   if (item.district) tags.push(item.district);
   const videoUrl = await processVideoEntry(item, media.videos[0], downloadAssets);
+  const targettedViews = ['category-feed'];
+  if (item.category === 'Flaş Haber') {
+    targettedViews.push('flash-news');
+  }
 
   return {
     header: stripHtml(item.title || 'DHA Haberi'),
@@ -392,7 +382,7 @@ async function buildArticlePayload(item, downloadAssets) {
     creationDate: toIsoDate(item.pubDate),
     source: 'DHA RSS',
     outlinks: item.link ? [item.link] : [],
-    targettedViews: item.category === 'Flaş Haber' ? ['flash-news'] : [],
+    targettedViews,
     relatedArticles: [],
     status: 'visible',
     pressAnnouncementId: buildExternalId(item) || '',

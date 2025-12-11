@@ -4,7 +4,7 @@ const path = require('path');
 const dbPath = path.join(__dirname, '../data/news.db');
 const db = new Database(dbPath);
 
-console.log('🔄 Updating article images in database...');
+console.log('🔄 Removing placeholder images from database...');
 
 const articles = db.prepare('SELECT id, images FROM articles').all();
 let updateCount = 0;
@@ -19,19 +19,17 @@ for (const article of articles) {
         continue;
     }
 
-    let modified = false;
-    const newImages = images.map(img => {
-        if (img.url && img.url.includes('via.placeholder.com')) {
-            modified = true;
-            return { ...img, url: '/uploads/media/placeHolder.png', highRes: '/uploads/media/placeHolder.png' };
-        }
-        return img;
+    const newImages = (images || []).filter(img => {
+        const candidate = (img && (img.url || img.lowRes || img.highRes)) || '';
+        const isRemotePlaceholder = /via\.placeholder\.com/i.test(candidate);
+        const isLocalPlaceholder = candidate.includes('/uploads/media/placeHolder.png');
+        return candidate && !isRemotePlaceholder && !isLocalPlaceholder;
     });
 
-    if (modified) {
+    if (JSON.stringify(newImages) !== JSON.stringify(images || [])) {
         updateStmt.run(JSON.stringify(newImages), article.id);
         updateCount++;
     }
 }
 
-console.log(`✅ Updated ${updateCount} articles.`);
+console.log(`✅ Updated ${updateCount} articles (placeholders removed).`);

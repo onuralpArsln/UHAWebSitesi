@@ -1,40 +1,26 @@
 #!/usr/bin/env node
 /**
- * Remove DHA-hosted media URLs from articles and enforce local/placeholder assets.
+ * Remove DHA-hosted media URLs from articles while keeping only safe local assets.
  * Run once after ingestion changes or as needed.
  */
 
 const DataService = require('../server/services/data-service');
 
-const PLACEHOLDER = '/uploads/media/placeHolder.png';
-
 const isLocal = (url) => typeof url === 'string' && url.startsWith('/uploads/');
 const isRemoteHttp = (url) => typeof url === 'string' && /^https?:\/\//i.test(url);
-
-const buildPlaceholder = (article) => ({
-  url: PLACEHOLDER,
-  lowRes: PLACEHOLDER,
-  highRes: PLACEHOLDER,
-  width: 800,
-  height: 600,
-  alt: (article && (article.header || article.title)) || 'Haber görseli'
-});
+const isPlaceholderPath = (url) => typeof url === 'string' && url.includes('/uploads/media/placeHolder.png');
 
 function normalizeImages(images, article) {
   const safe = (images || [])
     .filter((img) => {
       const candidate = img?.lowRes || img?.url || img?.highRes;
-      return isLocal(candidate);
+      return isLocal(candidate) && !isPlaceholderPath(candidate);
     })
     .map((img) => ({
       ...img,
       lowRes: img.lowRes || img.url,
       highRes: img.highRes || img.lowRes || img.url
     }));
-
-  if (!safe.length) {
-    safe.push(buildPlaceholder(article));
-  }
 
   return safe;
 }
@@ -78,5 +64,6 @@ async function main() {
 }
 
 main();
+
 
 
