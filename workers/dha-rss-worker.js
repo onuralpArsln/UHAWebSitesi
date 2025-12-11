@@ -12,6 +12,7 @@ const path = require('path');
 const fs = require('fs');
 const stream = require('stream');
 const sharp = require('sharp');
+const { createPosterFromVideo } = require('../server/services/video-poster');
 
 const DataService = require('../server/services/data-service');
 const urlSlugService = require('../server/services/url-slug');
@@ -36,6 +37,9 @@ const SETTINGS = {
 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
 const parseXml = promisify(parser.parseString);
 const pipeline = promisify(stream.pipeline);
+const normalizedBannedTopics = (Array.isArray(SETTINGS.bannedTopics) ? SETTINGS.bannedTopics : [])
+  .map((topic) => (topic || '').toString().trim().toLowerCase())
+  .filter(Boolean);
 
 const args = processArgs(process.argv.slice(2));
 const dataService = new DataService();
@@ -43,6 +47,8 @@ const RSS_MEDIA_DIR = path.join(__dirname, '../public/uploads/media/rss');
 const RSS_MEDIA_WEB_PATH = '/uploads/media/rss';
 const RSS_VIDEO_DIR = path.join(RSS_MEDIA_DIR, 'videos');
 const RSS_VIDEO_WEB_PATH = `${RSS_MEDIA_WEB_PATH}/videos`;
+const RSS_VIDEO_THUMB_DIR = path.join(RSS_MEDIA_DIR, 'video-thumbnails');
+const RSS_VIDEO_THUMB_WEB_PATH = `${RSS_MEDIA_WEB_PATH}/video-thumbnails`;
 const MAX_VIDEO_BYTES = SETTINGS.maxVideoBytes;
 const REQUEST_HEADERS = {
   'User-Agent': 'UHA-RSS-Worker/1.0 (+uha)',
@@ -110,6 +116,27 @@ const ensureArray = (value) => {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
 };
+
+function containsBannedContent(item) {
+  if (!normalizedBannedTopics.length) {
+    return { matched: false, term: null };
+  }
+
+  const fields = [
+    item?.title,
+    item?.description,
+    item?.summary,
+    item?.body,
+    item?.content
+  ]
+    .filter(Boolean)
+    .map((value) => (typeof value === 'string' ? value : JSON.stringify(value)))
+    .join(' ')
+    .toLowerCase();
+
+  const term = normalizedBannedTopics.find((topic) => fields.includes(topic));
+  return { matched: Boolean(term), term: term || null };
+}
 
 function extractMedia(item) {
   const mediaEntries = ensureArray(item.mediaList?.media).map((media) => ({
@@ -309,11 +336,11 @@ async function downloadVideoAsset(videoUrl, diskPath) {
 
 async function processVideoEntry(item, videoEntry, downloadAssets) {
   if (!videoEntry || !videoEntry.link) {
-    return '';
+    return { videoUrl: '', posterImage: null };
   }
 
   if (!downloadAssets) {
-    return '';
+    return { videoUrl: '', posterImage: null };
   }
 
   ensureVideoDirectory();
@@ -324,10 +351,22 @@ async function processVideoEntry(item, videoEntry, downloadAssets) {
     if (!fs.existsSync(diskPath)) {
       await downloadVideoAsset(videoEntry.link, diskPath);
     }
-    return `${RSS_VIDEO_WEB_PATH}/${filename}`;
+    const videoUrl = `${RSS_VIDEO_WEB_PATH}/${filename}`;
+
+    const posterResult = await createPosterFromVideo({
+      videoDiskPath: diskPath,
+      filenameBase: path.parse(filename).name,
+      outputDir: RSS_VIDEO_THUMB_DIR,
+      webBasePath: RSS_VIDEO_THUMB_WEB_PATH
+    });
+
+    return {
+      videoUrl,
+      posterImage: posterResult.image || null
+    };
   } catch (error) {
     log(`  ⚠️  Video download failed: ${error.message}`);
-    return '';
+    return { videoUrl: '', posterImage: null };
   }
 }
 
@@ -373,10 +412,16 @@ async function buildArticlePayload(item, downloadAssets) {
   const category = incomingCategory && categoryLookup.has(incomingCategory.toLowerCase())
     ? incomingCategory
     : fallbackCategory;
-  const videoUrl = await processVideoEntry(item, media.videos[0], downloadAssets);
   const targettedViews = ['category-feed'];
   if (item.category === 'Flaş Haber') {
     targettedViews.push('flash-news');
+  }
+
+  const videoResult = await processVideoEntry(item, media.videos[0], downloadAssets);
+  const videoUrl = isLocalPath(videoResult.videoUrl) ? videoResult.videoUrl : '';
+
+  if (!safeImages.length && videoResult.posterImage) {
+    safeImages.push(videoResult.posterImage);
   }
 
   return {
@@ -388,7 +433,7 @@ async function buildArticlePayload(item, downloadAssets) {
     body: descriptionHtml,
     images: safeImages,
     headlineImage: safeImages[0] || null,
-    videoUrl: isLocalPath(videoUrl) ? videoUrl : '',
+    videoUrl,
     writer: item.author?.trim() || SETTINGS.writerName,
     creationDate: toIsoDate(item.pubDate),
     source: 'DHA RSS',
@@ -473,8 +518,17 @@ async function run() {
     let inserted = 0;
     let skipped = 0;
     let duplicates = 0;
+    let filtered = 0;
 
     for (const item of limitedItems) {
+      const banCheck = containsBannedContent(item);
+      if (banCheck.matched) {
+        filtered += 1;
+        const titlePreview = stripHtml(item.title || '').slice(0, 120) || 'untitled';
+        log(`  ↳ Skipped (banned term "${banCheck.term}") in "${titlePreview}" (${item.newsId || 'no-id'})`);
+        continue;
+      }
+
       let payload = await buildArticlePayload(item, false);
       const key = buildArticleKey(payload);
       log(`• Processing ${payload.header} (${item.newsId || 'no-id'}) [${key.slice(0, 8)}]`);
@@ -505,6 +559,7 @@ async function run() {
     log(`Inserted: ${inserted}`);
     log(`Dry-run skipped: ${skipped}`);
     log(`Duplicates skipped: ${duplicates}`);
+    log(`Filtered (banned): ${filtered}`);
   } catch (error) {
     console.error('❌ Worker failed:', error.message);
     process.exitCode = 1;
