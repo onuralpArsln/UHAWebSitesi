@@ -40,6 +40,8 @@ const pipeline = promisify(stream.pipeline);
 const normalizedBannedTopics = (Array.isArray(SETTINGS.bannedTopics) ? SETTINGS.bannedTopics : [])
   .map((topic) => (topic || '').toString().trim().toLowerCase())
   .filter(Boolean);
+// Turkish-aware lowercasing to avoid dotted/dotless I mismatches (e.g., EKONOMİ vs ekonomi)
+const normalizeCategoryName = (value = '') => value.toString().trim().toLocaleLowerCase('tr-TR');
 
 const args = processArgs(process.argv.slice(2));
 const dataService = new DataService();
@@ -401,16 +403,17 @@ async function buildArticlePayload(item, downloadAssets) {
   if (item.category) tags.push(item.category);
   if (item.location) tags.push(item.location);
   if (item.district) tags.push(item.district);
-  const incomingCategory = (item.category || '').trim();
+  const incomingCategoryRaw = (item.category || '').trim();
+  const incomingCategoryNormalized = normalizeCategoryName(incomingCategoryRaw);
   const fallbackCategory = SETTINGS.fallbackCategory || 'Gündem';
   const categoryLookup = new Set(
     dataService
       .getCategories()
-      .map((cat) => (cat.name || '').trim().toLowerCase())
+      .map((cat) => normalizeCategoryName(cat.name))
       .filter(Boolean)
   );
-  const category = incomingCategory && categoryLookup.has(incomingCategory.toLowerCase())
-    ? incomingCategory
+  const category = incomingCategoryNormalized && categoryLookup.has(incomingCategoryNormalized)
+    ? incomingCategoryRaw
     : fallbackCategory;
   const targettedViews = ['category-feed'];
   if (item.category === 'Flaş Haber') {
