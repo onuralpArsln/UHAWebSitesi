@@ -50,6 +50,7 @@ Goal: explain how a widget receives data and shows up on the site. Follow this o
 - Verify the route sends the data you expect (`console.log` in `pages.js` if needed).
 - Ensure the widget macro is imported (missing import = blank output).
 - If CMS layout isn’t updating, confirm the widget type exists in the renderer and layout manager config.
+- Image-less articles: widgets (`article-hero-image`, `article-image`, cards/carousels) render nothing when no local `/uploads/...` image exists; no placeholders are shown.
 
 ## Related Docs
 - `add-widget.md` – create new widgets safely.

@@ -47,6 +47,9 @@
       {% endif %}
       {% if article.images and article.images.length > 0 %}
       {% set heroImage = article.images[0] %}
+      {% set heroPath = heroImage and (heroImage.lowRes or heroImage.url) %}
+      {% set heroLocal = heroPath and heroPath.startsWith('/uploads/') %}
+      {% if heroLocal %}
       <figure class="article-view__media">
         <img
           src="{{ heroImage.lowRes }}"
@@ -55,6 +58,7 @@
           loading="eager"
         >
       </figure>
+      {% endif %}
       {% endif %}
 
       <header class="article-view__header">
@@ -71,6 +75,9 @@
 
       {% if article.images and article.images.length > 1 %}
       {% set secondaryImage = article.images[1] %}
+      {% set secondaryPath = secondaryImage and (secondaryImage.lowRes or secondaryImage.url) %}
+      {% set secondaryLocal = secondaryPath and secondaryPath.startsWith('/uploads/') %}
+      {% if secondaryLocal %}
       <figure class="article-view__media">
         <img
           src="{{ secondaryImage.lowRes }}"
@@ -80,24 +87,18 @@
         >
       </figure>
       {% endif %}
+      {% endif %}
 
       {% if article.videoUrl %}
+      {% set isLocalVideo = article.videoUrl and article.videoUrl.startsWith('/uploads/') %}
+      {% if isLocalVideo %}
       <div class="article-view__video">
-        {% if article.videoUrl.startsWith('/uploads/') %}
         <video controls preload="metadata" style="width: 100%; height: auto; border-radius: 8px;">
           <source src="{{ article.videoUrl }}" type="video/mp4">
           Tarayıcınız video etiketini desteklemiyor.
         </video>
-        {% else %}
-        <iframe
-          src="{{ article.videoUrl }}"
-          title="{{ article.title }} video"
-          loading="lazy"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowfullscreen
-        ></iframe>
-        {% endif %}
       </div>
+      {% endif %}
       {% endif %}
 
       <div class="article-view__content">

@@ -2,6 +2,9 @@
 {% if article and article.images and article.images.length > 0 %}
   {% set heroImage = article.images[0] %}
   {% set maxHeight = config.maxHeight %}
+  {% set imagePath = heroImage and (heroImage.lowRes or heroImage.url) %}
+  {% set isLocal = imagePath and imagePath.startsWith('/uploads/') %}
+  {% if isLocal %}
   <figure class="article-view__media" {% if maxHeight %}style="max-height: {{ maxHeight }}px; overflow: hidden; display: flex; align-items: center; justify-content: center;"{% endif %}>
     <img
       src="{{ heroImage.lowRes }}"
@@ -11,6 +14,7 @@
       {% if maxHeight %}style="max-height: {{ maxHeight }}px; width: 100%; height: auto; object-fit: contain; display: block;"{% endif %}
     >
   </figure>
+  {% endif %}
 {% endif %}
 {% endmacro %}
 

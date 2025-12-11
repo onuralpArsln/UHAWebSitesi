@@ -43,6 +43,17 @@ Optional flags:
 | `--limit <n>` | Process only the first `n` items |
 | `--dry-run` | Force dry-run mode even if `RSS_DEFAULT_DRYRUN` is false |
 
+### How duplicates are avoided
+- Each RSS item’s `newsId` (or link hash) is stored in `pressAnnouncementId`.
+- Before inserting, the worker looks up existing articles by this external ID; header/date matching remains a secondary guard.
+- Slugs are generated after insert, so slug timing does not affect deduplication.
+
+### How images are handled
+- All images are downloaded locally to `/uploads/media/rss/...`; remote DHA URLs are never stored.
+- Downloads use redirects + retries; if an image ultimately fails, it is skipped (no remote fallback).
+- Control the count via `SETTINGS.maxImages` (can be raised, e.g., up to 10).
+- If the RSS item has no images (or all downloads fail), the article renders without any image or placeholder; the UI shows text-only.
+
 ## 4. Verify new content
 
 1. **SQLite check** – Open the DB and list the latest headers:
@@ -92,4 +103,11 @@ The scheduler is intentionally small; to register another job:
 All workers share the same guardrails—only one instance per label runs at a time, and logs are piped to the main process.
 
 Following these steps keeps ingestion self-contained and reversible without needing any server restarts or schema changes.
+
+## 7. Cleanup utilities
+
+- Dedup/remote-image fixer: `node scripts/cleanup-rss-data.js [--dry-run] [--skip-images]`
+  - Removes duplicates by `pressAnnouncementId` (keeps earliest `creationDate`).
+  - Downloads any remaining remote DHA image URLs and rewrites them to local `/uploads/media/rss/...`.
+  - Use `--dry-run` to review actions first.
 

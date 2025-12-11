@@ -1,5 +1,6 @@
 {% macro articleImage(article, config = {}) %}
 {% if article %}
+  {% set placeholder = '/uploads/media/placeHolder.png' %}
   {% if article.images and article.images.length > 0 %}
   {% set skipFirst = config.skipFirst %}
   {% set hasSecondImage = article.images.length > 1 %}
@@ -8,6 +9,9 @@
   {% set imageIndex = 1 if (skipFirst and hasSecondImage) else 0 %}
   {% set displayImage = article.images[imageIndex] %}
   {% set maxHeight = config.maxHeight %}
+  {% set imagePath = displayImage and (displayImage.lowRes or displayImage.url) %}
+  {% set isLocal = imagePath and imagePath.startsWith('/uploads/') %}
+  {% if isLocal %}
   <figure class="article-view__media" {% if maxHeight %}style="max-height: {{ maxHeight }}px; overflow: hidden; display: flex; align-items: center; justify-content: center;"{% endif %}>
     <img
       src="{{ displayImage.lowRes }}"
@@ -19,24 +23,18 @@
   </figure>
   {% endif %}
   {% endif %}
+  {% endif %}
   
   {% if article.videoUrl %}
+  {% set isLocalVideo = article.videoUrl and article.videoUrl.startsWith('/uploads/') %}
+  {% if isLocalVideo %}
   <div class="article-view__video">
-    {% if article.videoUrl.startsWith('/uploads/') %}
     <video controls preload="metadata" style="width: 100%; height: auto; border-radius: 8px;">
       <source src="{{ article.videoUrl }}" type="video/mp4">
       Tarayıcınız video etiketini desteklemiyor.
     </video>
-    {% else %}
-    <iframe
-      src="{{ article.videoUrl }}"
-      title="{{ article.title }} video"
-      loading="lazy"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-      allowfullscreen
-    ></iframe>
-    {% endif %}
   </div>
+  {% endif %}
   {% endif %}
 {% endif %}
 {% endmacro %}

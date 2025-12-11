@@ -25,7 +25,7 @@ const SETTINGS = {
   maxImages: 2,
   maxVideos: 1,
   fallbackCategory: 'Gündem',
-  bannedTopics: [],
+  bannedTopics: ["Yurt Haber"],
   defaultLimit: 20,
   defaultFeedUrl: 'https://dhaabone.dha.com.tr/rss/1719/k9quL7DqdugGLn4kKrTMzmHbRWQN5JQZ4wfCwMuJiOE64o3-B7R_qu33sYG8kMYZHDqtewhItlDOPuc=',
   defaultLogFile: null,
@@ -44,6 +44,24 @@ const RSS_MEDIA_WEB_PATH = '/uploads/media/rss';
 const RSS_VIDEO_DIR = path.join(RSS_MEDIA_DIR, 'videos');
 const RSS_VIDEO_WEB_PATH = `${RSS_MEDIA_WEB_PATH}/videos`;
 const MAX_VIDEO_BYTES = SETTINGS.maxVideoBytes;
+const PLACEHOLDER_IMAGE_PATH = '/uploads/media/placeHolder.png';
+const REQUEST_HEADERS = {
+  'User-Agent': 'UHA-RSS-Worker/1.0 (+uha)',
+  Accept: 'image/*,*/*;q=0.8'
+};
+const MAX_IMAGE_REDIRECTS = 3;
+const IMAGE_DOWNLOAD_RETRIES = 3;
+
+const isLocalPath = (url) => typeof url === 'string' && url.startsWith('/uploads/');
+
+const buildPlaceholderImage = (item) => ({
+  url: PLACEHOLDER_IMAGE_PATH,
+  lowRes: PLACEHOLDER_IMAGE_PATH,
+  highRes: PLACEHOLDER_IMAGE_PATH,
+  width: 800,
+  height: 600,
+  alt: stripHtml(item?.title || 'Haber görseli')
+});
 
 function processArgs(argv) {
   const options = {
@@ -152,20 +170,48 @@ function buildImageFilename(item, index, imageUrl) {
   return `${base}-${index}${safeExt}`;
 }
 
-async function downloadImageAsset(imageUrl, diskPath) {
+function fetchWithRedirects(url, attempt = 0) {
   return new Promise((resolve, reject) => {
-    https.get(imageUrl, (res) => {
-      if (res.statusCode !== 200) {
-        reject(new Error(`Image download failed (${res.statusCode}) for ${imageUrl}`));
+    https.get(url, { headers: REQUEST_HEADERS }, (res) => {
+      const { statusCode, headers } = res;
+
+      if (statusCode >= 300 && statusCode < 400 && headers.location) {
+        if (attempt >= MAX_IMAGE_REDIRECTS) {
+          res.resume();
+          reject(new Error(`Too many redirects for ${url}`));
+          return;
+        }
+        const nextUrl = new URL(headers.location, url).toString();
         res.resume();
+        resolve(fetchWithRedirects(nextUrl, attempt + 1));
         return;
       }
 
-      pipeline(res, fs.createWriteStream(diskPath))
-        .then(resolve)
-        .catch(reject);
+      if (statusCode !== 200) {
+        res.resume();
+        reject(new Error(`Image download failed (${statusCode}) for ${url}`));
+        return;
+      }
+
+      resolve(res);
     }).on('error', reject);
   });
+}
+
+async function downloadImageAsset(imageUrl, diskPath) {
+  let lastError;
+  for (let attempt = 1; attempt <= IMAGE_DOWNLOAD_RETRIES; attempt += 1) {
+    try {
+      const response = await fetchWithRedirects(imageUrl);
+      await pipeline(response, fs.createWriteStream(diskPath));
+      return;
+    } catch (error) {
+      lastError = error;
+      const isLast = attempt === IMAGE_DOWNLOAD_RETRIES;
+      if (isLast) break;
+    }
+  }
+  throw lastError;
 }
 
 async function processImageEntry(item, imageUrl, index, downloadAssets) {
@@ -174,13 +220,9 @@ async function processImageEntry(item, imageUrl, index, downloadAssets) {
     title: stripHtml(item.title || '')
   };
 
+  // Always prefer locally downloaded assets; do not store remote DHA URLs
   if (!downloadAssets) {
-    return {
-      url: imageUrl,
-      lowRes: imageUrl,
-      highRes: imageUrl,
-      ...commonMeta
-    };
+    return null;
   }
 
   ensureMediaDirectory();
@@ -281,7 +323,7 @@ async function processVideoEntry(item, videoEntry, downloadAssets) {
   }
 
   if (!downloadAssets) {
-    return videoEntry.link;
+    return '';
   }
 
   ensureVideoDirectory();
@@ -295,7 +337,7 @@ async function processVideoEntry(item, videoEntry, downloadAssets) {
     return `${RSS_VIDEO_WEB_PATH}/${filename}`;
   } catch (error) {
     log(`  ⚠️  Video download failed: ${error.message}`);
-    return videoEntry.link;
+    return '';
   }
 }
 
@@ -314,15 +356,20 @@ async function buildArticlePayload(item, downloadAssets) {
   const descriptionText = stripHtml(descriptionHtml);
   const media = extractMedia(item);
 
-  let images = await prepareImages(item, media.images, downloadAssets);
-  if (!images.length) {
-    images = media.images.map((img) => ({
-      url: img.link,
-      lowRes: img.link,
-      highRes: img.link,
-      alt: stripHtml(item.title || ''),
-      title: stripHtml(item.title || '')
+  const images = await prepareImages(item, media.images, downloadAssets);
+  const safeImages = images
+    .filter((img) => {
+      const candidate = img?.lowRes || img?.url || img?.highRes;
+      return isLocalPath(candidate);
+    })
+    .map((img) => ({
+      ...img,
+      lowRes: img.lowRes || img.url,
+      highRes: img.highRes || img.lowRes || img.url
     }));
+
+  if (!safeImages.length) {
+    safeImages.push(buildPlaceholderImage(item));
   }
 
   const tags = [];
@@ -338,9 +385,9 @@ async function buildArticlePayload(item, downloadAssets) {
     category: item.category || 'Genel',
     tags,
     body: descriptionHtml,
-    images,
-    headlineImage: images[0] || null,
-    videoUrl,
+    images: safeImages,
+    headlineImage: safeImages[0] || null,
+    videoUrl: isLocalPath(videoUrl) ? videoUrl : '',
     writer: item.author?.trim() || SETTINGS.writerName,
     creationDate: toIsoDate(item.pubDate),
     source: 'DHA RSS',
@@ -348,9 +395,21 @@ async function buildArticlePayload(item, downloadAssets) {
     targettedViews: item.category === 'Flaş Haber' ? ['flash-news'] : [],
     relatedArticles: [],
     status: 'visible',
-    pressAnnouncementId: '',
+    pressAnnouncementId: buildExternalId(item) || '',
     created_by: 'rss-worker'
   };
+}
+
+function buildExternalId(item) {
+  if (item.newsId) {
+    return `dha:${item.newsId}`;
+  }
+  if (item.link) {
+    const hash = crypto.createHash('sha1');
+    hash.update(item.link);
+    return `dha-link:${hash.digest('hex')}`;
+  }
+  return null;
 }
 
 function buildArticleKey(payload) {
@@ -360,6 +419,19 @@ function buildArticleKey(payload) {
 }
 
 function findExistingArticle(payload) {
+  if (payload.pressAnnouncementId) {
+    const byExternalId = dataService.getArticleByPressAnnouncementId(payload.pressAnnouncementId);
+    if (byExternalId) {
+      return byExternalId;
+    }
+  }
+
+  // Secondary guard: exact header match (case-insensitive) to block same-title duplicates
+  const byHeader = dataService.getArticleByHeaderExact(payload.header);
+  if (byHeader) {
+    return byHeader;
+  }
+
   const searchResults = dataService.getArticles({
     search: payload.header,
     limit: 5

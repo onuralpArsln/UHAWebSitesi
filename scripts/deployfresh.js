@@ -1,23 +1,27 @@
 #!/usr/bin/env node
 
 /**
- * Deployment script for UHA News Server
+ * Fresh deployment script for UHA News Server
  * - Kills processes on port 3000
- * - Checks CSS files exist
- * - Auto-detects configuration (no .env required)
- * - Starts the server with fully self-configuring system
- * - Supports both HTTP and HTTPS automatically
- * - Works on any server without configuration files
+ * - Wipes all articles from the database
+ * - Clears RSS media (images & videos) and slug cache
+ * - Checks CSS files
+ * - Starts the server (same as deploy)
  */
 
 const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const DataService = require('../server/services/data-service');
+const urlSlugService = require('../server/services/url-slug');
 
 const PORT = process.env.PORT || 3000;
 const PROJECT_DIR = path.join(__dirname, '..');
 const CSS_DIR = path.join(PROJECT_DIR, 'public/css');
 const REQUIRED_CSS = ['variables.css', 'main.css', 'widgets.css'];
+const RSS_MEDIA_DIR = path.join(PROJECT_DIR, 'public/uploads/media/rss');
+const RSS_VIDEO_DIR = path.join(RSS_MEDIA_DIR, 'videos');
+const SLUG_CACHE = path.join(PROJECT_DIR, 'server/cache/slug-cache.json');
 
 function killProjectProcesses() {
   console.log('🧹 Ensuring no other project node processes are running...');
@@ -36,25 +40,20 @@ function killProjectProcesses() {
   }
 }
 
-console.log('🚀 Starting deployment process...\n');
+console.log('🧹 Starting fresh deploy (cleanup + start)...\n');
 
-// Step 1: Kill processes on port 3000
 function killProcessOnPort(port) {
   try {
     console.log(`📌 Checking for processes on port ${port}...`);
-    
-    // Try different methods to find and kill processes
+
     const methods = [
-      // Linux/Unix: lsof
       `lsof -ti:${port}`,
-      // Alternative: fuser (if lsof not available)
       `fuser ${port}/tcp 2>/dev/null`,
-      // Using netstat and kill
       `netstat -tlnp 2>/dev/null | grep :${port} | awk '{print $7}' | cut -d'/' -f1`
     ];
 
     let killed = false;
-    
+
     for (const method of methods) {
       try {
         const result = execSync(method, { encoding: 'utf8', stdio: 'pipe' }).trim();
@@ -67,7 +66,7 @@ function killProcessOnPort(port) {
                 execSync(`kill -9 ${pid}`, { stdio: 'pipe' });
                 console.log(`   ✅ Killed process ${pid}`);
               } catch (err) {
-                // Process might already be dead
+                // ignore
               }
             });
             killed = true;
@@ -75,7 +74,6 @@ function killProcessOnPort(port) {
           }
         }
       } catch (err) {
-        // Method not available or no process found, try next
         continue;
       }
     }
@@ -84,7 +82,6 @@ function killProcessOnPort(port) {
       console.log(`✅ Port ${port} is already free`);
     } else {
       console.log(`✅ Port ${port} is now free\n`);
-      // Wait a moment for port to be released
       setTimeout(() => {}, 1000);
     }
   } catch (error) {
@@ -93,7 +90,6 @@ function killProcessOnPort(port) {
   }
 }
 
-// Step 2: Check CSS files
 function checkCSSFiles() {
   console.log('🎨 Checking CSS files...');
   const missing = [];
@@ -127,19 +123,55 @@ function checkCSSFiles() {
   }
 }
 
-// Step 3: Check configuration (no .env required - fully dynamic)
+function cleanupDatabaseAndMedia() {
+  console.log('🧽 Cleaning database articles and RSS media...');
+  const dataService = new DataService();
+  try {
+    dataService.db.exec('DELETE FROM articles');
+    dataService.db.exec('UPDATE categories SET articleCount = 0');
+    console.log('   ✅ Articles cleared, category counts reset');
+  } catch (error) {
+    console.error(`   ❌ Failed to clear articles: ${error.message}`);
+  } finally {
+    dataService.close();
+  }
+
+  // Clear slug cache
+  try {
+    if (fs.existsSync(SLUG_CACHE)) {
+      fs.unlinkSync(SLUG_CACHE);
+      console.log('   ✅ Slug cache cleared');
+    }
+    if (typeof urlSlugService?.loadSlugCache === 'function') {
+      urlSlugService.loadSlugCache();
+    }
+  } catch (error) {
+    console.error(`   ⚠️ Failed to clear slug cache: ${error.message}`);
+  }
+
+  // Clear RSS media directories
+  [RSS_VIDEO_DIR, RSS_MEDIA_DIR].forEach((dir) => {
+    try {
+      if (fs.existsSync(dir)) {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+      fs.mkdirSync(dir, { recursive: true });
+      console.log(`   ✅ Reset media directory: ${dir}`);
+    } catch (error) {
+      console.error(`   ⚠️ Failed to reset media dir ${dir}: ${error.message}`);
+    }
+  });
+}
+
 function checkConfiguration() {
   console.log('✅ Configuration check (auto-detecting)...');
-  
-  // Check if .env exists (optional - system works without it)
   const envPath = path.join(PROJECT_DIR, '.env');
   if (fs.existsSync(envPath)) {
     console.log('   ℹ️  .env file found (optional - system auto-configures)');
   } else {
     console.log('   ✅ No .env file needed - system auto-configures from runtime');
   }
-  
-  // Display auto-configuration info
+
   console.log('   🌐 Auto-configuration enabled:');
   console.log('      - Port: Auto-detected from PORT env or defaults to 3000');
   console.log('      - Protocol: Auto-detected per request (HTTP/HTTPS)');
@@ -147,13 +179,9 @@ function checkConfiguration() {
   console.log('      - Base Path: Auto-detected from BASE_PATH env or empty');
   console.log('      - File paths: Auto-detected from project structure');
   console.log('   ✅ Server supports both HTTP and HTTPS automatically');
-  console.log('   ✅ Works on any server without configuration files');
-  console.log('');
-  
-  return { protocol: 'auto' }; // Protocol detected per request
+  console.log('   ✅ Works on any server without configuration files\n');
 }
 
-// Step 4: Start the server
 function startServer() {
   console.log(`🚀 Starting server on port ${PORT}...`);
   console.log(`📁 Project directory: ${PROJECT_DIR}`);
@@ -161,17 +189,14 @@ function startServer() {
   console.log(`   - Protocol: Detected per request (HTTP/HTTPS)`);
   console.log(`   - URLs: Auto-detected from request headers`);
   console.log(`   - Paths: Auto-detected from project structure`);
-  console.log(`   - No .env file required - fully self-configuring`);
-  console.log('');
-  
+  console.log(`   - No .env file required - fully self-configuring\n`);
+
   const serverPath = path.join(PROJECT_DIR, 'server/index.js');
-  
-  // Set NODE_ENV if not set
+
   if (!process.env.NODE_ENV) {
     process.env.NODE_ENV = 'production';
   }
 
-  // Start the server
   const server = spawn('node', [serverPath], {
     cwd: PROJECT_DIR,
     stdio: 'inherit',
@@ -190,7 +215,6 @@ function startServer() {
     }
   });
 
-  // Handle termination signals
   process.on('SIGINT', () => {
     console.log('\n\n🛑 Shutting down server...');
     server.kill('SIGINT');
@@ -204,20 +228,22 @@ function startServer() {
   });
 }
 
-// Run deployment steps
+// Run steps
 try {
   killProjectProcesses();
   killProcessOnPort(PORT);
+  cleanupDatabaseAndMedia();
   const cssOk = checkCSSFiles();
   checkConfiguration();
-  
+
   if (!cssOk) {
     console.log('⚠️  Starting server despite CSS issues...\n');
   }
-  
+
   startServer();
 } catch (error) {
-  console.error(`❌ Deployment failed: ${error.message}`);
+  console.error(`❌ Fresh deployment failed: ${error.message}`);
   process.exit(1);
 }
+
 

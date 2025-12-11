@@ -7,6 +7,7 @@
     "start": "node server/index.js",
     "dev": "node scripts/kill-port.js && nodemon server/index.js",
     "deploy": "node scripts/deploy.js",
+    "deployfresh": "node scripts/deployfresh.js",
     "build": "echo 'No build step needed for SSR'",
     "test": "jest"
   },

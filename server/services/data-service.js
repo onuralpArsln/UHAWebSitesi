@@ -24,6 +24,9 @@ const clampLogoHeight = (value) => {
   return LOGO_HEIGHT_DEFAULT;
 };
 
+// Toggle to disable automatic mock data seeding when the DB is empty
+const ENABLE_MOCK_MIGRATION = false;
+
 class DataService {
   constructor(dbInstance = null) {
     if (dbInstance) {
@@ -81,7 +84,9 @@ class DataService {
       this.ensureCarouselDefaults();
 
       // Migrate mock data if database is empty
-      this.migrateMockDataIfNeeded();
+      if (ENABLE_MOCK_MIGRATION) {
+        this.migrateMockDataIfNeeded();
+      }
     }
   }
 
@@ -142,6 +147,9 @@ class DataService {
       CREATE INDEX IF NOT EXISTS idx_articles_creationDate ON articles(creationDate);
       CREATE INDEX IF NOT EXISTS idx_articles_targettedViews ON articles(targettedViews);
       CREATE INDEX IF NOT EXISTS idx_articles_created_by ON articles(created_by);
+      CREATE INDEX IF NOT EXISTS idx_articles_pressAnnouncementId ON articles(pressAnnouncementId);
+      CREATE UNIQUE INDEX IF NOT EXISTS uniq_articles_pressAnnouncementId ON articles(pressAnnouncementId);
+      CREATE INDEX IF NOT EXISTS idx_articles_header ON articles(header);
       CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name);
     `);
 
@@ -1241,6 +1249,26 @@ class DataService {
    */
   getArticleById(id) {
     const row = this.db.prepare('SELECT * FROM articles WHERE id = ?').get(id);
+    return this.parseArticle(row);
+  }
+
+  /**
+   * Get article by pressAnnouncementId (used for external IDs like RSS newsId)
+   */
+  getArticleByPressAnnouncementId(externalId) {
+    if (!externalId) return null;
+    const row = this.db.prepare('SELECT * FROM articles WHERE pressAnnouncementId = ?').get(externalId);
+    return this.parseArticle(row);
+  }
+
+  /**
+   * Get article by exact header (case-insensitive)
+   */
+  getArticleByHeaderExact(header) {
+    if (!header) return null;
+    const row = this.db
+      .prepare('SELECT * FROM articles WHERE LOWER(header) = LOWER(?) LIMIT 1')
+      .get(header);
     return this.parseArticle(row);
   }
 

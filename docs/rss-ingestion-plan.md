@@ -84,3 +84,10 @@ Use these statistics to sanity-check incoming data before inserts (e.g., skip it
 
 This process keeps the ingestion logic isolated while respecting the “no core code changes” constraint.
 
+## Media policy (legal/operational)
+
+- **Never persist or render DHA-hosted URLs.** All images/videos must be downloaded to `/uploads/media/rss` (or `/uploads/media/rss/videos`), or replaced with a local placeholder.
+- **Worker enforcement:** `workers/dha-rss-worker.js` filters out any non-local media, clears `videoUrl` on download failures, and injects a placeholder image when nothing local is available.
+- **Rendering enforcement:** Templates render images/videos only when the path starts with `/uploads/`; otherwise they fall back to the placeholder and skip iframes.
+- **Cleanup:** Run `node scripts/strip-dha-media.js` to strip existing DHA URLs from the database and backfill placeholders.
+
