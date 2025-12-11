@@ -415,9 +415,13 @@ async function buildArticlePayload(item, downloadAssets) {
   const category = incomingCategoryNormalized && categoryLookup.has(incomingCategoryNormalized)
     ? incomingCategoryRaw
     : fallbackCategory;
-  const targettedViews = ['category-feed'];
-  if (item.category === 'Flaş Haber') {
-    targettedViews.push('flash-news');
+  // Targeting logic: keep simple and media-driven for widgets
+  // - Always send to category feed
+  // - Always send to flash-news ticker (global slider)
+  // - If we have at least one local image, surface in featured grid + carousel
+  const targettedViews = ['category-feed', 'flash-news'];
+  if (safeImages.length > 0) {
+    targettedViews.push('featured-news-grid', 'carousel');
   }
 
   const videoResult = await processVideoEntry(item, media.videos[0], downloadAssets);
