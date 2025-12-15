@@ -184,16 +184,23 @@ router.get('/', async (req, res) => {
             { name: widget.config.categoryName3, slug: widget.config.categorySlug3 }
           ];
 
+          // Back-compat / safety: if categoryNameX is missing but slug exists, resolve name from categories table.
+          const allCategories = typeof dataService.getCategories === 'function' ? dataService.getCategories() : [];
+          const slugToName = new Map((allCategories || []).map(c => [c.slug, c.name]));
+          const nameToSlug = new Map((allCategories || []).map(c => [c.name, c.slug]));
+
           for (const cfg of configs) {
-            if (!cfg || !cfg.name) continue;
+            if (!cfg) continue;
+            const resolvedName = cfg.name || (cfg.slug ? slugToName.get(cfg.slug) : '');
+            const resolvedSlug = cfg.slug || (resolvedName ? nameToSlug.get(resolvedName) : '');
+            if (!resolvedName) continue;
 
             const result = dataService.getArticles({
-              category: cfg.name,
+              category: resolvedName,
               limit: 4,
               sortBy: 'publishedAt',
-              sortOrder: 'desc',
-              targettedView: 'three-column-category-feed',
-              status: 'visible'
+            sortOrder: 'desc',
+            status: 'visible'
             });
 
             const articles = (result.articles || []).map(article => ({
@@ -205,8 +212,8 @@ router.get('/', async (req, res) => {
             }));
 
             columns.push({
-              name: cfg.name,
-              slug: cfg.slug,
+              name: resolvedName,
+              slug: resolvedSlug,
               articles
             });
           }

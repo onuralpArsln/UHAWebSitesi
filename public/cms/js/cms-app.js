@@ -979,19 +979,38 @@
       console.log('🔵 updateLayoutCategorySelects called, categories:', this.state.categories);
       if (!this.layoutTable) return;
 
-      const categorySelects = this.layoutTable.querySelectorAll('select[data-config="categorySlug"]');
+      const categorySelects = this.layoutTable.querySelectorAll(
+        'select[data-config="categorySlug"], select[data-config="categorySlug1"], select[data-config="categorySlug2"], select[data-config="categorySlug3"]'
+      );
       console.log('🔵 Found category selects:', categorySelects.length);
 
       categorySelects.forEach(select => {
         const widgetIndex = parseInt(select.dataset.widgetIndex);
+        const configKey = select.dataset.config;
+
+        if (Number.isNaN(widgetIndex)) {
+          console.warn('⚠️ category select without valid widgetIndex', select);
+          return;
+        }
 
         // Get the current value from widget config, not from DOM
-        // Check both categorySlug (new) and slug (old) for compatibility
         const widget = this.state.homepageLayout[widgetIndex];
-        const currentValue = widget && widget.config ?
-          (widget.config.categorySlug || widget.config.slug) : '';
+        if (!widget || !widget.config) {
+          select.innerHTML = '<option value="">Kategori bulunamadı</option>';
+          return;
+        }
 
-        console.log(`🔵 Widget ${widgetIndex}: configured category = ${currentValue}`);
+        let currentValue = '';
+        if (widget && widget.config) {
+          if (configKey === 'categorySlug') {
+            // Check both categorySlug (new) and slug (old) for compatibility
+            currentValue = widget.config.categorySlug || widget.config.slug || '';
+          } else {
+            currentValue = widget.config[configKey] || '';
+          }
+        }
+
+        console.log(`🔵 Widget ${widgetIndex}: configured ${configKey} = ${currentValue}`);
 
         // Rebuild options
         if (this.state.categories.length > 0) {
@@ -1002,10 +1021,16 @@
             </option>`
           ).join('');
 
+          // Auto-select first category if none set
+          if (!currentValue && this.state.categories.length > 0) {
+            select.value = this.state.categories[0].slug;
+            this.updateWidgetConfig(widgetIndex, configKey, select);
+          }
+
           // If previously selected category no longer exists, select first available
           if (currentValue && !this.state.categories.find(c => c.slug === currentValue)) {
             select.value = this.state.categories[0].slug;
-            this.updateWidgetConfig(widgetIndex, 'categorySlug', select);
+            this.updateWidgetConfig(widgetIndex, configKey, select);
           }
         } else {
           // No categories available
@@ -3662,22 +3687,20 @@
     openAddWidgetModal() {
       if (!this.modalOverlay || !this.widgetListContainer) return;
 
-      // Render widget list if empty
-      if (!this.widgetListContainer.children.length) {
-        this.widgetListContainer.innerHTML = this.availableWidgets.map(widget => `
-          <div class="widget-item" data-widget-type="${widget.type}">
-            <div class="widget-item__title">${widget.title}</div>
-            <div class="widget-item__desc">${widget.desc}</div>
-          </div>
-        `).join('');
+      // Always rebuild widget list to avoid stale/cached content
+      this.widgetListContainer.innerHTML = this.availableWidgets.map(widget => `
+        <div class="widget-item" data-widget-type="${widget.type}">
+          <div class="widget-item__title">${widget.title}</div>
+          <div class="widget-item__desc">${widget.desc}</div>
+        </div>
+      `).join('');
 
-        // Add click listeners to items (currently does nothing as requested)
-        this.widgetListContainer.querySelectorAll('.widget-item').forEach(item => {
-          item.addEventListener('click', () => {
-            this.addWidget(item.dataset.widgetType);
-          });
+      // Rebind click listeners each time the list is rebuilt
+      this.widgetListContainer.querySelectorAll('.widget-item').forEach(item => {
+        item.addEventListener('click', () => {
+          this.addWidget(item.dataset.widgetType);
         });
-      }
+      });
 
       this.modalOverlay.classList.add('is-active');
       document.body.style.overflow = 'hidden'; // Prevent background scrolling

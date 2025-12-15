@@ -16,9 +16,15 @@
           {% if config.showTitles is not defined or config.showTitles %}
             <div class="three-col-feed__col-header section-header">
               <h3 class="section-title">
-                <a href="{{ asset('kategori/' ~ col.slug) }}">{{ col.name }}</a>
+                {% if col.slug %}
+                  <a href="{{ asset('kategori/' ~ col.slug) }}">{{ col.name }}</a>
+                {% else %}
+                  {{ col.name }}
+                {% endif %}
               </h3>
-              <a href="{{ asset('kategori/' ~ col.slug) }}" class="view-all-link">Tümünü Gör →</a>
+              {% if col.slug %}
+                <a href="{{ asset('kategori/' ~ col.slug) }}" class="view-all-link">Tümünü Gör →</a>
+              {% endif %}
             </div>
           {% endif %}
 

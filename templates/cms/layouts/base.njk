@@ -10,7 +10,7 @@
   {% endif %}
   <link rel="stylesheet" href="{{ asset('css/variables.css') }}">
   <link rel="stylesheet" href="{{ asset('css/main.css') }}">
-  <link rel="stylesheet" href="{{ asset('cms/css/cms.css') }}?v=2">
+  <link rel="stylesheet" href="{{ asset('cms/css/cms.css') }}?v=3">
   {% block head %}{% endblock %}
 </head>
 <body class="cms-body">
@@ -20,7 +20,7 @@
   <script>
     window.__CMS_INITIAL_STATE__ = {{ initialStateJson | default('{}') | safe }};
   </script>
-  <script src="{{ asset('cms/js/cms-app.js') }}?v=2" defer></script>
+  <script src="{{ asset('cms/js/cms-app.js') }}?v=3" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
