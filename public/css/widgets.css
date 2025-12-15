@@ -972,3 +972,87 @@
   content: '⚠️ ';
   margin-right: var(--spacing-sm);
 }
+
+/* Three Column Category Feed (Magazine Layout) */
+.three-col-feed {
+  margin: var(--spacing-xl) auto;
+}
+
+.three-col-feed__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-xl);
+}
+
+@media (min-width: 1024px) {
+  .three-col-feed__grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-lg);
+  }
+}
+
+.three-col-feed__col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+@media (min-width: 1024px) {
+  .three-col-feed__col {
+    padding: 0 var(--spacing-md);
+  }
+
+  .three-col-feed__col:not(:first-child) {
+    border-left: 1px solid var(--color-border);
+  }
+}
+
+.three-col-feed__col-header.section-header {
+  margin-bottom: var(--spacing-sm);
+}
+
+.three-col-feed__featured .news-card__title {
+  font-size: var(--font-size-xl);
+}
+
+.three-col-feed__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/* Make the list feel more “magazine” (lighter than full cards) */
+.three-col-feed__list .news-card {
+  box-shadow: none;
+  border: 1px solid var(--color-border);
+}
+
+.three-col-feed__list .news-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.three-col-feed__empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Keep compact cards as thumbnail+headline even on mobile for this widget */
+@media (max-width: 768px) {
+  .three-col-feed .news-card--compact {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .three-col-feed .news-card--compact .news-card__image {
+    width: 92px;
+    aspect-ratio: 1;
+    flex-shrink: 0;
+  }
+
+  .three-col-feed .news-card--compact .news-card__content {
+    padding: var(--spacing-sm);
+  }
+}

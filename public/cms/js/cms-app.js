@@ -3568,6 +3568,20 @@
           defaultConfig: { categorySlug: '', limit: 5 }
         },
         {
+          type: 'three-column-category-feed',
+          title: '3 Kolon Kategori Akışı',
+          desc: '3 farklı kategoriden (kolon kolon) haber akışı. Her kolonda 1 büyük + 3 küçük haber.',
+          defaultConfig: {
+            categorySlug1: '',
+            categoryName1: '',
+            categorySlug2: '',
+            categoryName2: '',
+            categorySlug3: '',
+            categoryName3: '',
+            showTitles: true
+          }
+        },
+        {
           type: 'flash-news',
           title: 'Son Dakika Bandı',
           desc: 'Kayan son dakika haberleri şeridi.',
@@ -3727,6 +3741,13 @@
       if (configKey === 'categorySlug') {
         const selectedOption = element.options[element.selectedIndex];
         this.state.homepageLayout[widgetIndex].config.categoryName = selectedOption.text;
+      }
+
+      // For three-column-category-feed, keep categoryName1/2/3 synced to selected option text
+      if (configKey === 'categorySlug1' || configKey === 'categorySlug2' || configKey === 'categorySlug3') {
+        const selectedOption = element.options[element.selectedIndex];
+        const suffix = configKey.slice('categorySlug'.length); // "1" | "2" | "3"
+        this.state.homepageLayout[widgetIndex].config[`categoryName${suffix}`] = selectedOption ? selectedOption.text : '';
       }
 
       console.log(`Updated widget ${widgetIndex} config: ${configKey} = ${value}`);

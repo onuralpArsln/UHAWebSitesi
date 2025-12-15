@@ -176,6 +176,45 @@ router.get('/', async (req, res) => {
           }
           break;
 
+        case 'three-column-category-feed': {
+          const columns = [];
+          const configs = [
+            { name: widget.config.categoryName1, slug: widget.config.categorySlug1 },
+            { name: widget.config.categoryName2, slug: widget.config.categorySlug2 },
+            { name: widget.config.categoryName3, slug: widget.config.categorySlug3 }
+          ];
+
+          for (const cfg of configs) {
+            if (!cfg || !cfg.name) continue;
+
+            const result = dataService.getArticles({
+              category: cfg.name,
+              limit: 4,
+              sortBy: 'publishedAt',
+              sortOrder: 'desc',
+              targettedView: 'three-column-category-feed',
+              status: 'visible'
+            });
+
+            const articles = (result.articles || []).map(article => ({
+              ...article,
+              images: optimizeImageData(article.images),
+              headlineImage: optimizeSingleImage(article.headlineImage),
+              slug: urlSlugService.getSlugById(article.id) ||
+                urlSlugService.generateSlug(article.title)
+            }));
+
+            columns.push({
+              name: cfg.name,
+              slug: cfg.slug,
+              articles
+            });
+          }
+
+          widgetData.data.columns = columns;
+          break;
+        }
+
         case 'four-article-band': {
           const targetKey = widget.config.target || widget.config.source || widget.type;
           const limit = parseInt(widget.config.limit) || 4;

@@ -39,6 +39,7 @@
                   'featured-news-grid': 'Öne Çıkanlar Izgarası',
                   'four-article-band': '4\'lü Haber Bandı',
                   'category-feed': 'Kategori Akışı',
+                  'three-column-category-feed': '3 Kolon Kategori Akışı',
                   'flash-news': 'Son Dakika Bandı',
                   'ad-placeholder': 'Reklam Alanı'
                 } %}
@@ -161,6 +162,72 @@
                              min="1" 
                              max="20"
                              class="config-input-small">
+                    </label>
+
+                  {% elif widget.type == 'three-column-category-feed' %}
+                    <label class="config-control">
+                      <span>Kolon 1 Kategori:</span>
+                      <select data-config="categorySlug1"
+                              data-widget-index="{{ loop.index0 }}"
+                              class="config-select">
+                        {% if initialState.categories.length > 0 %}
+                          {% for cat in initialState.categories %}
+                            {% set currentSlug = widget.config.categorySlug1 %}
+                            <option value="{{ cat.slug }}"
+                                    {% if cat.slug == currentSlug %}selected{% endif %}>
+                              {{ cat.name }}
+                            </option>
+                          {% endfor %}
+                        {% else %}
+                          <option value="">Kategori bulunamadı</option>
+                        {% endif %}
+                      </select>
+                    </label>
+
+                    <label class="config-control">
+                      <span>Kolon 2 Kategori:</span>
+                      <select data-config="categorySlug2"
+                              data-widget-index="{{ loop.index0 }}"
+                              class="config-select">
+                        {% if initialState.categories.length > 0 %}
+                          {% for cat in initialState.categories %}
+                            {% set currentSlug = widget.config.categorySlug2 %}
+                            <option value="{{ cat.slug }}"
+                                    {% if cat.slug == currentSlug %}selected{% endif %}>
+                              {{ cat.name }}
+                            </option>
+                          {% endfor %}
+                        {% else %}
+                          <option value="">Kategori bulunamadı</option>
+                        {% endif %}
+                      </select>
+                    </label>
+
+                    <label class="config-control">
+                      <span>Kolon 3 Kategori:</span>
+                      <select data-config="categorySlug3"
+                              data-widget-index="{{ loop.index0 }}"
+                              class="config-select">
+                        {% if initialState.categories.length > 0 %}
+                          {% for cat in initialState.categories %}
+                            {% set currentSlug = widget.config.categorySlug3 %}
+                            <option value="{{ cat.slug }}"
+                                    {% if cat.slug == currentSlug %}selected{% endif %}>
+                              {{ cat.name }}
+                            </option>
+                          {% endfor %}
+                        {% else %}
+                          <option value="">Kategori bulunamadı</option>
+                        {% endif %}
+                      </select>
+                    </label>
+
+                    <label class="config-control">
+                      <input type="checkbox"
+                             data-config="showTitles"
+                             data-widget-index="{{ loop.index0 }}"
+                             {% if widget.config.showTitles is not defined or widget.config.showTitles %}checked{% endif %}>
+                      Başlıkları göster (kategori + Tümünü Gör)
                     </label>
                   
                   {% elif widget.type == 'flash-news' %}

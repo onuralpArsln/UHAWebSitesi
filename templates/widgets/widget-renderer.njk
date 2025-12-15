@@ -2,6 +2,7 @@
 {% import "widgets/carousel.njk" as carouselWidget %}
 {% import "widgets/featured-news-grid.njk" as featuredNewsGridWidget %}
 {% import "widgets/category-feed.njk" as categoryFeedWidget %}
+{% import "widgets/three-column-category-feed.njk" as threeColCategoryFeedWidget %}
 {% import "widgets/ad-placeholder.njk" as adPlaceholderWidget %}
 {% import "widgets/flashNews.njk" as flashNewsWidget %}
 {% import "widgets/four-article-band.njk" as fourArticleBandWidget %}
@@ -44,6 +45,13 @@
       name: widget.config.categoryName or widget.config.category,
       slug: widget.config.categorySlug or widget.config.slug,
       articles: widget.data.articles
+    }) }}
+
+  {% elif widget.type == 'three-column-category-feed' %}
+    {{ threeColCategoryFeedWidget.threeColumnCategoryFeed({
+      columns: widget.data.columns
+    }, {
+      showTitles: widget.config.showTitles
     }) }}
   
   {% elif widget.type == 'ad-placeholder' %}

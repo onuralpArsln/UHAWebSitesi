@@ -1,0 +1,50 @@
+{% from "widgets/news-card.njk" import newsCard %}
+
+{#
+  data.columns: [
+    { name, slug, articles: [...] },
+    ...
+  ]
+  config.showTitles: boolean
+#}
+{% macro threeColumnCategoryFeed(data = {}, config = {}) %}
+<section class="three-col-feed container" data-widget="three-column-category-feed">
+  {% if data.columns and data.columns | length %}
+    <div class="three-col-feed__grid">
+      {% for col in data.columns %}
+        <div class="three-col-feed__col">
+          {% if config.showTitles is not defined or config.showTitles %}
+            <div class="three-col-feed__col-header section-header">
+              <h3 class="section-title">
+                <a href="{{ asset('kategori/' ~ col.slug) }}">{{ col.name }}</a>
+              </h3>
+              <a href="{{ asset('kategori/' ~ col.slug) }}" class="view-all-link">Tümünü Gör →</a>
+            </div>
+          {% endif %}
+
+          {% if col.articles and col.articles | length %}
+            {% set featured = col.articles[0] %}
+            <div class="three-col-feed__featured">
+              {{ newsCard(featured, 'default') }}
+            </div>
+
+            {% if col.articles | length > 1 %}
+              <div class="three-col-feed__list">
+                {% for article in col.articles %}
+                  {% if loop.index0 > 0 %}
+                    {{ newsCard(article, 'compact') }}
+                  {% endif %}
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% else %}
+            <p class="three-col-feed__empty">Bu kategoride henüz haber bulunmuyor.</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</section>
+{% endmacro %}
+
+
