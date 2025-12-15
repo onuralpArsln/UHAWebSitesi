@@ -13,3 +13,5 @@ public/uploads/branding/
 public/uploads/
 public/uploads
 public/uploads/media/
+
+server/cache/slug-cache.json
