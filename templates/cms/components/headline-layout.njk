@@ -1,4 +1,4 @@
-{% macro HeadlineLayout(carouselArticles = [], carouselLimit = 5) %}
+{% macro HeadlineLayout(carouselArticles = [], carouselLimit = 5, anaMansetArticles = [], anaMansetLimit = 25) %}
 <section id="headline-layout" class="cms-section" data-cms="headline-layout-section" hidden>
   <div class="cms-section-heading">
     <div>
@@ -91,6 +91,102 @@
 
   <div class="cms-actions-footer">
     <button class="cms-btn cms-btn--primary" data-action="save-carousel-layout">
+      <i class="icon-save"></i> Değişiklikleri Kaydet
+    </button>
+  </div>
+
+  <hr style="margin: 24px 0; opacity: 0.35;">
+
+  <div class="cms-section-heading">
+    <div>
+      <h2 class="cms-section__title">Ana Manşet Düzeni</h2>
+      <p class="cms-section__description">
+        Ana Manşet slider'ında görüntülenen haberleri yönetin. Sürükleyip bırakarak sıralamayı değiştirebilirsiniz.
+        <span class="cms-badge badge--info">
+          Limit:
+          <span data-cms="ana-manset-count">{{ anaMansetArticles.length }}</span>
+          /
+          <span data-cms="ana-manset-limit">{{ anaMansetLimit }}</span>
+        </span>
+      </p>
+    </div>
+  </div>
+
+  <div class="cms-table-wrapper">
+    <table class="cms-table" id="ana-manset-layout-table" data-cms="ana-manset-layout-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Sıra</th>
+          <th>Haber</th>
+          <th>Durum</th>
+          <th>Kategori</th>
+          <th>Tarih</th>
+          <th>İşlemler</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for article in anaMansetArticles %}
+        <tr draggable="true" data-article-id="{{ article.id }}" data-index="{{ loop.index0 }}">
+         <!-- 1. Drag Handle -->
+          <td class="layout-drag-handle" title="Sürükle">
+            <span class="drag-icon" aria-hidden="true">⋮⋮</span>
+          </td>
+  
+        <!-- 2. order -->
+          <td class="layout-order">{{ loop.index }}</td>
+
+          <!-- 3. Article -->
+          <td>
+            <div class="article-title-cell">
+              {% set previewImage = article.headlineImage or (article.images and article.images[0]) %}
+              {% if previewImage %}
+              <img src="{{ previewImage.url }}" alt="{{ article.header or article.title }}" class="article-thumb">
+              {% endif %}
+              <div class="article-info">
+                <span class="article-title">{{ article.header or article.title }}</span>
+              </div>
+            </div>
+          </td>
+
+          <!-- 4. Status -->
+          <td>
+            {% set isHidden = article.status == 'hidden' %}
+            <span class="article-status {{ 'hidden' if isHidden else 'visible' }}">
+              {{ 'Taslak' if isHidden else 'Yayında' }}
+                </span></td>
+
+
+          <!-- 5. Category -->
+          <td>  <span class="cms-badge">{{ article.category or 'Genel' }}</span></td>
+
+          <!-- 6. Date -->
+          <td>{{ article.creationDate or article.publishedAt | formatDate }}</td>
+
+          <!-- 7. Actions -->
+          <td>
+            <button class="cms-btn-icon cms-btn-icon--danger" data-action="remove-ana-manset-article" title="Kaldır" type="button">
+              <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                <path d="M7.5 2a1 1 0 0 0-.964.736L6.28 4H4a1 1 0 1 0 0 2h.197l.757 10.193A2 2 0 0 0 6.95 18h6.1a2 2 0 0 0 1.996-1.807L15.803 6H16a1 1 0 1 0 0-2h-2.28l-.256-1.264A1 1 0 0 0 12.5 2h-5zm1.264 2h2.472l.2 1H8.564l.2-1zM8 9a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-4a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-4a1 1 0 0 1 1-1z" fill="currentColor" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr class="empty-state">
+          <td colspan="7">
+            <div class="cms-empty-state">
+              <p>Henüz ana manşet slider'ına eklenmiş haber bulunmuyor.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cms-actions-footer">
+    <button class="cms-btn cms-btn--primary" data-action="save-ana-manset-layout">
       <i class="icon-save"></i> Değişiklikleri Kaydet
     </button>
   </div>

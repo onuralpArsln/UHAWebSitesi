@@ -99,7 +99,8 @@
         users: initialState.users || [],
         cmsTabs: initialState.cmsTabs || [],
         targetOptions: initialState.targetOptions || [],
-        carouselLimit: initialState.carouselLimit || 5
+        carouselLimit: initialState.carouselLimit || 5,
+        anaMansetLimit: initialState.anaMansetLimit || 25
       };
 
       this.mediaLoaded = Array.isArray(this.state.media) && this.state.media.length > 0;
@@ -118,6 +119,7 @@
       this.initializeLayoutManager();
       this.initializeArticleLayoutManager();
       this.initializeHeadlineLayoutManager();
+      this.initializeAnaMansetLayoutManager();
       this.renderInitialState();
     }
 
@@ -1819,6 +1821,9 @@
         // If article targets carousel, refresh the headline layout
         if (savedArticle.targettedViews && savedArticle.targettedViews.includes('carousel')) {
           this.loadHeadlineLayout();
+        }
+        if (savedArticle.targettedViews && savedArticle.targettedViews.includes('ana-manset')) {
+          this.loadAnaMansetLayout();
         }
       } catch (error) {
         this.showError(error.message);
@@ -3539,6 +3544,12 @@
           defaultConfig: { autoplay: true, interval: 5000 }
         },
         {
+          type: 'ana-manset',
+          title: 'Ana Manşet Slider',
+          desc: 'En fazla 25 haberlik ana manşet slider alanı.',
+          defaultConfig: { id: 'ana-manset', maxArticles: 25, autoPlay: true, autoPlayDelay: 5000 }
+        },
+        {
           type: 'featured-news-grid',
           title: 'Öne Çıkanlar Izgarası',
           desc: 'Seçilmiş haberlerin ızgara görünümü.',
@@ -4928,6 +4939,34 @@
       this.setCarouselLimit(this.state.carouselLimit || 5);
     }
 
+    initializeAnaMansetLayoutManager() {
+      this.anaMansetTable = document.querySelector('[data-cms="ana-manset-layout-table"]');
+      this.saveAnaMansetBtn = document.querySelector('[data-action="save-ana-manset-layout"]');
+      this.anaMansetCountBadge = document.querySelector('[data-cms="ana-manset-count"]');
+      this.anaMansetLimitBadge = document.querySelector('[data-cms="ana-manset-limit"]');
+
+      if (!this.anaMansetTable) return;
+
+      this.saveAnaMansetBtn?.addEventListener('click', () => this.saveAnaMansetLayout());
+
+      // Table Actions (Remove)
+      this.anaMansetTable.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('[data-action="remove-ana-manset-article"]');
+        if (removeBtn) {
+          const row = removeBtn.closest('tr');
+          this.removeAnaMansetArticle(row, removeBtn);
+        }
+      });
+
+      // Drag and Drop
+      this.anaMansetTable.addEventListener('dragstart', this.handleAnaMansetDragStart.bind(this));
+      this.anaMansetTable.addEventListener('dragover', this.handleAnaMansetDragOver.bind(this));
+      this.anaMansetTable.addEventListener('drop', this.handleAnaMansetDrop.bind(this));
+      this.anaMansetTable.addEventListener('dragend', this.handleAnaMansetDragEnd.bind(this));
+
+      this.setAnaMansetLimit(this.state.anaMansetLimit || 25);
+    }
+
     async removeHeadlineArticle(row, triggerButton) {
       if (!row) return;
       const articleId = row.dataset.articleId;
@@ -5141,6 +5180,257 @@
         console.error('Load headline layout error:', error);
         this.showToast('Manşet verileri yüklenemedi', 'error');
       }
+    }
+
+    async removeAnaMansetArticle(row, triggerButton) {
+      if (!row) return;
+      const articleId = row.dataset.articleId;
+      if (!articleId) return;
+
+      if (!window.confirm('Bu haberi ana manşetten kaldırmak istediğinize emin misiniz?')) {
+        return;
+      }
+
+      const button = triggerButton || row.querySelector('[data-action="remove-ana-manset-article"]');
+      if (button) {
+        button.disabled = true;
+      }
+
+      try {
+        await this.updateArticleTargets(articleId, { remove: ['ana-manset'] });
+        row.remove();
+        this.updateAnaMansetOrder();
+        this.showSuccess('Haber ana manşetten kaldırıldı.');
+      } catch (error) {
+        console.error('Ana Manşet removal failed:', error);
+        this.showError('Haber ana manşetten kaldırılamadı.');
+      } finally {
+        if (button && row.isConnected) {
+          button.disabled = false;
+        }
+        if (row.isConnected) {
+          this.updateAnaMansetCount();
+        }
+      }
+    }
+
+    setAnaMansetLimit(limit) {
+      const parsedLimit = parseInt(limit, 10);
+      if (!Number.isFinite(parsedLimit) || parsedLimit <= 0) {
+        return;
+      }
+      this.state.anaMansetLimit = parsedLimit;
+      this.updateAnaMansetLimitBadge();
+      this.applyAnaMansetLimitStyles();
+    }
+
+    updateAnaMansetLimitBadge() {
+      if (this.anaMansetLimitBadge) {
+        this.anaMansetLimitBadge.textContent = this.state.anaMansetLimit || 25;
+      }
+    }
+
+    applyAnaMansetLimitStyles() {
+      if (!this.anaMansetTable) return;
+      const limit = this.state.anaMansetLimit || 25;
+      const rows = this.anaMansetTable.querySelectorAll('tbody tr[data-article-id]');
+      rows.forEach((row, index) => {
+        const isOverLimit = index >= limit;
+        row.classList.toggle('is-over-limit', isOverLimit);
+        row.setAttribute('draggable', (!isOverLimit).toString());
+      });
+    }
+
+    updateAnaMansetCount() {
+      if (!this.anaMansetTable) return;
+      const count = this.anaMansetTable.querySelectorAll('tbody tr[data-article-id]').length;
+      if (this.anaMansetCountBadge) {
+        this.anaMansetCountBadge.textContent = count;
+      }
+      this.updateAnaMansetLimitBadge();
+    }
+
+    updateAnaMansetOrder() {
+      if (!this.anaMansetTable) return;
+      const rows = this.anaMansetTable.querySelectorAll('tbody tr[data-article-id]');
+      rows.forEach((row, index) => {
+        const orderCell = row.querySelector('.layout-order');
+        if (orderCell) orderCell.textContent = index + 1;
+        row.dataset.index = index;
+      });
+      this.updateAnaMansetCount();
+      this.applyAnaMansetLimitStyles();
+    }
+
+    async saveAnaMansetLayout() {
+      try {
+        if (!this.anaMansetTable) return;
+
+        const limit = this.state.anaMansetLimit || 25;
+        const rows = Array.from(this.anaMansetTable.querySelectorAll('tbody tr[data-article-id]'));
+        const allowedRows = limit > 0 ? rows.slice(0, limit) : rows;
+        const overflowRows = limit > 0 ? rows.slice(limit) : [];
+
+        const articles = allowedRows.map((row, index) => ({
+          articleId: row.dataset.articleId,
+          order: index
+        }));
+
+        const response = await fetch('/cms/ana-manset', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ articles })
+        });
+
+        if (!response.ok) throw new Error('Failed to save layout');
+
+        if (overflowRows.length) {
+          overflowRows.forEach(row => row.remove());
+          this.showToast('Limit üzerindeki haberler otomatik kaldırıldı', 'warning');
+        }
+
+        this.updateAnaMansetOrder();
+        this.showToast('Ana Manşet düzeni kaydedildi', 'success');
+      } catch (error) {
+        console.error('Save ana-manset error:', error);
+        this.showToast('Kaydetme başarısız', 'error');
+      }
+    }
+
+    async loadAnaMansetLayout() {
+      try {
+        const response = await fetch('/cms/ana-manset');
+        if (!response.ok) throw new Error('Failed to load ana-manset data');
+
+        const data = await response.json();
+        const articles = data.populatedArticles || [];
+        if (data && data.maxArticles) {
+          this.setAnaMansetLimit(data.maxArticles);
+        }
+
+        if (!this.anaMansetTable) return;
+
+        const tbody = this.anaMansetTable.querySelector('tbody');
+        if (!tbody) return;
+
+        if (!articles.length) {
+          tbody.innerHTML = `
+            <tr class="empty-state">
+              <td colspan="7">
+                <div class="cms-empty-state">
+                  <p>Henüz ana manşet slider'ına eklenmiş haber bulunmuyor.</p>
+                </div>
+              </td>
+            </tr>
+          `;
+          this.updateAnaMansetCount();
+          return;
+        }
+
+        const rowsHtml = articles
+          .map((article, index) => {
+            const title = this.escapeHtml(article.header || article.title || 'Başlık Yok');
+            const isHidden = article.status === 'hidden';
+            const statusClass = isHidden ? 'hidden' : 'visible';
+            const statusLabel = isHidden ? 'Taslak' : 'Yayında';
+            const category = this.escapeHtml(article.category || 'Genel');
+            const formattedDate = this.formatDate(article.creationDate || article.publishedAt, '-');
+            const imageUrl = article.images && article.images[0] ? article.images[0].url : null;
+            const altText = this.escapeHtml(article.header || article.title || 'Ana manşet görseli');
+            const imageMarkup = imageUrl
+              ? `<img src="${this.escapeHtml(imageUrl)}" alt="${altText}" class="article-thumb">`
+              : '';
+
+            return `
+              <tr data-article-id="${this.escapeHtml(String(article.id))}" data-index="${index}" draggable="true">
+                <td class="layout-drag-handle" title="Sürükle">
+                  <span class="drag-icon" aria-hidden="true">⋮⋮</span>
+                </td>
+                <td class="layout-order">${index + 1}</td>
+                <td>
+                  <div class="article-title-cell">
+                    ${imageMarkup}
+                    <div class="article-info">
+                      <span class="article-title">${title}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="article-status ${statusClass}">${statusLabel}</span>
+                </td>
+                <td>
+                  <span class="cms-badge">${category}</span>
+                </td>
+                <td>${formattedDate}</td>
+                <td>
+                  <button
+                    type="button"
+                    class="cms-btn-icon cms-btn-icon--danger"
+                    data-action="remove-ana-manset-article"
+                    title="Kaldır"
+                  >
+                    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                      <path d="M7.5 2a1 1 0 0 0-.964.736L6.28 4H4a1 1 0 1 0 0 2h.197l.757 10.193A2 2 0 0 0 6.95 18h6.1a2 2 0 0 0 1.996-1.807L15.803 6H16a1 1 0 1 0 0-2h-2.28l-.256-1.264A1 1 0 0 0 12.5 2h-5zm1.264 2h2.472l.2 1H8.564l.2-1zM8 9a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-4a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-4a1 1 0 0 1 1-1z" fill="currentColor" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            `;
+          })
+          .join('');
+
+        tbody.innerHTML = rowsHtml;
+
+        this.updateAnaMansetCount();
+        this.applyAnaMansetLimitStyles();
+
+        const rows = tbody.querySelectorAll('tr[draggable=\"true\"]');
+        rows.forEach(row => {
+          row.addEventListener('dragstart', (e) => this.handleAnaMansetDragStart(e));
+          row.addEventListener('dragover', (e) => this.handleAnaMansetDragOver(e));
+          row.addEventListener('drop', (e) => this.handleAnaMansetDrop(e));
+          row.addEventListener('dragend', (e) => this.handleAnaMansetDragEnd(e));
+        });
+      } catch (error) {
+        console.error('Load ana-manset layout error:', error);
+        this.showToast('Ana Manşet verileri yüklenemedi', 'error');
+      }
+    }
+
+    handleAnaMansetDragStart(e) {
+      const row = e.target.closest('tr');
+      if (!row || row.classList.contains('is-over-limit')) {
+        e.preventDefault();
+        return;
+      }
+      this.draggedAnaMansetRow = row;
+      e.dataTransfer.effectAllowed = 'move';
+      row.classList.add('cms-dragging');
+    }
+
+    handleAnaMansetDragOver(e) {
+      e.preventDefault();
+      const row = e.target.closest('tr');
+      if (!row || row === this.draggedAnaMansetRow) return;
+
+      const bounding = row.getBoundingClientRect();
+      const offset = bounding.y + (bounding.height / 2);
+      if (e.clientY - offset > 0) {
+        row.after(this.draggedAnaMansetRow);
+      } else {
+        row.before(this.draggedAnaMansetRow);
+      }
+      this.updateAnaMansetOrder();
+    }
+
+    handleAnaMansetDrop(e) {
+      e.preventDefault();
+    }
+
+    handleAnaMansetDragEnd(e) {
+      this.draggedAnaMansetRow?.classList.remove('cms-dragging');
+      this.draggedAnaMansetRow = null;
+      this.updateAnaMansetOrder();
     }
 
     // Drag and Drop Handlers (Simplified version of LayoutManager)

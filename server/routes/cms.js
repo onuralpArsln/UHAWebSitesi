@@ -334,6 +334,26 @@ router.get('/', (req, res) => {
       carouselArticlesResult.articles = featuredArticles.articles || [];
     }
 
+    // Fetch Ana Manşet articles (manual ordered list; fallback to targettedView if list is empty)
+    const ANA_MANSET_LIMIT = 25;
+    let anaMansetArticlesResult = { articles: [] };
+    const manualAnaMansetArticles = dataServiceInstance.getHeadlineListArticles('ana-manset');
+    if (manualAnaMansetArticles && manualAnaMansetArticles.length > 0) {
+      anaMansetArticlesResult.articles = manualAnaMansetArticles;
+    } else {
+      const featuredAnaManset = dataServiceInstance.getArticles({
+        limit: ANA_MANSET_LIMIT,
+        sortBy: 'publishedAt',
+        sortOrder: 'desc',
+        targettedView: 'ana-manset'
+      });
+      const fallbackArticles = featuredAnaManset.articles || [];
+      anaMansetArticlesResult.articles = fallbackArticles;
+      // Seed the manual list so ordering/queue starts consistent
+      const seedItems = fallbackArticles.map((a, index) => ({ articleId: a.id, order: index }));
+      dataServiceInstance.updateHeadlineList('ana-manset', seedItems);
+    }
+
     const stats = {
       totalArticles: statusSummary.total || 0,
       totalCategories: categories.length,
@@ -358,6 +378,7 @@ router.get('/', (req, res) => {
     // to create targeted view tickers
     const targetOptions = [
       { value: 'carousel', label: 'Manşet Slider' },
+      { value: 'ana-manset', label: 'Ana Manşet' },
       { value: 'topfour', label: 'Üst Manşet' },
       { value: 'flashfour', label: 'Flash Manşet' },
       { value: 'editorfour', label: 'Editör Seçimi' },
@@ -374,6 +395,7 @@ router.get('/', (req, res) => {
     const cmsTabs = config.getCmsTabs(); // Get cmsTabs here
 
     const carouselLimit = getCarouselLimit();
+    const anaMansetLimit = ANA_MANSET_LIMIT;
 
     const initialState = {
       stats,
@@ -389,6 +411,8 @@ router.get('/', (req, res) => {
       cmsTabs, // Pass cmsTabs to initialState
       carouselArticles: carouselArticlesResult.articles || [], // Pass carouselArticles to initialState
       carouselLimit,
+      anaMansetArticles: anaMansetArticlesResult.articles || [],
+      anaMansetLimit,
       currentUser: {
         username: req.session.username,
         displayName: req.session.displayName,
@@ -407,7 +431,9 @@ router.get('/', (req, res) => {
       cmsTabs: config.getCmsTabs(),
       user: initialState.currentUser,
       carouselArticles: carouselArticlesResult.articles || [],
-      carouselLimit
+      carouselLimit,
+      anaMansetArticles: anaMansetArticlesResult.articles || [],
+      anaMansetLimit
     });
   } catch (error) {
     console.error('CMS Dashboard route error:', error);
@@ -794,10 +820,39 @@ router.put('/articles/:id/targets', async (req, res) => {
       dataService.removeArticleFromCarouselLayout(id);
     }
 
+    // Ana Manşet queue behavior (max 25)
+    const ANA_MANSET_LIST_ID = 'ana-manset';
+    const ANA_MANSET_LIMIT = 25;
+
+    let droppedAnaMansetIds = [];
+    if (removals.includes(ANA_MANSET_LIST_ID) && typeof dataService.removeArticleFromHeadlineList === 'function') {
+      dataService.removeArticleFromHeadlineList(ANA_MANSET_LIST_ID, id);
+    }
+
+    if (additions.includes(ANA_MANSET_LIST_ID) && typeof dataService.addArticleToHeadlineList === 'function') {
+      const result = dataService.addArticleToHeadlineList(ANA_MANSET_LIST_ID, id, ANA_MANSET_LIMIT);
+      droppedAnaMansetIds = Array.isArray(result.droppedIds) ? result.droppedIds : [];
+
+      // Remove target from dropped (oldest) articles to keep membership consistent
+      droppedAnaMansetIds.forEach((droppedId) => {
+        try {
+          const droppedArticle = dataService.getArticleById(droppedId);
+          if (!droppedArticle) return;
+          const currentTargets = Array.isArray(droppedArticle.targettedViews) ? droppedArticle.targettedViews : [];
+          if (!currentTargets.includes(ANA_MANSET_LIST_ID)) return;
+          const nextTargets = currentTargets.filter((t) => t !== ANA_MANSET_LIST_ID);
+          dataService.updateArticle(droppedId, { targettedViews: nextTargets });
+        } catch (e) {
+          // Best effort; do not fail whole request
+        }
+      });
+    }
+
     res.json({
       success: true,
       targets: updatedTargets,
-      article: updatedArticle
+      article: updatedArticle,
+      anaMansetDroppedIds: droppedAnaMansetIds
     });
   } catch (error) {
     console.error('CMS Update article targets error:', error);
@@ -1060,6 +1115,9 @@ const getCarouselLimit = () => {
   return parseInt(carouselWidget?.config?.maxArticles) || 5;
 };
 
+const ANA_MANSET_LIST_ID = 'ana-manset';
+const ANA_MANSET_LIMIT = 25;
+
 // Get carousel configuration
 router.get('/carousel', (req, res) => {
   try {
@@ -1083,6 +1141,72 @@ router.get('/carousel', (req, res) => {
   } catch (error) {
     console.error('Get carousel error:', error);
     res.status(500).json({ error: 'Failed to get carousel configuration' });
+  }
+});
+
+// Ana Manşet configuration (manual ordered list; max 25)
+router.get('/ana-manset', (req, res) => {
+  try {
+    const articles = typeof dataService.getHeadlineListArticles === 'function'
+      ? dataService.getHeadlineListArticles(ANA_MANSET_LIST_ID)
+      : [];
+
+    res.json({
+      populatedArticles: articles || [],
+      maxArticles: ANA_MANSET_LIMIT,
+      updatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Get ana-manset error:', error);
+    res.status(500).json({ error: 'Failed to get ana-manset configuration' });
+  }
+});
+
+router.put('/ana-manset', (req, res) => {
+  try {
+    const { articles } = req.body;
+    if (!Array.isArray(articles)) {
+      return res.status(400).json({ error: 'Articles must be an array' });
+    }
+
+    let finalArticles = articles.slice(0, ANA_MANSET_LIMIT);
+    finalArticles = finalArticles
+      .filter((a) => a && a.articleId)
+      .map((a, index) => ({ articleId: a.articleId, order: index }));
+
+    const updated = typeof dataService.updateHeadlineList === 'function'
+      ? dataService.updateHeadlineList(ANA_MANSET_LIST_ID, finalArticles)
+      : { articles: [], updatedAt: new Date().toISOString() };
+
+    res.json({
+      ...updated,
+      maxArticles: ANA_MANSET_LIMIT
+    });
+  } catch (error) {
+    console.error('Update ana-manset error:', error);
+    res.status(500).json({ error: 'Failed to update ana-manset' });
+  }
+});
+
+router.post('/ana-manset/add', (req, res) => {
+  try {
+    const { articleId } = req.body;
+    if (!articleId) {
+      return res.status(400).json({ error: 'Article ID is required' });
+    }
+
+    const updated = typeof dataService.addArticleToHeadlineList === 'function'
+      ? dataService.addArticleToHeadlineList(ANA_MANSET_LIST_ID, articleId, ANA_MANSET_LIMIT)
+      : { articles: [], updatedAt: new Date().toISOString(), droppedIds: [] };
+
+    res.json({
+      ...updated,
+      maxArticles: ANA_MANSET_LIMIT,
+      added: true
+    });
+  } catch (error) {
+    console.error('Add to ana-manset error:', error);
+    res.status(500).json({ error: 'Failed to add article to ana-manset' });
   }
 });
 
