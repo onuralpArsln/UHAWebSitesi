@@ -293,6 +293,12 @@ function mountRoutesBoth(mountPath, ...handlers) {
 }
 
 mountRoutesBoth('/api/auth', require('./routes/auth'));
+// QR redirect endpoint for mobile/QR use; keep 302 so destination can change later
+const qrRedirectRouter = express.Router();
+qrRedirectRouter.get('/', (req, res) => {
+  res.redirect(302, 'https://www.uygurhaberajansi.com');
+});
+mountRoutesBoth('/api/qr', qrRedirectRouter);
 mountRoutesBoth('/api', require('./routes/api'));
 mountRoutesBoth('/cms/media', requireAuth, require('./routes/cms-media'));
 
