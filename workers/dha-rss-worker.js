@@ -26,7 +26,7 @@ const SETTINGS = {
   maxImages: 2,
   maxVideos: 1,
   fallbackCategory: 'Gündem',
-  bannedTopics: ["Yurt Haber"],
+  bannedTopics: ["Yurt Haber", "Ek fotoğraflar"],
   defaultLimit: 20,
   defaultFeedUrl: 'https://dhaabone.dha.com.tr/rss/1719/k9quL7DqdugGLn4kKrTMzmHbRWQN5JQZ4wfCwMuJiOE64o3-B7R_qu33sYG8kMYZHDqtewhItlDOPuc=',
   defaultLogFile: null,
