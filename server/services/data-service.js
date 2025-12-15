@@ -15,6 +15,8 @@ const {
 } = require('../config/branding');
 
 const MEDIA_UPLOAD_WEB_PATH = '/uploads/media';
+const CAROUSEL_LIST_ID = 'main-carousel';
+const ANA_MANSET_LIST_ID = 'ana-manset';
 
 const clampLogoHeight = (value) => {
   const parsed = parseInt(value, 10);
@@ -421,6 +423,7 @@ class DataService {
         { type: 'flash-news', config: { id: 'flash-news', speed: 30, pauseDelay: 3000, duplicateCount: 2, source: 'latest' } },
         { type: 'hero-title', config: { title: 'Son Dakika Haberleri' } },
         { type: 'carousel', config: { source: 'manual', id: 'home-hero', maxArticles: 5, autoPlay: true, autoPlayDelay: 5000 } },
+        { type: 'ana-manset', config: { id: 'ana-manset', maxArticles: 25, autoPlay: true, autoPlayDelay: 5000 } },
         { type: 'featured-news-grid', config: { title: 'Öne Çıkan Haberler', source: 'featured' } },
         { type: 'category-feed', config: { category: 'Gündem', slug: 'gundem' } },
         { type: 'category-feed', config: { category: 'Ekonomi', slug: 'ekonomi' } },
@@ -515,19 +518,25 @@ class DataService {
       )
     `);
 
-    const existing = this.db.prepare('SELECT COUNT(*) as count FROM carousel_layout').get();
-    if (!existing || existing.count === 0) {
+    const ensureListRow = (id) => {
+      const row = this.db.prepare('SELECT id FROM carousel_layout WHERE id = ?').get(id);
+      if (row && row.id) return;
       const now = new Date().toISOString();
       // Initialize with empty array
       this.db.prepare(`
         INSERT INTO carousel_layout (id, articles, updatedAt)
         VALUES (@id, @articles, @updatedAt)
       `).run({
-        id: 'main-carousel',
+        id,
         articles: JSON.stringify([]),
         updatedAt: now
       });
-    }
+    };
+
+    // Back-compat: existing manual carousel list
+    ensureListRow(CAROUSEL_LIST_ID);
+    // New list: Ana Manşet
+    ensureListRow(ANA_MANSET_LIST_ID);
   }
   /**
    * Get article layout configuration
@@ -568,24 +577,65 @@ class DataService {
    * Get carousel layout configuration
    */
   getCarouselLayout() {
-    const row = this.db.prepare('SELECT * FROM carousel_layout WHERE id = ?').get('main-carousel');
-    if (!row) {
-      this.ensureCarouselDefaults();
-      return this.getCarouselLayout();
-    }
-
-    return {
-      articles: JSON.parse(row.articles),
-      updatedAt: row.updatedAt || new Date().toISOString()
-    };
+    return this.getHeadlineList(CAROUSEL_LIST_ID);
   }
 
   /**
    * Update carousel layout configuration
    */
   updateCarouselLayout(newArticles = []) {
+    return this.updateHeadlineList(CAROUSEL_LIST_ID, newArticles);
+  }
+
+  removeArticleFromCarouselLayout(articleId) {
+    return this.removeArticleFromHeadlineList(CAROUSEL_LIST_ID, articleId);
+  }
+
+  /**
+   * Get full article data for carousel
+   */
+  getCarouselArticles() {
+    return this.getHeadlineListArticles(CAROUSEL_LIST_ID);
+  }
+
+  /**
+   * Generic headline list helpers (manual ordering + queue behavior)
+   * Backing table: carousel_layout (id = listId)
+   */
+  getHeadlineList(listId) {
+    const effectiveId = String(listId || '').trim();
+    if (!effectiveId) {
+      return { articles: [], updatedAt: new Date().toISOString() };
+    }
+
+    const row = this.db.prepare('SELECT * FROM carousel_layout WHERE id = ?').get(effectiveId);
+    if (!row) {
+      this.ensureCarouselDefaults();
+      const retry = this.db.prepare('SELECT * FROM carousel_layout WHERE id = ?').get(effectiveId);
+      if (!retry) {
+        return { articles: [], updatedAt: new Date().toISOString() };
+      }
+      return {
+        articles: JSON.parse(retry.articles || '[]'),
+        updatedAt: retry.updatedAt || new Date().toISOString()
+      };
+    }
+
+    return {
+      articles: JSON.parse(row.articles || '[]'),
+      updatedAt: row.updatedAt || new Date().toISOString()
+    };
+  }
+
+  updateHeadlineList(listId, newArticles = []) {
+    const effectiveId = String(listId || '').trim();
+    if (!effectiveId) {
+      return { articles: [], updatedAt: new Date().toISOString() };
+    }
+
     const updated = {
-      articles: JSON.stringify(newArticles),
+      id: effectiveId,
+      articles: JSON.stringify(Array.isArray(newArticles) ? newArticles : []),
       updatedAt: new Date().toISOString()
     };
 
@@ -593,20 +643,20 @@ class DataService {
       UPDATE carousel_layout
       SET articles = @articles,
           updatedAt = @updatedAt
-      WHERE id = 'main-carousel'
+      WHERE id = @id
     `).run(updated);
 
-    return this.getCarouselLayout();
+    return this.getHeadlineList(effectiveId);
   }
 
-  removeArticleFromCarouselLayout(articleId) {
-    if (!articleId) {
-      return this.getCarouselLayout();
-    }
+  removeArticleFromHeadlineList(listId, articleId) {
+    const effectiveId = String(listId || '').trim();
+    if (!effectiveId) return { articles: [], updatedAt: new Date().toISOString() };
+    if (!articleId) return this.getHeadlineList(effectiveId);
 
-    const layout = this.getCarouselLayout();
+    const layout = this.getHeadlineList(effectiveId);
     const existingArticles = Array.isArray(layout.articles) ? layout.articles : [];
-    const filtered = existingArticles.filter((item) => item.articleId !== articleId);
+    const filtered = existingArticles.filter((item) => item && item.articleId !== articleId);
 
     if (filtered.length === existingArticles.length) {
       return layout;
@@ -617,20 +667,49 @@ class DataService {
       order: index
     }));
 
-    return this.updateCarouselLayout(reindexed);
+    return this.updateHeadlineList(effectiveId, reindexed);
   }
 
-  /**
-   * Get full article data for carousel
-   */
-  getCarouselArticles() {
-    const { articles: carouselItems } = this.getCarouselLayout();
+  addArticleToHeadlineList(listId, articleId, limit) {
+    const effectiveId = String(listId || '').trim();
+    const effectiveArticleId = String(articleId || '').trim();
+    const max = parseInt(limit, 10);
 
-    if (!carouselItems || carouselItems.length === 0) {
+    if (!effectiveId || !effectiveArticleId) {
+      return { ...this.getHeadlineList(effectiveId), droppedIds: [] };
+    }
+
+    const layout = this.getHeadlineList(effectiveId);
+    let items = Array.isArray(layout.articles) ? [...layout.articles] : [];
+
+    // De-dup and enqueue newest to the front
+    items = items.filter((i) => i && i.articleId !== effectiveArticleId);
+    items.unshift({ articleId: effectiveArticleId, order: 0 });
+
+    let droppedIds = [];
+    if (Number.isFinite(max) && max > 0 && items.length > max) {
+      const dropped = items.slice(max);
+      droppedIds = dropped.map((i) => i && i.articleId).filter(Boolean);
+      items = items.slice(0, max);
+    }
+
+    items = items
+      .filter((i) => i && i.articleId)
+      .map((i, index) => ({ ...i, order: index }));
+
+    const updated = this.updateHeadlineList(effectiveId, items);
+    return { ...updated, droppedIds };
+  }
+
+  getHeadlineListArticles(listId) {
+    const { articles: items } = this.getHeadlineList(listId);
+
+    if (!items || items.length === 0) {
       return [];
     }
 
-    const articleIds = carouselItems.map(item => item.articleId);
+    const articleIds = items.map((item) => item && item.articleId).filter(Boolean);
+    if (!articleIds.length) return [];
 
     // Fetch articles from DB
     const placeholders = articleIds.map(() => '?').join(',');
@@ -639,14 +718,17 @@ class DataService {
       WHERE id IN (${placeholders})
     `).all(...articleIds);
 
-    // Map articles back to the order in carouselItems
-    const orderedArticles = carouselItems.map(item => {
+    // Map articles back to the stored order
+    const orderedArticles = items.map(item => {
       const article = articles.find(a => a.id === item.articleId);
       if (!article) return null;
 
-      // Parse images if string
       if (typeof article.images === 'string') {
-        article.images = JSON.parse(article.images);
+        try {
+          article.images = JSON.parse(article.images);
+        } catch (e) {
+          article.images = [];
+        }
       }
 
       if (typeof article.headlineImage === 'string') {
@@ -658,7 +740,7 @@ class DataService {
       }
 
       return article;
-    }).filter(Boolean); // Remove any nulls (deleted articles)
+    }).filter(Boolean);
 
     return orderedArticles;
   }

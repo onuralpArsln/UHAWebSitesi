@@ -21,6 +21,20 @@
         {% endif %}
       </div>
     </section>
+
+  {% elif widget.type == 'ana-manset' %}
+    <section class="main-headline-2 mb-3">
+      <div class="container">
+        {% if widget.data.articles and widget.data.articles | length %}
+          {{ carouselWidget.carousel(widget.config.id or 'ana-manset', widget.data.articles, widget.config) }}
+          <div class="ana-manset-count">
+            Toplam {{ widget.data.articles | length }} haber
+          </div>
+        {% else %}
+          <p>Şu anda ana manşet bulunmuyor.</p>
+        {% endif %}
+      </div>
+    </section>
   
   {% elif widget.type == 'featured-news-grid' %}
     {{ featuredNewsGridWidget.featuredNewsGrid(widget.data.articles) }}

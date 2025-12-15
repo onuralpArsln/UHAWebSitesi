@@ -133,6 +133,25 @@ router.get('/', async (req, res) => {
           }
           break;
 
+        case 'ana-manset': {
+          const ANA_MANSET_LIMIT = 25;
+          const listArticles = typeof dataService.getHeadlineListArticles === 'function'
+            ? dataService.getHeadlineListArticles('ana-manset')
+            : [];
+
+          widgetData.data.articles = (listArticles || [])
+            .filter((a) => a && a.status !== 'hidden')
+            .slice(0, ANA_MANSET_LIMIT)
+            .map(article => ({
+              ...article,
+              images: optimizeImageData(article.images),
+              headlineImage: optimizeSingleImage(article.headlineImage),
+              slug: urlSlugService.getSlugById(article.id) ||
+                urlSlugService.generateSlug(article.title)
+            }));
+          break;
+        }
+
         case 'category-feed':
           // Fetch articles for specific category
           // Support both new (categoryName) and old (category) config properties

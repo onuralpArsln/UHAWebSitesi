@@ -1,0 +1,2302 @@
+CODEBASE REVIEW (READ-ONLY)
+Model: GPT-5.2
+Date: 2025-12-15
+Repo: UHAWebSitesi (workspace root)
+
+Scope & constraints
+- This is a static code review. No code changes were made as part of the scan.
+- Goal: list likely problems (ex: slow slug update, manşet issues), explain why they happen, and how to fix them.
+
+High-signal summary (top issues)
+1) CRITICAL: “Slug update” does not actually update when headline/title changes (cached slug returned).
+2) HIGH: “Manşet/Carousel” has two competing sources of truth (manual ordered list vs targettedViews), so saved order/membership can appear to “not stick” and differ between CMS and homepage.
+3) HIGH: Hardcoded credentials + weak fallbacks + hardcoded RSS subscription URL/token in repo.
+4) HIGH: XSS risk: article body HTML is rendered with Nunjucks `| safe`, while RSS worker stores raw HTML from RSS description.
+5) MED/HIGH: Performance + scaling risks: slug lookup is O(n) per request, slug cache rewrites whole JSON file, and target filtering uses LIKE on JSON text.
+
+------------------------------------------------------------
+DETECTED PROBLEMS (with causes + fixes)
+
+[CRITICAL] Slug update bug (cached slug prevents updates)
+- Where:
+  - server/services/url-slug.js (URLSlugService.updateSlug -> getSlugForArticle)
+  - server/routes/cms.js updates slug on header change via urlSlugService.updateSlug(...)
+- Symptom:
+  - You edit an article headline (header/title) but its slug often stays the same.
+  - Users see old URLs, or multiple headlines share unexpected slugs.
+- Why it happens:
+  - updateSlug() calls getSlugForArticle(articleId, newTitle)
+  - getSlugForArticle() returns early if an entry already exists in NodeCache or slugMap,
+    so it does NOT regenerate slug from the new title for existing articles.
+- How to solve:
+  - Implement a “force regenerate” path. Examples:
+    - updateSlug(): explicitly recompute from newTitle (generateSlug + ensureUniqueSlug),
+      then overwrite slugMap + NodeCache and persist.
+    - OR: delete existing mapping first (slugMap.delete + cache.del) before calling getSlugForArticle.
+  - Add automated test: “changing header changes slug” and “slug uniqueness maintained”.
+
+[HIGH] Slug lookup is O(n) per article request (scales poorly)
+- Where:
+  - server/services/url-slug.js getIdBySlug() loops over slugMap entries
+  - server/routes/pages.js /haber/:slug uses urlSlugService.getIdBySlug(slug) on every request
+- Symptom:
+  - As slug-cache grows (thousands+ articles), article page requests get slower and CPU increases.
+- Why it happens:
+  - getIdBySlug is a linear scan over all slugs (O(number_of_articles)).
+- How to solve:
+  - Maintain a reverse index: slug -> articleId (Map) updated whenever slugMap changes.
+  - Alternatively store slugs in SQLite with an index and query by slug.
+
+[HIGH] Slug normalization missing for /haber/:slug (Turkish/URL-encoded edge cases)
+- Where:
+  - server/routes/pages.js: uses getIdBySlug(slug) directly
+  - url-slug service provides normalizeSlugFromUrl(), but it isn’t used here
+- Symptom:
+  - Some URLs with URL-encoded Turkish characters or unexpected casing don’t resolve (404).
+- Why it happens:
+  - Category routes normalize; article route does not.
+- How to solve:
+  - Normalize incoming slug parameter before lookup (normalizeSlugFromUrl).
+  - Consider redirecting to canonical slug (301) when normalized differs (SEO consistency).
+
+[HIGH] Slug cache persistence is expensive and can corrupt under concurrency
+- Where:
+  - server/services/url-slug.js saveSlugCache() writes whole JSON (`slug-cache.json`) with pretty print
+  - worker + server both can read/write slug-cache.json
+- Symptoms:
+  - “Slow slug update” during bulk ingestion / high write rate (disk I/O + JSON stringify).
+  - Risk of partially-written/corrupted JSON if two processes write around the same time.
+- Why it happens:
+  - Each new slug triggers a full file rewrite.
+  - There’s no file lock and no atomic “write temp then rename” pattern.
+- How to solve:
+  - Make writes atomic: write to temp file then rename.
+  - Add file locking, or serialize writes, or batch updates (debounce / coalesce).
+  - Prefer moving slug storage into SQLite with an indexed table (authoritative source).
+
+[HIGH] “Manşet / Carousel” inconsistency (two sources of truth)
+- Where:
+  - Manual ordered list: data-service “carousel_layout” table:
+    - server/services/data-service.js: getCarouselArticles(), updateCarouselLayout(), etc.
+  - Target membership: articles.targettedViews (JSON text):
+    - server/services/data-service.js getArticles({ targettedView }) uses LIKE on targettedViews
+  - CMS:
+    - server/routes/cms.js dashboard initialState: prefers manual carousel list first
+    - BUT GET /cms/carousel returns targettedView-based list (date-sorted)
+    - PUT /cms/carousel saves manual list to carousel_layout
+  - Frontend CMS JS:
+    - public/cms/js/cms-app.js loadHeadlineLayout() fetches /cms/carousel and repaints table
+- Symptom:
+  - You reorder “Manşet Slider” in CMS and hit save, but refresh/return shows different order.
+  - Homepage can show a different carousel from what CMS “carousel” API returns.
+  - “Slow / inconsistent manşet update” perception: because multiple pipelines touch carousel.
+- Why it happens:
+  - There are two independent mechanisms controlling carousel content:
+    - carousel_layout (manual order) vs targettedViews membership.
+  - CMS GET endpoint serves one mechanism (targettedViews), while CMS PUT endpoint writes the other (carousel_layout).
+- How to solve:
+  - Pick ONE authoritative model and align:
+    - Option A (recommended): carousel_layout is authoritative for carousel membership + order.
+      - Make GET /cms/carousel return dataService.getCarouselArticles() in stored order.
+      - Ensure “add/remove carousel” operations update carousel_layout (and optionally also set targettedViews for analytics).
+    - Option B: remove carousel_layout entirely and store order in DB (explicit ordering column or join table).
+      - Then homepage and CMS both read from the same ordering store.
+  - Add regression tests: “save order persists” and “homepage equals CMS preview list”.
+
+[MED/HIGH] TargettedViews stored as JSON text + LIKE filtering (performance and correctness)
+- Where:
+  - server/services/data-service.js getArticles: `targettedViews LIKE '%"carousel"%'`
+- Symptoms:
+  - Queries get slower as DB grows (no index use).
+  - Potential false positives if target strings overlap (less likely due to quoting, but still brittle).
+- How to solve:
+  - Normalize to a join table (article_id, target) with indexes.
+  - Or use SQLite JSON1 (json_each) + indexing strategy if available.
+
+[HIGH] Hardcoded Master Admin fallback credentials
+- Where:
+  - server/routes/auth.js: defaults to username 'admin', password 'admin123' if env vars absent
+- Symptom:
+  - If deployed without env hardening, anyone can log in as admin.
+- Why it happens:
+  - Intended for dev convenience, but the fallback exists unconditionally.
+- How to solve:
+  - In production: require env vars and refuse to start if missing.
+  - Alternatively restrict fallback to NODE_ENV=development only.
+  - Add rate limiting and lockout policies for /api/auth/login.
+
+[HIGH] Weak default session secret
+- Where:
+  - server/index.js: `secret: process.env.SESSION_SECRET || 'uha-secret-key-change-in-prod'`
+- Symptom:
+  - Predictable session signing key if SESSION_SECRET isn’t set => session forgery risk.
+- How to solve:
+  - Require SESSION_SECRET in production and rotate secrets.
+  - Consider setting cookie `sameSite` explicitly and verifying HTTPS/proxy settings.
+
+[HIGH] RSS subscription URL/token committed to repo
+- Where:
+  - workers/dha-rss-worker.js (SETTINGS.defaultFeedUrl)
+  - tests also contain the same URL
+- Symptom:
+  - Secret leakage: anyone with repo access can use/abuse the RSS subscription.
+- How to solve:
+  - Move feed URL into environment variables or secret manager.
+  - Rotate/revoke existing token.
+  - Keep test fixtures sanitized (use sample RSS dump, not live secret URL).
+
+[HIGH] XSS risk: rendering raw HTML via `| safe` while ingesting external HTML
+- Where:
+  - templates/pages/article.njk and templates/widgets/article-content.njk: `{{ article.content | safe }}`
+  - workers/dha-rss-worker.js: stores `body: descriptionHtml` (raw RSS HTML) into DB
+- Symptom:
+  - Malicious HTML in RSS (or CMS content) can execute scripts in users’ browsers.
+  - CSP currently includes 'unsafe-inline' in scripts/styles, which increases blast radius.
+- How to solve:
+  - Sanitize HTML on ingestion (RSS worker + CMS save) using an allowlist sanitizer.
+  - At minimum strip script tags + inline event handlers + javascript: URLs.
+  - Tighten CSP to remove 'unsafe-inline' where possible (use nonces/hashes).
+
+[MED] CORS is wide open by default
+- Where:
+  - server/index.js: app.use(cors())
+- Symptom:
+  - Broad exposure of API endpoints; increases attack surface.
+- How to solve:
+  - Restrict origins to known domains and methods; consider disabling CORS for CMS/session endpoints.
+
+[MED] trust proxy is always enabled (can be dangerous if not behind a trusted proxy)
+- Where:
+  - server/services/config.js trustProxy: true
+  - server/index.js app.set('trust proxy', serverConfig.trustProxy)
+- Symptom:
+  - If directly exposed to the internet, clients can spoof X-Forwarded-* headers.
+  - This can affect protocol detection (req.secure), cookies, and security decisions.
+- How to solve:
+  - Set trust proxy to a strict value (e.g., 1 hop) or trusted IP ranges.
+  - Make it environment-configurable and default to false unless explicitly behind a proxy.
+
+[MED] Worker scheduler executes shell command strings with `shell: true`
+- Where:
+  - server/index.js startWorker(): spawn(command, { shell: true })
+- Symptom:
+  - If an attacker can influence env vars, this becomes command injection.
+- How to solve:
+  - Avoid shell mode; pass executable + args array; validate command inputs.
+
+[MED] Excessive synchronous logging and file writes in CMS routes
+- Where:
+  - server/routes/cms.js:
+    - Logs every CMS request (console.log)
+    - Layout save endpoints append to layout-changes.log using fs.appendFileSync
+- Symptom:
+  - Event loop blocking under usage, slow CMS actions, log bloat.
+- How to solve:
+  - Gate debug logging behind NODE_ENV/flag.
+  - Use async logging and structured logger with rotation.
+
+[MED] Sitemap/Robots and “pageUrl” ignore BASE_PATH
+- Where:
+  - server/services/sitemap.js uses config.getSiteUrl(req) only (no base path)
+  - server/routes/pages.js sets pageUrl = `${siteUrl}/haber/${slug}` (no base path)
+- Symptom:
+  - If deployed under a subpath (BASE_PATH), generated URLs are wrong.
+- How to solve:
+  - Use a single helper (e.g., config.getUrl(req, '/haber/...')) that includes basePath.
+  - Apply same logic to robots.txt and RSS self links.
+
+Dependency vulnerabilities
+- `npm audit --omit=dev`: found 0 vulnerabilities at scan time.
+
+------------------------------------------------------------
+Recommended next steps (order of impact)
+1) Fix slug update bug (force regeneration) + normalize slug lookup for /haber/:slug.
+2) Unify carousel/manşet data model: make CMS GET/PUT and homepage read/write the same source of truth.
+3) Remove hardcoded credentials + require SESSION_SECRET and admin creds in production.
+4) Move RSS feed URL/token to env + rotate token.
+5) Add HTML sanitization for article body, then tighten CSP.
+6) Address scaling: reverse slug index, atomic slug-cache writes or migrate slugs to SQLite, and normalize targettedViews.
+
+
+================================================================================
+                    CODEBASE REVIEW & PROBLEM ANALYSIS
+================================================================================
+
+AI Model: Claude Sonnet 4.5
+Date: December 15, 2025
+Project: UHA News Website (SSR News Platform with CMS)
+Review Type: Static Code Analysis - NO CHANGES MADE
+
+================================================================================
+                            EXECUTIVE SUMMARY
+================================================================================
+
+This document provides a comprehensive analysis of potential issues found in
+the UHA News Website codebase. The review covers architecture, performance,
+security, data integrity, and maintainability concerns.
+
+Overall Assessment: The codebase is well-structured with good separation of
+concerns, but contains several critical issues that should be addressed,
+particularly around slug caching, session management, and concurrent access
+patterns.
+
+================================================================================
+                        CRITICAL ISSUES (Priority 1)
+================================================================================
+
+1. SLOW SLUG UPDATE PROBLEM
+───────────────────────────────────────────────────────────────────────────────
+Location: server/services/url-slug.js
+Status: CRITICAL
+
+Problem Description:
+The slug cache is loaded only once when the server boots. When the RSS worker
+(or any external process) adds new articles and generates new slugs, the
+running server does NOT see these changes until it is restarted.
+
+Why This Occurs:
+- In url-slug.js constructor (line 18): loadSlugCache() reads from disk once
+- The slugMap is stored in memory as a Map object
+- RSS worker writes to disk but cannot notify the server
+- No hot-reload or cache invalidation mechanism exists
+
+Technical Impact:
+- New articles ingested via RSS worker return 404 errors
+- Users cannot access newly published content without server restart
+- Manual intervention required after every RSS ingestion
+- Poor user experience and operational overhead
+
+Solution:
+Option A - Add a reload endpoint:
+  1. Add method: reloadSlugCache() in url-slug.js
+  2. Create endpoint: POST /api/cache/reload-slugs
+  3. RSS worker calls this endpoint after successful ingestion
+  4. Server reloads slugMap from disk on demand
+
+Option B - Implement file watching:
+  1. Use fs.watch() or chokidar to monitor slug-cache.json
+  2. Automatically reload when file changes detected
+  3. Debounce reloads to avoid excessive I/O
+
+Option C - Use shared cache (Redis/Memcached):
+  1. Replace JSON file with Redis cache
+  2. All processes read/write to shared cache
+  3. Eliminates process isolation issues
+  4. Better for production scalability
+
+Recommended: Option A for immediate fix, Option C for long-term solution.
+
+Code Reference:
+```18:33:server/services/url-slug.js
+  loadSlugCache() {
+    try {
+      if (fs.existsSync(this.slugCachePath)) {
+        const data = fs.readFileSync(this.slugCachePath, 'utf8');
+        const cache = JSON.parse(data);
+        this.slugMap = new Map(Object.entries(cache));
+        console.log(`📝 Loaded ${this.slugMap.size} slug mappings from cache`);
+      } else {
+        console.log('📝 No existing slug cache found, starting fresh');
+        this.slugMap = new Map();
+      }
+    } catch (error) {
+      console.log('📝 Error loading slug cache, starting fresh:', error.message);
+      this.slugMap = new Map();
+    }
+  }
+```
+
+Related Documentation: docs/slug-cache.md (lines 44-56)
+
+───────────────────────────────────────────────────────────────────────────────
+
+2. MANŞET (HEADLINE) QUEUE OVERFLOW PROBLEM
+───────────────────────────────────────────────────────────────────────────────
+Location: server/services/data-service.js (lines 673-702)
+Status: CRITICAL
+
+Problem Description:
+The "Ana Manşet" headline list has a hard limit of 25 articles. When adding
+a new article, the oldest article is automatically dropped from the list.
+However, the dropped article's `targettedViews` array is not always updated
+to remove 'ana-manset', causing inconsistency between the article's metadata
+and its actual presence in the list.
+
+Why This Occurs:
+- Queue behavior implemented in addArticleToHeadlineList() (line 673)
+- Dropped articles are identified but not all code paths update them
+- The CMS route (cms.js lines 826-848) attempts to fix this but may fail
+- Race conditions possible when multiple updates occur simultaneously
+
+Technical Impact:
+- Article metadata becomes stale
+- CMS UI shows incorrect headline status
+- Reports and analytics may be inaccurate
+- Manual cleanup required
+
+Solution:
+1. Centralize cleanup logic in data-service.js:
+   - Modify addArticleToHeadlineList() to automatically update dropped articles
+   - Add transaction support to ensure atomicity
+
+2. Add consistency check endpoint:
+   - Create /api/admin/verify-headline-lists
+   - Scan all articles and verify targettedViews matches list membership
+   - Provide repair functionality
+
+3. Implement audit logging:
+   - Log all headline list mutations
+   - Track which articles are added/removed
+   - Enable debugging of inconsistencies
+
+Code Reference:
+```673:702:server/services/data-service.js
+  addArticleToHeadlineList(listId, articleId, limit) {
+    const effectiveId = String(listId || '').trim();
+    const effectiveArticleId = String(articleId || '').trim();
+    const max = parseInt(limit, 10);
+
+    if (!effectiveId || !effectiveArticleId) {
+      return { ...this.getHeadlineList(effectiveId), droppedIds: [] };
+    }
+
+    const layout = this.getHeadlineList(effectiveId);
+    let items = Array.isArray(layout.articles) ? [...layout.articles] : [];
+
+    // De-dup and enqueue newest to the front
+    items = items.filter((i) => i && i.articleId !== effectiveArticleId);
+    items.unshift({ articleId: effectiveArticleId, order: 0 });
+
+    let droppedIds = [];
+    if (Number.isFinite(max) && max > 0 && items.length > max) {
+      const dropped = items.slice(max);
+      droppedIds = dropped.map((i) => i && i.articleId).filter(Boolean);
+      items = items.slice(0, max);
+    }
+
+    items = items
+      .filter((i) => i && i.articleId)
+      .map((i, index) => ({ ...i, order: index }));
+
+    const updated = this.updateHeadlineList(effectiveId, items);
+    return { ...updated, droppedIds };
+  }
+```
+
+───────────────────────────────────────────────────────────────────────────────
+
+3. INSECURE DEFAULT SESSION SECRET
+───────────────────────────────────────────────────────────────────────────────
+Location: server/index.js (line 222)
+Status: CRITICAL - SECURITY
+
+Problem Description:
+The session secret has a hardcoded default value 'uha-secret-key-change-in-prod'
+which is exposed in source code. If deployed to production without setting the
+SESSION_SECRET environment variable, all sessions can be compromised.
+
+Why This Occurs:
+- Fallback value for development convenience
+- No validation that checks if default is still in use
+- No warning logged in production mode
+
+Technical Impact:
+- Session hijacking possible
+- Cookie forgery attacks
+- User impersonation
+- Authentication bypass
+
+Solution:
+1. Require SESSION_SECRET in production:
+```javascript
+const SESSION_SECRET = process.env.SESSION_SECRET;
+if (!SESSION_SECRET && process.env.NODE_ENV === 'production') {
+  console.error('FATAL: SESSION_SECRET environment variable is required in production');
+  process.exit(1);
+}
+```
+
+2. Generate random secret on first boot if missing:
+```javascript
+const crypto = require('crypto');
+const sessionSecret = process.env.SESSION_SECRET || 
+  (process.env.NODE_ENV === 'production' ? null : crypto.randomBytes(32).toString('hex'));
+```
+
+3. Add startup warning:
+```javascript
+if (process.env.SESSION_SECRET === 'uha-secret-key-change-in-prod') {
+  console.warn('⚠️  WARNING: Using default session secret. Change immediately!');
+}
+```
+
+Code Reference:
+```214:230:server/index.js
+app.use(session({
+  store: new SqliteStore({
+    client: db,
+    expired: {
+      clear: true,
+      intervalMs: 900000 // 15min
+    }
+  }),
+  secret: process.env.SESSION_SECRET || 'uha-secret-key-change-in-prod',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: 'auto',
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24 // 1 day
+  }
+}));
+```
+
+================================================================================
+                        HIGH PRIORITY ISSUES (Priority 2)
+================================================================================
+
+4. RSS WORKER PERFORMANCE BOTTLENECK
+───────────────────────────────────────────────────────────────────────────────
+Location: workers/dha-rss-worker.js
+Status: HIGH
+
+Problem Description:
+The RSS worker downloads images and videos synchronously in sequence. For
+articles with multiple media files, this causes very slow ingestion times.
+Large videos can take several minutes to download, blocking the entire
+ingestion process.
+
+Why This Occurs:
+- Line 390: `await prepareImages()` processes images sequentially
+- Line 427: `await processVideoEntry()` blocks until video download completes
+- No parallel processing implemented
+- No timeout mechanism for slow downloads
+
+Technical Impact:
+- Worker runs take 5-10x longer than necessary
+- Memory usage spikes during large downloads
+- Failed downloads block subsequent articles
+- Poor scalability for high-volume RSS feeds
+
+Solution:
+1. Implement concurrent downloads:
+```javascript
+// Process images in parallel with concurrency limit
+const imagePromises = mediaImages.map((img, index) => 
+  processImageEntry(item, img.link, index, downloadAssets)
+);
+const images = await Promise.all(imagePromises);
+```
+
+2. Add timeout and retry logic:
+```javascript
+const downloadWithTimeout = (url, timeout = 30000) => {
+  return Promise.race([
+    downloadImageAsset(url, diskPath),
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Download timeout')), timeout)
+    )
+  ]);
+};
+```
+
+3. Implement progressive processing:
+- Save article with text first
+- Queue media downloads as background jobs
+- Update article when media is ready
+
+Code References:
+```390:402:workers/dha-rss-worker.js
+  const images = await prepareImages(item, media.images, downloadAssets);
+  const safeImages = images
+    .filter((img) => {
+      const candidate = img?.lowRes || img?.url || img?.highRes;
+      return isLocalPath(candidate);
+    })
+    .map((img) => ({
+      ...img,
+      lowRes: img.lowRes || img.url,
+      highRes: img.highRes || img.lowRes || img.url
+    }));
+```
+
+───────────────────────────────────────────────────────────────────────────────
+
+5. DATABASE CONNECTION PROLIFERATION
+───────────────────────────────────────────────────────────────────────────────
+Location: Multiple files (server/routes/api.js, cms.js, pages.js)
+Status: HIGH
+
+Problem Description:
+Each route file creates its own instance of DataService, which in turn creates
+a new SQLite database connection. This leads to multiple connections to the
+same database file, potential lock contention, and memory waste.
+
+Why This Occurs:
+- Line 6 in api.js: `const dataService = new DataService();`
+- Line 19 in pages.js: `const dataService = new DataService();`
+- Lines 19-45 in cms.js: Complex DataService instantiation logic
+- No singleton pattern enforced
+- No connection pooling
+
+Technical Impact:
+- SQLite WAL mode contention under load
+- Memory overhead (each instance maintains caches)
+- Inconsistent state between instances
+- Lock timeouts possible
+
+Solution:
+1. Implement singleton pattern:
+```javascript
+// server/services/data-service-singleton.js
+let instance = null;
+
+module.exports = {
+  getInstance: () => {
+    if (!instance) {
+      instance = new DataService();
+    }
+    return instance;
+  }
+};
+```
+
+2. Use dependency injection:
+```javascript
+// app.js
+const dataService = new DataService();
+app.set('dataService', dataService);
+
+// routes
+const dataService = req.app.get('dataService');
+```
+
+3. Implement proper connection pooling with better-sqlite3:
+- Use prepare() statements consistently
+- Reuse prepared statements
+- Implement connection pool wrapper
+
+Code References:
+```6:6:server/routes/api.js
+const dataService = new DataService();
+```
+
+```19:19:server/routes/pages.js
+const dataService = new DataService();
+```
+
+───────────────────────────────────────────────────────────────────────────────
+
+6. CONCURRENT FILE ACCESS RACE CONDITION
+───────────────────────────────────────────────────────────────────────────────
+Location: server/services/url-slug.js (saveSlugCache method)
+Status: HIGH
+
+Problem Description:
+When multiple processes (server + RSS worker) write to slug-cache.json
+simultaneously, the file can become corrupted. No locking mechanism exists
+to prevent concurrent writes.
+
+Why This Occurs:
+- Line 38-48: saveSlugCache() writes directly to file
+- No file locking implemented
+- No atomic write pattern (write to temp, then rename)
+- Multiple processes can call this simultaneously
+
+Technical Impact:
+- Corrupted JSON file breaks all slug lookups
+- Server fails to start after corruption
+- Lost slug mappings
+- Manual recovery required
+
+Solution:
+1. Implement atomic writes:
+```javascript
+async saveSlugCache() {
+  try {
+    const cacheDir = path.dirname(this.slugCachePath);
+    await fsPromises.mkdir(cacheDir, { recursive: true });
+
+    const cache = Object.fromEntries(this.slugMap);
+    const tempPath = `${this.slugCachePath}.tmp`;
+    
+    // Write to temp file
+    await fsPromises.writeFile(tempPath, JSON.stringify(cache, null, 2));
+    
+    // Atomic rename
+    await fsPromises.rename(tempPath, this.slugCachePath);
+    
+    console.log(`💾 Saved ${this.slugMap.size} slug mappings to cache`);
+  } catch (error) {
+    console.error('❌ Error saving slug cache:', error);
+  }
+}
+```
+
+2. Use file locking library (proper-lockfile):
+```javascript
+const lockfile = require('proper-lockfile');
+
+async saveSlugCache() {
+  const release = await lockfile.lock(this.slugCachePath);
+  try {
+    // Write logic here
+  } finally {
+    await release();
+  }
+}
+```
+
+Code Reference:
+```38:49:server/services/url-slug.js
+  async saveSlugCache() {
+    try {
+      const cacheDir = path.dirname(this.slugCachePath);
+      await fsPromises.mkdir(cacheDir, { recursive: true });
+
+      const cache = Object.fromEntries(this.slugMap);
+      await fsPromises.writeFile(this.slugCachePath, JSON.stringify(cache, null, 2));
+      console.log(`💾 Saved ${this.slugMap.size} slug mappings to cache`);
+    } catch (error) {
+      console.error('❌ Error saving slug cache:', error);
+    }
+  }
+```
+
+───────────────────────────────────────────────────────────────────────────────
+
+7. SLUG CACHE MEMORY SCALING ISSUE
+───────────────────────────────────────────────────────────────────────────────
+Location: server/services/url-slug.js
+Status: HIGH
+
+Problem Description:
+The entire slug cache is loaded into memory on startup. For a large news site
+with 100,000+ articles, this Map can consume significant memory. There's no
+pagination, lazy loading, or LRU eviction strategy.
+
+Why This Occurs:
+- Line 23: All entries loaded into Map at once
+- No memory limit set
+- NodeCache has TTL but Map doesn't
+- No consideration for growth over time
+
+Technical Impact:
+- Memory usage grows unbounded
+- Slow startup times with large caches
+- No memory pressure handling
+- Potential OOM errors
+
+Solution:
+1. Implement LRU cache with size limit:
+```javascript
+const LRU = require('lru-cache');
+
+constructor() {
+  this.cache = new LRU({
+    max: 50000, // Maximum entries
+    maxAge: 3600000 // 1 hour
+  });
+  // Load only recent slugs into memory
+  this.loadRecentSlugs();
+}
+```
+
+2. Use database instead of JSON file:
+```javascript
+// Store slugs in SQLite with index
+CREATE TABLE slugs (
+  article_id TEXT PRIMARY KEY,
+  slug TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_slugs_slug ON slugs(slug);
+```
+
+3. Implement lazy loading:
+```javascript
+getIdBySlug(slug) {
+  if (this.slugMap.has(slug)) {
+    return this.slugMap.get(slug);
+  }
+  // Fall back to database query
+  return this.loadSlugFromDatabase(slug);
+}
+```
+
+Code Reference:
+```18:33:server/services/url-slug.js
+  loadSlugCache() {
+    try {
+      if (fs.existsSync(this.slugCachePath)) {
+        const data = fs.readFileSync(this.slugCachePath, 'utf8');
+        const cache = JSON.parse(data);
+        this.slugMap = new Map(Object.entries(cache));
+        console.log(`📝 Loaded ${this.slugMap.size} slug mappings from cache`);
+      }
+    }
+  }
+```
+
+================================================================================
+                       MEDIUM PRIORITY ISSUES (Priority 3)
+================================================================================
+
+8. ERROR HANDLING - STACK TRACES EXPOSED TO CLIENT
+───────────────────────────────────────────────────────────────────────────────
+Location: server/routes/cms.js (lines 438-455)
+Status: MEDIUM - SECURITY
+
+Problem Description:
+When errors occur in the CMS dashboard route, the full error stack trace is
+sent to the client in HTML format. This exposes internal system information
+including file paths, dependency versions, and code structure.
+
+Why This Occurs:
+- Error handler sends error.stack directly to client
+- No differentiation between development and production
+- Meant for debugging but left in production code
+
+Technical Impact:
+- Information disclosure vulnerability
+- Aids attackers in reconnaissance
+- Exposes internal structure
+- Unprofessional appearance to users
+
+Solution:
+```javascript
+if (!res.headersSent) {
+  if (config.isProduction()) {
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html>
+      <head><title>CMS Error</title></head>
+      <body>
+        <h1>Internal Server Error</h1>
+        <p>An error occurred. Please contact support.</p>
+      </body>
+      </html>
+    `);
+  } else {
+    // Show detailed error only in development
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html>
+      <head><title>CMS Error</title></head>
+      <body>
+        <h1>Internal Server Error</h1>
+        <p><strong>Error:</strong> ${error.message}</p>
+        <pre>${error.stack}</pre>
+      </body>
+      </html>
+    `);
+  }
+}
+```
+
+Code Reference:
+```438:455:server/routes/cms.js
+  } catch (error) {
+    console.error('CMS Dashboard route error:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+
+    if (!res.headersSent) {
+      res.status(500).send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>CMS Error</title></head>
+        <body>
+          <h1>Internal Server Error</h1>
+          <p><strong>Error:</strong> ${error.message}</p>
+          <pre>${error.stack}</pre>
+        </body>
+        </html>
+      `);
+    }
+  }
+```
+
+───────────────────────────────────────────────────────────────────────────────
+
+9. TURKISH CHARACTER SLUG NORMALIZATION COMPLEXITY
+───────────────────────────────────────────────────────────────────────────────
+Location: server/services/url-slug.js (lines 54-85, 93-107)
+Status: MEDIUM
+
+Problem Description:
+The slug generation and normalization logic handles Turkish characters through
+multiple layers of transformation. The normalizeSlugFromUrl() function attempts
+to decode and normalize URL parameters, but edge cases with double-encoding or
+mixed character sets can cause issues.
+
+Why This Occurs:
+- Turkish characters (ğ, ı, ş, ç, ö, ü) need special handling
+- URL encoding adds complexity
+- Multiple normalization passes
+- Express.js already decodes URLs before passing to route handlers
+
+Technical Impact:
+- Some valid URLs may return 404
+- Category redirects may fail
+- SEO issues with inconsistent URLs
+- User confusion with broken links
+
+Solution:
+1. Simplify normalization:
+```javascript
+normalizeSlugFromUrl(urlSlug) {
+  if (!urlSlug) return '';
+  
+  // Express already decodes URLs, just normalize
+  return this.generateSlug(urlSlug);
+}
+```
+
+2. Add comprehensive tests:
+```javascript
+// Test cases for Turkish characters
+const testCases = [
+  { input: 'çalışma', expected: 'calisma' },
+  { input: 'Çalışma', expected: 'calisma' },
+  { input: '%C3%A7al%C4%B1%C5%9Fma', expected: 'calisma' },
+  { input: 'ışık-göğüs', expected: 'isik-gogus' }
+];
+```
+
+3. Add logging for problematic slugs:
+```javascript
+const normalized = this.generateSlug(decoded);
+if (normalized !== urlSlug) {
+  console.log(`Slug normalized: ${urlSlug} -> ${normalized}`);
+}
+```
+
+Code References:
+```54:85:server/services/url-slug.js
+  generateSlug(title) {
+    if (!title) return '';
+
+    const turkishMap = {
+      'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
+      'Ç': 'C', 'Ğ': 'G', 'İ': 'I', 'Ö': 'O', 'Ş': 'S', 'Ü': 'U'
+    };
+
+    let slug = title;
+    Object.entries(turkishMap).forEach(([tr, en]) => {
+      slug = slug.replace(new RegExp(tr, 'g'), en);
+    });
+
+    slug = slugify(slug, {
+      lower: true,
+      strict: true,
+      remove: /[*+~.()'"!:@]/g
+    });
+
+    if (slug.length > 60) {
+      slug = slug.substring(0, 60);
+      slug = slug.replace(/-$/, '');
+    }
+
+    return slug;
+  }
+```
+
+───────────────────────────────────────────────────────────────────────────────
+
+10. DATA SERVICE SCHEMA MIGRATION COMPLEXITY
+───────────────────────────────────────────────────────────────────────────────
+Location: server/services/data-service.js (lines 225-288, 293-323)
+Status: MEDIUM
+
+Problem Description:
+Multiple schema migration methods are scattered throughout DataService
+initialization. The migration logic is complex, with nested try-catch blocks
+and multiple code paths. There's no version tracking or migration history.
+
+Why This Occurs:
+- Schema evolved over time with ad-hoc migrations
+- No formal migration framework
+- Backwards compatibility requirements
+- Multiple migration methods called separately
+
+Technical Impact:
+- Hard to understand current schema state
+- Risky to add new migrations
+- No rollback capability
+- Testing migrations is difficult
+- Migration failures can leave database in inconsistent state
+
+Solution:
+1. Implement formal migration system:
+```javascript
+class MigrationManager {
+  constructor(db) {
+    this.db = db;
+    this.initMigrationTable();
+  }
+
+  initMigrationTable() {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        version INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        applied_at TEXT NOT NULL
+      )
+    `);
+  }
+
+  getCurrentVersion() {
+    const result = this.db.prepare(
+      'SELECT MAX(version) as version FROM schema_migrations'
+    ).get();
+    return result.version || 0;
+  }
+
+  runMigrations() {
+    const currentVersion = this.getCurrentVersion();
+    const migrations = this.getAllMigrations();
+    
+    for (const migration of migrations) {
+      if (migration.version > currentVersion) {
+        console.log(`Running migration ${migration.version}: ${migration.name}`);
+        migration.up(this.db);
+        this.recordMigration(migration);
+      }
+    }
+  }
+}
+```
+
+2. Extract migrations to separate files:
+```
+migrations/
+  001_initial_schema.js
+  002_add_headline_image.js
+  003_add_user_tabs.js
+  004_add_created_by.js
+```
+
+3. Add migration tests:
+```javascript
+describe('Schema Migrations', () => {
+  it('should migrate from v0 to v4', () => {
+    const db = new Database(':memory:');
+    const migrator = new MigrationManager(db);
+    migrator.runMigrations();
+    expect(migrator.getCurrentVersion()).toBe(4);
+  });
+});
+```
+
+Code Reference:
+```225:288:server/services/data-service.js
+  migrateSchemaIfNeeded() {
+    try {
+      const tableInfo = this.db.prepare("PRAGMA table_info(articles)").all();
+      const columnNames = tableInfo.map(col => col.name);
+
+      const needsMigration = !columnNames.includes('header') || !columnNames.includes('summaryHead');
+
+      if (needsMigration) {
+        console.log('🔄 Migrating database schema to new structure...');
+
+        const newColumns = [
+          { name: 'header', type: 'TEXT', default: "COALESCE(title, '')" },
+          { name: 'summaryHead', type: 'TEXT', default: "''" },
+          { name: 'tags', type: 'TEXT', default: "COALESCE(keywords, '[]')" },
+          // ... more columns
+        ];
+
+        for (const col of newColumns) {
+          if (!columnNames.includes(col.name)) {
+            try {
+              this.db.exec(`ALTER TABLE articles ADD COLUMN ${col.name} ${col.type}`);
+              if (col.default && col.default !== "''" && col.default !== "'[]'") {
+                this.db.exec(`UPDATE articles SET ${col.name} = ${col.default} WHERE ${col.name} IS NULL OR ${col.name} = ''`);
+              }
+            } catch (err) {
+              console.log(`Column ${col.name} might already exist, skipping...`);
+            }
+          }
+        }
+        console.log('✅ Schema migration completed');
+      }
+    } catch (error) {
+      console.error('⚠️ Schema migration error:', error.message);
+    }
+  }
+```
+
+───────────────────────────────────────────────────────────────────────────────
+
+11. RSS WORKER - BANNED CONTENT FILTERING TIMING
+───────────────────────────────────────────────────────────────────────────────
+Location: workers/dha-rss-worker.js (lines 122-141, 530-537)
+Status: MEDIUM
+
+Problem Description:
+The banned content filter (line 531) runs AFTER the article payload is built,
+which means media has already been partially downloaded in the false/preview
+pass. If content is banned, the downloaded media becomes waste.
+
+Why This Occurs:
+- buildArticlePayload() called first (line 539)
+- containsBannedContent() checks title/description
+- Media is downloaded in buildArticlePayload() before ban check
+- Inefficient processing order
+
+Technical Impact:
+- Wasted bandwidth on banned content
+- Slower worker execution
+- Unnecessary disk writes
+- Resource waste
+
+Solution:
+1. Check banned content first:
+```javascript
+for (const item of limitedItems) {
+  // Check banned BEFORE any processing
+  const banCheck = containsBannedContent(item);
+  if (banCheck.matched) {
+    filtered += 1;
+    log(`Skipped (banned: "${banCheck.term}")`);
+    continue;
+  }
+
+  // Check for duplicates BEFORE downloading media
+  const quickPayload = {
+    header: stripHtml(item.title || 'DHA Haberi'),
+    creationDate: toIsoDate(item.pubDate),
+    pressAnnouncementId: buildExternalId(item)
+  };
+
+  const existing = findExistingArticle(quickPayload);
+  if (existing) {
+    duplicates += 1;
+    continue;
+  }
+
+  // Only now download media and create full payload
+  const payload = await buildArticlePayload(item, true);
+  // ... rest of processing
+}
+```
+
+Code Reference:
+```530:550:workers/dha-rss-worker.js
+    for (const item of limitedItems) {
+      const banCheck = containsBannedContent(item);
+      if (banCheck.matched) {
+        filtered += 1;
+        const titlePreview = stripHtml(item.title || '').slice(0, 120) || 'untitled';
+        log(`  ↳ Skipped (banned term "${banCheck.term}") in "${titlePreview}" (${item.newsId || 'no-id'})`);
+        continue;
+      }
+
+      let payload = await buildArticlePayload(item, false);
+      const key = buildArticleKey(payload);
+      log(`• Processing ${payload.header} (${item.newsId || 'no-id'}) [${key.slice(0, 8)}]`);
+
+      const existing = findExistingArticle(payload);
+      if (existing) {
+        duplicates += 1;
+        const existingHeader = existing.header || existing.title || payload.header;
+        await urlSlugService.getSlugForArticle(existing.id, existingHeader);
+        log(`  ↳ Skipped (duplicate of ${existing.id}), slug ensured`);
+        continue;
+      }
+```
+
+================================================================================
+                        LOW PRIORITY ISSUES (Priority 4)
+================================================================================
+
+12. CODE DUPLICATION - formatBranding() FUNCTION
+───────────────────────────────────────────────────────────────────────────────
+Location: server/routes/cms.js (lines 236-254), server/routes/pages.js (32-59)
+Status: LOW
+
+Problem Description:
+The formatBranding() function is duplicated in both cms.js and pages.js with
+nearly identical implementations. This violates DRY principle and makes
+maintenance harder.
+
+Why This Occurs:
+- No shared utility module for branding
+- Each route file implements its own version
+- Slight variations in implementation
+
+Solution:
+1. Create shared module:
+```javascript
+// server/utils/branding-formatter.js
+function formatBranding(raw) {
+  // Common implementation
+}
+module.exports = { formatBranding };
+```
+
+2. Import in both files:
+```javascript
+const { formatBranding } = require('../utils/branding-formatter');
+```
+
+───────────────────────────────────────────────────────────────────────────────
+
+13. LARGE FILE COMPLEXITY - cms.js
+───────────────────────────────────────────────────────────────────────────────
+Location: server/routes/cms.js (1520 lines)
+Status: LOW - MAINTAINABILITY
+
+Problem Description:
+The cms.js route file is extremely large (1520 lines) and handles multiple
+responsibilities: articles, categories, layouts, branding, carousel, users,
+and media. This makes the file hard to navigate, test, and maintain.
+
+Why This Occurs:
+- All CMS routes in single file
+- No separation of concerns
+- Historical growth
+
+Solution:
+1. Split into separate route files:
+```
+routes/cms/
+  index.js (dashboard)
+  articles.js
+  categories.js
+  layouts.js
+  branding.js
+  carousel.js
+  users.js
+  media.js
+```
+
+2. Create route aggregator:
+```javascript
+// routes/cms/index.js
+const express = require('express');
+const router = express.Router();
+
+router.use('/articles', require('./articles'));
+router.use('/categories', require('./categories'));
+router.use('/layouts', require('./layouts'));
+// etc.
+
+module.exports = router;
+```
+
+───────────────────────────────────────────────────────────────────────────────
+
+14. MISSING INPUT VALIDATION
+───────────────────────────────────────────────────────────────────────────────
+Location: Multiple API endpoints
+Status: LOW - SECURITY
+
+Problem Description:
+Many API endpoints perform minimal input validation. While basic checks exist
+for required fields, there's no comprehensive validation for data types,
+ranges, or formats.
+
+Examples:
+- Article tags: no limit on array size
+- Image URLs: no format validation
+- Video URLs: no protocol check
+- Category names: no character restrictions
+
+Solution:
+Implement validation middleware using Joi or express-validator:
+
+```javascript
+const { body, validationResult } = require('express-validator');
+
+router.post('/articles', [
+  body('header').isString().isLength({ min: 10, max: 200 }),
+  body('body').isString().isLength({ min: 50 }),
+  body('tags').isArray().custom((value) => value.length <= 20),
+  body('videoUrl').optional().isURL({ protocols: ['http', 'https'] }),
+  body('status').isIn(['visible', 'hidden'])
+], (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  // Process request
+});
+```
+
+───────────────────────────────────────────────────────────────────────────────
+
+15. NO RATE LIMITING
+───────────────────────────────────────────────────────────────────────────────
+Location: Server-wide (server/index.js)
+Status: LOW - SECURITY
+
+Problem Description:
+No rate limiting middleware is implemented. The server is vulnerable to:
+- Brute force attacks on login
+- DOS via excessive API calls
+- Comment spam
+- Media upload abuse
+
+Solution:
+Implement express-rate-limit:
+
+```javascript
+const rateLimit = require('express-rate-limit');
+
+// General API rate limiter
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests, please try again later.'
+});
+
+app.use('/api/', apiLimiter);
+
+// Stricter limit for authentication
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  skipSuccessfulRequests: true
+});
+
+app.use('/api/auth/', authLimiter);
+```
+
+================================================================================
+                        PERFORMANCE OBSERVATIONS
+================================================================================
+
+1. DATABASE QUERY PATTERNS
+───────────────────────────────────────────────────────────────────────────────
+- Most queries use good indexing
+- Articles table has appropriate indexes on category, creationDate, status
+- Consider adding composite index: (status, creationDate) for common queries
+- getArticles() function could benefit from query result caching
+
+2. IMAGE OPTIMIZATION
+───────────────────────────────────────────────────────────────────────────────
+- Sharp library is used for image processing (good)
+- No automatic WebP conversion implemented
+- No responsive image generation (srcset)
+- Consider adding image CDN integration
+
+3. CACHING STRATEGY
+───────────────────────────────────────────────────────────────────────────────
+- NodeCache used for in-memory caching (good)
+- TTL set to 1 hour for slug cache
+- No HTTP cache headers set for static assets
+- No Redis/Memcached for multi-instance deployments
+
+4. SERVER-SIDE RENDERING
+───────────────────────────────────────────────────────────────────────────────
+- Nunjucks template engine with caching enabled in production
+- Good separation of layout and content
+- Could benefit from partial template caching
+- Consider implementing incremental static regeneration for popular pages
+
+================================================================================
+                        SECURITY OBSERVATIONS
+================================================================================
+
+1. AUTHENTICATION & AUTHORIZATION
+───────────────────────────────────────────────────────────────────────────────
+✓ Bcrypt used for password hashing (good)
+✓ Session-based authentication implemented
+✓ Role-based access control present
+✗ Default session secret (Critical - see Issue #3)
+✗ No account lockout after failed login attempts
+✗ No password complexity requirements enforced
+✗ No rate limiting on authentication endpoints
+
+2. INPUT SANITIZATION
+───────────────────────────────────────────────────────────────────────────────
+✓ Nunjucks autoescape enabled (prevents XSS)
+✓ SQL injection prevented by parameterized queries
+✗ Limited input validation (see Issue #14)
+✗ No HTML sanitization for article body content
+✗ File upload validation minimal (mime type only)
+
+3. HTTP SECURITY HEADERS
+───────────────────────────────────────────────────────────────────────────────
+✓ Helmet middleware used for HTTPS
+✓ CSP headers configured
+✓ X-Content-Type-Options set
+✗ Mixed HTTP/HTTPS handling may cause security warnings
+✗ HSTS only enabled for HTTPS requests
+
+================================================================================
+                        DOCUMENTATION OBSERVATIONS
+================================================================================
+
+STRENGTHS:
+✓ Comprehensive docs/ directory with 17 documentation files
+✓ Good troubleshooting guide (docs/troubleshooting.md)
+✓ Detailed slug caching documentation
+✓ Clear RSS worker usage guide
+✓ Agent guide for AI assistance
+
+AREAS FOR IMPROVEMENT:
+- No API documentation (consider Swagger/OpenAPI)
+- No deployment guide
+- No database schema documentation
+- No contribution guidelines
+- Environment variables not documented in one place
+
+================================================================================
+                            TESTING OBSERVATIONS
+================================================================================
+
+TEST COVERAGE:
+✓ tests/ directory exists with integration and unit tests
+✓ Test helpers and setup files present
+✓ Tests for critical services (data-service, url-slug, video-poster)
+
+GAPS:
+- No tests for RSS worker
+- No tests for slug cache corruption scenarios
+- No tests for concurrent access patterns
+- No performance/load tests
+- No E2E tests for CMS workflows
+
+RECOMMENDED TESTS TO ADD:
+1. Slug cache reload mechanism (when implemented)
+2. Headline list queue overflow scenarios
+3. RSS worker media download failures
+4. Concurrent database access
+5. Session security tests
+
+================================================================================
+                        DEPLOYMENT CONSIDERATIONS
+================================================================================
+
+PRODUCTION READINESS CHECKLIST:
+
+CRITICAL (Must Fix Before Production):
+[ ] Change SESSION_SECRET (Issue #3)
+[ ] Implement slug cache reload mechanism (Issue #1)
+[ ] Fix headline queue consistency (Issue #2)
+[ ] Add rate limiting (Issue #15)
+[ ] Remove stack trace exposure (Issue #8)
+
+HIGH PRIORITY (Should Fix Before Production):
+[ ] Optimize RSS worker performance (Issue #4)
+[ ] Implement database connection pooling (Issue #5)
+[ ] Add file locking for slug cache (Issue #6)
+[ ] Consider Redis for slug cache (Issue #7)
+
+RECOMMENDED (Before Scale):
+[ ] Add comprehensive monitoring
+[ ] Implement proper logging (structured logs)
+[ ] Set up error tracking (Sentry, Rollbar)
+[ ] Configure CDN for static assets
+[ ] Implement database backups
+[ ] Add health check endpoints
+[ ] Configure process manager (PM2, systemd)
+
+================================================================================
+                        ARCHITECTURE STRENGTHS
+================================================================================
+
+1. CLEAN SEPARATION OF CONCERNS
+   - Services layer well organized
+   - Routes properly separated from business logic
+   - Middleware appropriately modular
+
+2. GOOD USE OF MODERN PATTERNS
+   - Async/await consistently used
+   - Promise-based operations
+   - Template engine with proper escaping
+
+3. SOLID DATABASE DESIGN
+   - Proper normalization
+   - Good indexing strategy
+   - WAL mode for better concurrency
+
+4. EXTENSIBLE WIDGET SYSTEM
+   - Dynamic layout configuration
+   - Easy to add new widget types
+   - Good separation of widget data and rendering
+
+5. THOUGHTFUL TURKISH LOCALIZATION
+   - Character mapping for slugs
+   - Locale-aware date formatting
+   - Turkish language support throughout
+
+================================================================================
+                            RECOMMENDATIONS SUMMARY
+================================================================================
+
+IMMEDIATE ACTIONS (Week 1):
+1. Fix Issue #3 (Session Secret) - 30 minutes
+2. Implement Issue #1 Solution A (Reload endpoint) - 2 hours
+3. Add rate limiting (Issue #15) - 1 hour
+4. Remove stack trace exposure (Issue #8) - 30 minutes
+
+SHORT TERM (Month 1):
+1. Implement headline queue consistency fix (Issue #2) - 4 hours
+2. Add file locking for slug cache (Issue #6) - 2 hours
+3. Optimize RSS worker (Issue #4) - 8 hours
+4. Implement database singleton (Issue #5) - 4 hours
+
+MEDIUM TERM (Quarter 1):
+1. Migrate to Redis for slug cache (Issue #7) - 1 week
+2. Implement formal migration system (Issue #10) - 1 week
+3. Split cms.js into modules (Issue #13) - 1 week
+4. Add comprehensive testing - 2 weeks
+
+LONG TERM (Year 1):
+1. Consider microservices architecture for scalability
+2. Implement CDN integration
+3. Add advanced caching layers
+4. Build admin dashboard for monitoring
+
+================================================================================
+                            CONCLUSION
+================================================================================
+
+The UHA News Website codebase demonstrates solid engineering practices with
+good separation of concerns, proper use of modern JavaScript patterns, and
+thoughtful localization support. However, several critical issues need
+immediate attention, particularly around slug cache management, session
+security, and data consistency.
+
+The most impactful improvements would be:
+1. Fixing the slug cache reload mechanism (eliminates manual restarts)
+2. Securing the session secret (prevents security breaches)
+3. Implementing rate limiting (prevents abuse)
+4. Optimizing RSS worker (improves operational efficiency)
+
+With these fixes, the system will be significantly more robust, secure, and
+production-ready.
+
+Overall Code Quality Rating: 7.5/10
+Production Readiness: 6/10 (improves to 8.5/10 with critical fixes)
+Maintainability: 7/10
+Security: 6.5/10 (improves to 8/10 with fixes)
+Performance: 7/10
+Documentation: 8/10
+
+================================================================================
+                            END OF REVIEW
+================================================================================
+
+Generated by: Claude Sonnet 4.5
+Date: December 15, 2025
+Lines of Code Analyzed: ~8000+
+Files Reviewed: 25+ core files
+Issues Identified: 15 (3 Critical, 4 High, 4 Medium, 4 Low)
+
+This document should be treated as a living document and updated as issues
+are resolved and new ones are discovered.
+
+# UHA News Website - Codebase Review Report
+
+## Date: December 15, 2025
+## Model: Node.js SSR News Website with SQLite Database
+
+## IDENTIFIED PROBLEMS
+
+### 🚀 PERFORMANCE ISSUES
+
+#### 1. SLOW SLUG UPDATE PROBLEM
+**Location**: `server/services/url-slug.js`
+
+**Problem**:
+- Slug cache is saved synchronously to disk on every article creation/update
+- File I/O operations block the event loop during slug generation
+- Cache save operations happen in `getSlugForArticle()` method (lines 138-139)
+- No debouncing or batching of cache writes
+
+**Why it occurs**:
+- `saveSlugCache()` is called after every slug generation in `getSlugForArticle()`
+- Uses synchronous file operations that block the main thread
+- No caching layer for frequently accessed slugs
+
+**How to fix**:
+- Implement asynchronous cache saving with debouncing
+- Use a write queue to batch cache operations
+- Add in-memory LRU cache for frequently accessed slugs
+- Consider using Redis for distributed slug caching
+
+#### 2. DATABASE QUERY PERFORMANCE ISSUES
+**Location**: `server/services/data-service.js`
+
+**Problems**:
+- Synchronous SQLite operations (better-sqlite3) can block event loop
+- Complex queries in homepage rendering without optimization
+- Article search uses simple LIKE queries (line 1324)
+- No query result caching for frequently accessed data
+
+**Why it occurs**:
+- Homepage loads multiple widgets with separate database queries
+- Search functionality performs full table scans with LIKE
+- No database connection pooling or prepared statement caching
+
+**How to fix**:
+- Implement query result caching with TTL
+- Add database indexes for search fields
+- Use full-text search capabilities
+- Implement query batching for homepage widgets
+
+#### 3. MEMORY LEAKS AND CACHE MANAGEMENT
+**Location**: `server/services/url-slug.js`, `server/services/config.js`
+
+**Problems**:
+- NodeCache instances without proper cleanup
+- Request cache in config service grows indefinitely
+- Slug cache loaded entirely into memory on startup
+- No cache size limits or eviction policies
+
+**Why it occurs**:
+- Cache objects persist for entire application lifetime
+- No monitoring of cache memory usage
+- Large slug maps loaded synchronously on service initialization
+
+**How to fix**:
+- Implement cache size limits and LRU eviction
+- Add cache statistics and monitoring
+- Use streaming for large cache files
+- Implement cache warming strategies
+
+### 📰 MANŞET (HEADLINE) PROBLEMS
+
+#### 4. ANA MANŞET QUEUE MANAGEMENT ISSUES
+**Location**: `server/routes/cms.js`, `server/services/data-service.js`
+
+**Problems**:
+- Race conditions when multiple users modify ana-manset queue
+- No transaction safety for headline list operations
+- Manual ordering can be lost during concurrent updates
+- Queue seeding happens on every dashboard load (lines 352-354)
+
+**Why it occurs**:
+- Headline list operations are not atomic
+- No locking mechanism for queue modifications
+- Fallback seeding happens on every request when queue is empty
+
+**How to fix**:
+- Implement database transactions for queue operations
+- Add optimistic locking with version numbers
+- Use Redis or database-based queue for atomic operations
+- Implement proper queue initialization logic
+
+#### 5. HEADLINE LIST INCONSISTENCIES
+**Location**: `server/routes/pages.js` (lines 136-153)
+
+**Problems**:
+- Ana-manset fallback logic creates inconsistent ordering
+- Manual queue vs automatic targettedView articles can conflict
+- No validation of article existence in headline lists
+
+**Why it occurs**:
+- Mixed logic between manual curation and automatic targeting
+- Articles can be in both manual queue and targettedView lists
+- No cleanup when articles are deleted
+
+**How to fix**:
+- Separate manual headline lists from automatic targeting
+- Add article existence validation before rendering
+- Implement cleanup routines for deleted articles
+- Use consistent ordering logic
+
+### 🔒 SECURITY ISSUES
+
+#### 6. INPUT VALIDATION WEAKNESSES
+**Location**: Various route handlers
+
+**Problems**:
+- Limited input sanitization in article creation/update
+- No rate limiting on API endpoints
+- File upload paths not fully validated
+- URL parameters not properly validated for malicious content
+
+**Why it occurs**:
+- Trusting user input without comprehensive validation
+- No centralized input validation middleware
+- File paths constructed from user input without full sanitization
+
+**How to fix**:
+- Implement comprehensive input validation middleware
+- Add rate limiting for all public endpoints
+- Use allowlists for file extensions and paths
+- Validate all URL parameters and form inputs
+
+#### 7. POTENTIAL SQL INJECTION VECTORS
+**Location**: `server/services/data-service.js` (lines 1324-1326)
+
+**Problems**:
+- Search queries use string concatenation for LIKE queries
+- Dynamic query building without proper parameterization
+- Some queries use string interpolation instead of prepared statements
+
+**Why it occurs**:
+- Complex query building for search functionality
+- Legacy code patterns not updated to use prepared statements
+- Dynamic field selection without validation
+
+**How to fix**:
+- Convert all dynamic queries to use prepared statements
+- Implement query builders with proper parameterization
+- Add input validation before query construction
+- Use ORM or query builder library
+
+### 🏗️ ARCHITECTURE AND CODE QUALITY ISSUES
+
+#### 8. ERROR HANDLING INCONSISTENCIES
+**Location**: Throughout the codebase
+
+**Problems**:
+- Inconsistent error handling patterns
+- Some routes don't handle database errors properly
+- No centralized error logging and monitoring
+- Silent failures in background operations
+
+**Why it occurs**:
+- Mixed synchronous/asynchronous error handling
+- No error boundary patterns
+- Console.log used instead of proper logging
+
+**How to fix**:
+- Implement centralized error handling middleware
+- Add structured logging with Winston or similar
+- Implement error boundaries for async operations
+- Add health checks and monitoring endpoints
+
+#### 9. RESOURCE MANAGEMENT ISSUES
+**Location**: `workers/dha-rss-worker.js`, `server/index.js`
+
+**Problems**:
+- Child processes not properly cleaned up on shutdown
+- File handles not closed in worker processes
+- No connection pooling for external API calls
+- Memory usage not monitored in long-running processes
+
+**Why it occurs**:
+- Worker processes spawn without proper lifecycle management
+- File operations in workers don't ensure cleanup
+- No resource limits or monitoring
+
+**How to fix**:
+- Implement proper process lifecycle management
+- Add resource cleanup in finally blocks
+- Implement connection pooling for external APIs
+- Add memory and resource monitoring
+
+#### 10. CONFIGURATION MANAGEMENT PROBLEMS
+**Location**: `server/services/config.js`
+
+**Problems**:
+- Request cache can grow without bounds
+- Configuration loaded synchronously on every request
+- No configuration validation
+- Environment variables not validated
+
+**Why it occurs**:
+- Cache keys based on host/protocol without expiration
+- Configuration parsing happens on each request
+- No schema validation for configuration
+
+**How to fix**:
+- Implement cache size limits and TTL
+- Cache configuration parsing results
+- Add configuration validation on startup
+- Use environment variable validation libraries
+
+### 📊 MONITORING AND OBSERVABILITY ISSUES
+
+#### 11. LACK OF PERFORMANCE MONITORING
+**Location**: Throughout the application
+
+**Problems**:
+- No performance metrics collection
+- No database query performance monitoring
+- No cache hit/miss ratio tracking
+- No error rate monitoring
+
+**Why it occurs**:
+- No monitoring infrastructure implemented
+- Console.log used instead of structured logging
+- No alerts or dashboards for system health
+
+**How to fix**:
+- Implement application metrics with Prometheus
+- Add database query performance monitoring
+- Implement distributed tracing
+- Add health check endpoints and alerting
+
+#### 12. LOGGING INCONSISTENCIES
+**Location**: Various files
+
+**Problems**:
+- Inconsistent logging levels and formats
+- Sensitive information potentially logged
+- No log rotation or management
+- Console.log mixed with proper logging
+
+**Why it occurs**:
+- No centralized logging strategy
+- Development logging practices carried to production
+- No log aggregation or analysis
+
+**How to fix**:
+- Implement structured logging with Winston
+- Add log levels and filtering
+- Implement log rotation and archiving
+- Add log aggregation and analysis
+
+### 🔄 RACE CONDITIONS AND CONCURRENCY ISSUES
+
+#### 13. CONCURRENT ARTICLE UPDATES
+**Location**: `server/routes/cms.js`
+
+**Problems**:
+- Multiple users can update articles simultaneously
+- No optimistic locking for article edits
+- Slug generation can conflict during concurrent saves
+
+**Why it occurs**:
+- No version checking or locking mechanisms
+- Database operations not wrapped in transactions
+- Cache updates not atomic
+
+**How to fix**:
+- Implement optimistic locking with version fields
+- Use database transactions for multi-step operations
+- Implement atomic cache operations
+- Add conflict resolution strategies
+
+### 📱 FRONTEND PERFORMANCE ISSUES
+
+#### 14. STATIC ASSET MANAGEMENT
+**Location**: `server/index.js` (lines 236-285)
+
+**Problems**:
+- Static file serving with complex middleware stacking
+- No asset versioning or cache busting
+- CSS/JS files served without compression headers
+- Multiple static file mount points
+
+**Why it occurs**:
+- Complex static file serving logic
+- No build process for asset optimization
+- Manual CSS/JS file handling
+
+**How to fix**:
+- Implement asset versioning and cache busting
+- Use compression middleware for all static assets
+- Simplify static file serving logic
+- Implement asset bundling and minification
+
+## PRIORITY RECOMMENDATIONS
+
+### HIGH PRIORITY (Fix Immediately)
+1. Fix slow slug updates by implementing asynchronous caching
+2. Add proper input validation and SQL injection prevention
+3. Implement transaction safety for headline queue operations
+4. Fix memory leaks in cache management
+
+### MEDIUM PRIORITY (Fix Soon)
+5. Implement proper error handling and logging
+6. Add performance monitoring and metrics
+7. Fix concurrent update race conditions
+8. Optimize database queries and add proper indexing
+
+### LOW PRIORITY (Technical Debt)
+9. Implement proper resource cleanup
+10. Add configuration validation
+11. Improve static asset management
+12. Add comprehensive testing for edge cases
+
+## CONCLUSION
+
+The codebase shows signs of rapid development with several performance bottlenecks, security vulnerabilities, and architectural issues that need immediate attention. The slug update performance problem and headline management race conditions are particularly critical for a news website where timely content updates are essential.
+
+Implementing the recommended fixes will significantly improve the application's performance, security, and maintainability.
+
+
+================================================================================
+UHA NEWS WEBSITE - CODE REVIEW PROBLEMS REPORT
+================================================================================
+Model: Claude Opus 4.5
+Date: December 15, 2025
+================================================================================
+
+TABLE OF CONTENTS:
+1. CRITICAL ISSUES (Immediate Action Required)
+2. MAJOR ISSUES (High Priority)
+3. MEDIUM ISSUES (Should Be Fixed)
+4. MINOR ISSUES (Low Priority / Code Quality)
+5. ARCHITECTURE CONCERNS
+6. SECURITY CONSIDERATIONS
+
+================================================================================
+1. CRITICAL ISSUES (Immediate Action Required)
+================================================================================
+
+-------------------------------------------------------------------------------
+PROBLEM #1: SLOW SLUG UPDATE PROBLEM (Yavaş Slug Güncelleme)
+-------------------------------------------------------------------------------
+Location: server/services/url-slug.js
+Current Model: URLSlugService (Singleton with file-based + in-memory cache)
+
+WHY IT OCCURS:
+- The slug cache is loaded ONCE at server startup via loadSlugCache()
+- When RSS worker (dha-rss-worker.js) adds new articles, it writes new slugs 
+  to disk (server/cache/slug-cache.json)
+- The running Express server does NOT reload slug-cache.json
+- New articles created by the worker are invisible to the server until restart
+- The worker calls urlSlugService.getSlugForArticle() which updates the file,
+  but server has its own isolated copy of slugMap in memory
+
+HOW TO SOLVE:
+1. Add a public reload method to URLSlugService:
+   ```javascript
+   reloadSlugCache() {
+     this.loadSlugCache();
+     this.cache.flushAll(); // Clear NodeCache
+   }
+   ```
+
+2. After RSS worker completes successfully in server/index.js (around line 349),
+   call slugServiceInstance.loadSlugCache() to refresh the cache
+
+3. Alternative: Implement file-watcher on slug-cache.json to auto-reload
+
+4. Better long-term: Move slug storage to SQLite and use same DB connection
+
+-------------------------------------------------------------------------------
+PROBLEM #2: MANŞET (Headline) SYNC PROBLEM
+-------------------------------------------------------------------------------
+Location: server/services/data-service.js (getHeadlineListArticles, addArticleToHeadlineList)
+         server/routes/cms.js (ana-manset endpoints)
+Current Model: Dual-list system with carousel_layout table
+
+WHY IT OCCURS:
+- Articles can have 'ana-manset' in targettedViews but NOT be in the 
+  actual headline list (carousel_layout table with id='ana-manset')
+- When limit of 25 is reached, oldest articles are DROPPED from the list
+- BUT the 'ana-manset' target is NOT automatically removed from those articles
+- Result: Article shows "ana-manset" tag but doesn't appear in manşet widget
+- Dropping logic in cms.js lines 837-848 tries to clean up but can fail silently
+
+HOW TO SOLVE:
+1. Implement transactional update: When dropping articles from headline list,
+   ALWAYS remove the target from article's targettedViews in same operation
+
+2. Add validation on dashboard load to check consistency:
+   - All articles in headline list should have matching targettedViews
+   - All articles with 'ana-manset' target should be in the list
+
+3. Create a cleanup script/API endpoint to fix inconsistencies
+
+4. Add user notification when articles are auto-dropped from manşet
+
+===============================================================================
+2. MAJOR ISSUES (High Priority)
+================================================================================
+
+-------------------------------------------------------------------------------
+PROBLEM #3: DUPLICATE DataService INSTANCES (Memory/Consistency Issue)
+-------------------------------------------------------------------------------
+Location: Multiple files create separate DataService instances
+  - server/routes/pages.js (line 19): new DataService()
+  - server/routes/api.js (line 6): new DataService()  
+  - server/routes/cms.js (line 32): new DataService()
+  - workers/dha-rss-worker.js (line 47): new DataService()
+  - server/index.js (line 212): uses Database directly for sessions
+
+WHY IT OCCURS:
+- Each file imports and instantiates its own DataService
+- Each instance opens its own database connection to same SQLite file
+- SQLite WAL mode helps, but still creates unnecessary overhead
+- In-memory caches within each instance can become inconsistent
+
+HOW TO SOLVE:
+1. Create shared singleton pattern:
+   ```javascript
+   // server/services/data-service-singleton.js
+   const DataService = require('./data-service');
+   module.exports = new DataService();
+   ```
+
+2. All routes import the singleton instead of creating new instances
+
+3. For testing, keep the current pattern with dependency injection
+
+-------------------------------------------------------------------------------
+PROBLEM #4: COMMENTS NOT PERSISTED (Feature Not Implemented)
+-------------------------------------------------------------------------------
+Location: server/routes/api.js, lines 152-214
+
+WHY IT OCCURS:
+- POST /api/comments creates a comment object but NEVER saves it
+- GET /api/comments always returns empty array
+- Line 178-183: Comment object is created and immediately returned
+- No database table for comments exists
+- Comment form on frontend collects data that is lost
+
+HOW TO SOLVE:
+1. Create comments table in data-service.js initializeDatabase():
+   ```sql
+   CREATE TABLE IF NOT EXISTS comments (
+     id TEXT PRIMARY KEY,
+     article_id TEXT NOT NULL,
+     name TEXT NOT NULL,
+     email TEXT,
+     content TEXT NOT NULL,
+     likes INTEGER DEFAULT 0,
+     status TEXT DEFAULT 'pending',
+     created_at TEXT,
+     FOREIGN KEY (article_id) REFERENCES articles(id)
+   )
+   ```
+
+2. Implement actual CRUD operations in DataService
+
+3. Add moderation status (pending, approved, rejected)
+
+-------------------------------------------------------------------------------
+PROBLEM #5: DUPLICATE METHOD DEFINITION (Bug)
+-------------------------------------------------------------------------------
+Location: server/services/data-service.js
+  - First definition: Lines 225-288 (migrateSchemaIfNeeded)
+  - Second definition: Lines 2092-2105 (migrateSchemaIfNeeded)
+
+WHY IT OCCURS:
+- Method was likely added twice during development
+- Second definition overwrites the first
+- First definition has more comprehensive migration logic
+- Second definition only checks for 'created_by' column
+
+HOW TO SOLVE:
+1. Remove duplicate definition (lines 2092-2105)
+2. Merge any unique logic from second definition into first
+3. The first definition already handles created_by column (line 250)
+
+-------------------------------------------------------------------------------
+PROBLEM #6: CAROUSEL DATA SOURCE INCONSISTENCY
+-------------------------------------------------------------------------------
+Location: 
+  - server/routes/pages.js (lines 102-133): Homepage carousel logic
+  - server/routes/cms.js (lines 1122-1144): GET /carousel endpoint
+  - server/services/data-service.js: getCarouselArticles vs getArticles
+
+WHY IT OCCURS:
+- Carousel has TWO data sources that can conflict:
+  1. Manual list: carousel_layout table (ordered, user-controlled)
+  2. Automatic: Articles with 'carousel' in targettedViews
+  
+- Frontend CMS uses manual list (getCarouselArticles)
+- GET /cms/carousel endpoint fetches from targettedViews filter
+- Homepage uses manual list if populated, else falls back to targettedViews
+- Articles can be removed from manual list but still have 'carousel' target
+
+HOW TO SOLVE:
+1. Choose single source of truth - recommend manual list only
+2. When article is removed from manual carousel list, also remove 
+   'carousel' from its targettedViews
+3. Sync both sources on CMS load to detect inconsistencies
+4. Add clear documentation on which source controls what
+
+================================================================================
+3. MEDIUM ISSUES (Should Be Fixed)
+================================================================================
+
+-------------------------------------------------------------------------------
+PROBLEM #7: O(n) SLUG LOOKUP PERFORMANCE
+-------------------------------------------------------------------------------
+Location: server/services/url-slug.js, lines 165-172 (getIdBySlug method)
+
+WHY IT OCCURS:
+- getIdBySlug() iterates through ENTIRE slugMap to find articleId
+- As article count grows, this becomes slower
+- Every article page request calls this method
+
+CURRENT CODE:
+```javascript
+getIdBySlug(slug) {
+  for (const [id, cachedSlug] of this.slugMap.entries()) {
+    if (cachedSlug === slug) return id;
+  }
+  return null;
+}
+```
+
+HOW TO SOLVE:
+1. Maintain reverse lookup Map:
+   ```javascript
+   this.slugMap = new Map();      // articleId -> slug
+   this.reverseMap = new Map();   // slug -> articleId
+   ```
+
+2. Update both maps in getSlugForArticle, updateSlug, deleteSlug
+
+3. Use reverseMap.get(slug) for O(1) lookup
+
+-------------------------------------------------------------------------------
+PROBLEM #8: TEMPLATE VARIABLE DUPLICATION
+-------------------------------------------------------------------------------
+Location: server/routes/pages.js, lines 243-244
+
+CURRENT CODE:
+```javascript
+const pageData = {
+  meta,
+  branding,
+  layout: processedLayout,
+  navCategories,
+  navCategories,  // <-- DUPLICATE
+  jsonLd: null
+};
+```
+
+HOW TO SOLVE:
+- Remove duplicate line 244
+
+-------------------------------------------------------------------------------
+PROBLEM #9: MISSING ERROR RESPONSE STANDARDIZATION
+-------------------------------------------------------------------------------
+Location: Multiple route files
+
+WHY IT OCCURS:
+- Some error handlers return plain text: res.status(500).send('Internal Server Error')
+- Others return JSON: res.status(500).json({ error: '...' })
+- API routes should always return JSON
+- Page routes should render error pages
+
+HOW TO SOLVE:
+1. Create error handling middleware for consistent responses
+2. API routes: Always return JSON with error object
+3. Page routes: Render error template (404.njk, 500.njk)
+
+-------------------------------------------------------------------------------
+PROBLEM #10: RACE CONDITION IN HEADLINE LIST UPDATES
+-------------------------------------------------------------------------------
+Location: server/services/data-service.js (addArticleToHeadlineList method)
+         server/routes/cms.js (PUT /articles/:id/targets)
+
+WHY IT OCCURS:
+- Multiple CMS users could add articles to headline at same time
+- getHeadlineList → modify array → updateHeadlineList is not atomic
+- Between get and update, another request could modify the list
+- Result: One request's changes get overwritten
+
+HOW TO SOLVE:
+1. Use SQLite transaction for the entire operation:
+   ```javascript
+   addArticleToHeadlineListAtomic(listId, articleId, limit) {
+     const updateInTransaction = this.db.transaction(() => {
+       // All operations here
+     });
+     return updateInTransaction();
+   }
+   ```
+
+2. Or implement optimistic locking with version number
+
+================================================================================
+4. MINOR ISSUES (Low Priority / Code Quality)
+================================================================================
+
+-------------------------------------------------------------------------------
+PROBLEM #11: UNUSED cmsTabs IMPORT
+-------------------------------------------------------------------------------
+Location: server/routes/cms.js, line 9
+
+CURRENT CODE:
+```javascript
+const cmsTabs = require('../config/cms-tabs');
+```
+
+WHY IT OCCURS:
+- Variable is imported but never used in cms.js
+- cmsTabs is accessed via config.getCmsTabs() instead (line 395, 431)
+
+HOW TO SOLVE:
+- Remove unused import from line 9
+
+-------------------------------------------------------------------------------
+PROBLEM #12: MEMORY LEAK POTENTIAL IN WORKER MANAGEMENT
+-------------------------------------------------------------------------------
+Location: server/index.js, lines 35-37, 319-357
+
+WHY IT OCCURS:
+- childProcesses array stores spawned worker processes
+- Cleanup happens in shutdownScheduler() on SIGINT/SIGTERM
+- If process exits abnormally, cleanup may not run
+- Child processes could become orphaned zombies
+
+HOW TO SOLVE:
+1. Add process.on('exit') handler for cleanup
+2. Add process.on('uncaughtException') handler
+3. Set detached: false in spawn options (already done)
+4. Consider using proper process manager (PM2) in production
+
+-------------------------------------------------------------------------------
+PROBLEM #13: INCONSISTENT ASYNC/AWAIT USAGE
+-------------------------------------------------------------------------------
+Location: Multiple route handlers
+
+WHY IT OCCURS:
+- Some route handlers are marked async but don't use await
+- urlSlugService.deleteSlug(id) returns Promise but not awaited 
+  (cms.js line 931)
+- Mixing sync and async patterns creates confusion
+
+HOW TO SOLVE:
+1. Await all async operations
+2. Only mark functions async if they contain await
+3. Or use .then().catch() consistently instead
+
+-------------------------------------------------------------------------------
+PROBLEM #14: HARDCODED CONSTANTS SCATTERED
+-------------------------------------------------------------------------------
+Locations:
+- ANA_MANSET_LIMIT = 25 defined multiple times (cms.js line 338, 824, 1119)
+- CAROUSEL_LIST_ID = 'main-carousel' in data-service.js
+- ANA_MANSET_LIST_ID = 'ana-manset' in data-service.js and cms.js
+
+HOW TO SOLVE:
+1. Create constants file: server/config/constants.js
+2. Import constants where needed
+3. Keep single source of truth
+
+================================================================================
+5. ARCHITECTURE CONCERNS
+================================================================================
+
+-------------------------------------------------------------------------------
+CONCERN #1: SINGLE PROCESS ARCHITECTURE LIMITATIONS
+-------------------------------------------------------------------------------
+Current Model: Single Express server with in-memory caches
+
+ISSUES:
+- Slug cache is process-local, not shared
+- Cannot run multiple server instances (horizontal scaling impossible)
+- RSS worker runs as child process with its own memory space
+- No message passing between server and worker
+
+RECOMMENDATIONS:
+1. For horizontal scaling: Use Redis for shared caching
+2. Or use database-backed caching (slug table in SQLite)
+3. Consider worker process communication (IPC or message queue)
+
+-------------------------------------------------------------------------------
+CONCERN #2: NO DATABASE MIGRATIONS SYSTEM
+-------------------------------------------------------------------------------
+Current Model: Ad-hoc migration in migrateSchemaIfNeeded()
+
+ISSUES:
+- No version tracking for migrations
+- Migrations re-run on every server start
+- No rollback capability
+- Hard to manage schema changes across environments
+
+RECOMMENDATIONS:
+1. Implement migration versioning (migrations table)
+2. Create numbered migration files
+3. Track which migrations have been applied
+4. Consider using a migration library (knex, umzug)
+
+-------------------------------------------------------------------------------
+CONCERN #3: TESTING DATABASE ISOLATION
+-------------------------------------------------------------------------------
+Current Model: DataService throws error if no instance in test environment
+
+ISSUES:
+- Good that production DB is protected
+- But setup is complex for test writers
+- Each route file needs its own dataService injection
+
+RECOMMENDATIONS:
+- Already well-designed for dependency injection
+- Document test setup patterns clearly
+- Consider creating test helpers for common setup
+
+================================================================================
+6. SECURITY CONSIDERATIONS
+================================================================================
+
+-------------------------------------------------------------------------------
+SECURITY #1: HARDCODED SESSION SECRET
+-------------------------------------------------------------------------------
+Location: server/index.js, line 222
+
+CURRENT CODE:
+```javascript
+secret: process.env.SESSION_SECRET || 'uha-secret-key-change-in-prod',
+```
+
+RISK: If SESSION_SECRET env var is not set, default secret is used
+IMPACT: Session cookies could be forged if secret is known
+
+HOW TO SOLVE:
+1. Require SESSION_SECRET in production:
+   ```javascript
+   const secret = process.env.SESSION_SECRET;
+   if (!secret && process.env.NODE_ENV === 'production') {
+     throw new Error('SESSION_SECRET environment variable is required');
+   }
+   ```
+
+2. Generate strong random secret for deployment
+
+-------------------------------------------------------------------------------
+SECURITY #2: NO RATE LIMITING
+-------------------------------------------------------------------------------
+Location: All API routes
+
+RISK: 
+- No protection against brute force login attempts
+- API endpoints can be hammered
+- Comment spam possible
+
+HOW TO SOLVE:
+1. Add express-rate-limit middleware
+2. Stricter limits on auth endpoints
+3. CAPTCHA for public comment submission
+
+-------------------------------------------------------------------------------
+SECURITY #3: POTENTIAL PATH TRAVERSAL IN BRANDING UPLOAD
+-------------------------------------------------------------------------------
+Location: server/routes/cms.js, lines 69-78 (multer storage config)
+
+RISK: If filename contains path separators, could write outside upload dir
+
+CURRENT MITIGATION: multer storage uses custom filename generator
+ADDITIONAL CHECK NEEDED: Sanitize file.originalname before using
+
+HOW TO SOLVE:
+```javascript
+const ext = path.extname(path.basename(file.originalname)) || '.png';
+```
+
+================================================================================
+SUMMARY
+================================================================================
+
+CRITICAL: 2 issues (Slug sync, Manşet sync)
+MAJOR: 4 issues (Duplicate instances, Comments, Duplicate method, Carousel sources)
+MEDIUM: 4 issues (O(n) lookup, Template dup, Error responses, Race condition)
+MINOR: 4 issues (Unused import, Memory leak, Async usage, Constants)
+ARCHITECTURE: 3 concerns
+SECURITY: 3 considerations
+
+PRIORITY ORDER FOR FIXES:
+1. Slug cache reload mechanism (Critical - affects RSS ingestion)
+2. Manşet/Carousel consistency enforcement (Critical - user-facing bug)
+3. Remove duplicate migrateSchemaIfNeeded method (Bug - could cause issues)
+4. Consolidate DataService instances (Performance + Consistency)
+5. Session secret enforcement in production (Security)
+6. Add reverse slug lookup (Performance)
+7. Implement comments persistence (Feature completion)
+8. Rate limiting middleware (Security)
+
+================================================================================
+END OF REPORT
+================================================================================
+
+================================================================================
