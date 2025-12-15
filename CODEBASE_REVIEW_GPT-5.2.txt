@@ -1,0 +1,220 @@
+CODEBASE REVIEW (READ-ONLY)
+Model: GPT-5.2
+Date: 2025-12-15
+Repo: UHAWebSitesi (workspace root)
+
+Scope & constraints
+- This is a static code review. No code changes were made as part of the scan.
+- Goal: list likely problems (ex: slow slug update, manşet issues), explain why they happen, and how to fix them.
+
+High-signal summary (top issues)
+1) CRITICAL: “Slug update” does not actually update when headline/title changes (cached slug returned).
+2) HIGH: “Manşet/Carousel” has two competing sources of truth (manual ordered list vs targettedViews), so saved order/membership can appear to “not stick” and differ between CMS and homepage.
+3) HIGH: Hardcoded credentials + weak fallbacks + hardcoded RSS subscription URL/token in repo.
+4) HIGH: XSS risk: article body HTML is rendered with Nunjucks `| safe`, while RSS worker stores raw HTML from RSS description.
+5) MED/HIGH: Performance + scaling risks: slug lookup is O(n) per request, slug cache rewrites whole JSON file, and target filtering uses LIKE on JSON text.
+
+------------------------------------------------------------
+DETECTED PROBLEMS (with causes + fixes)
+
+[CRITICAL] Slug update bug (cached slug prevents updates)
+- Where:
+  - server/services/url-slug.js (URLSlugService.updateSlug -> getSlugForArticle)
+  - server/routes/cms.js updates slug on header change via urlSlugService.updateSlug(...)
+- Symptom:
+  - You edit an article headline (header/title) but its slug often stays the same.
+  - Users see old URLs, or multiple headlines share unexpected slugs.
+- Why it happens:
+  - updateSlug() calls getSlugForArticle(articleId, newTitle)
+  - getSlugForArticle() returns early if an entry already exists in NodeCache or slugMap,
+    so it does NOT regenerate slug from the new title for existing articles.
+- How to solve:
+  - Implement a “force regenerate” path. Examples:
+    - updateSlug(): explicitly recompute from newTitle (generateSlug + ensureUniqueSlug),
+      then overwrite slugMap + NodeCache and persist.
+    - OR: delete existing mapping first (slugMap.delete + cache.del) before calling getSlugForArticle.
+  - Add automated test: “changing header changes slug” and “slug uniqueness maintained”.
+
+[HIGH] Slug lookup is O(n) per article request (scales poorly)
+- Where:
+  - server/services/url-slug.js getIdBySlug() loops over slugMap entries
+  - server/routes/pages.js /haber/:slug uses urlSlugService.getIdBySlug(slug) on every request
+- Symptom:
+  - As slug-cache grows (thousands+ articles), article page requests get slower and CPU increases.
+- Why it happens:
+  - getIdBySlug is a linear scan over all slugs (O(number_of_articles)).
+- How to solve:
+  - Maintain a reverse index: slug -> articleId (Map) updated whenever slugMap changes.
+  - Alternatively store slugs in SQLite with an index and query by slug.
+
+[HIGH] Slug normalization missing for /haber/:slug (Turkish/URL-encoded edge cases)
+- Where:
+  - server/routes/pages.js: uses getIdBySlug(slug) directly
+  - url-slug service provides normalizeSlugFromUrl(), but it isn’t used here
+- Symptom:
+  - Some URLs with URL-encoded Turkish characters or unexpected casing don’t resolve (404).
+- Why it happens:
+  - Category routes normalize; article route does not.
+- How to solve:
+  - Normalize incoming slug parameter before lookup (normalizeSlugFromUrl).
+  - Consider redirecting to canonical slug (301) when normalized differs (SEO consistency).
+
+[HIGH] Slug cache persistence is expensive and can corrupt under concurrency
+- Where:
+  - server/services/url-slug.js saveSlugCache() writes whole JSON (`slug-cache.json`) with pretty print
+  - worker + server both can read/write slug-cache.json
+- Symptoms:
+  - “Slow slug update” during bulk ingestion / high write rate (disk I/O + JSON stringify).
+  - Risk of partially-written/corrupted JSON if two processes write around the same time.
+- Why it happens:
+  - Each new slug triggers a full file rewrite.
+  - There’s no file lock and no atomic “write temp then rename” pattern.
+- How to solve:
+  - Make writes atomic: write to temp file then rename.
+  - Add file locking, or serialize writes, or batch updates (debounce / coalesce).
+  - Prefer moving slug storage into SQLite with an indexed table (authoritative source).
+
+[HIGH] “Manşet / Carousel” inconsistency (two sources of truth)
+- Where:
+  - Manual ordered list: data-service “carousel_layout” table:
+    - server/services/data-service.js: getCarouselArticles(), updateCarouselLayout(), etc.
+  - Target membership: articles.targettedViews (JSON text):
+    - server/services/data-service.js getArticles({ targettedView }) uses LIKE on targettedViews
+  - CMS:
+    - server/routes/cms.js dashboard initialState: prefers manual carousel list first
+    - BUT GET /cms/carousel returns targettedView-based list (date-sorted)
+    - PUT /cms/carousel saves manual list to carousel_layout
+  - Frontend CMS JS:
+    - public/cms/js/cms-app.js loadHeadlineLayout() fetches /cms/carousel and repaints table
+- Symptom:
+  - You reorder “Manşet Slider” in CMS and hit save, but refresh/return shows different order.
+  - Homepage can show a different carousel from what CMS “carousel” API returns.
+  - “Slow / inconsistent manşet update” perception: because multiple pipelines touch carousel.
+- Why it happens:
+  - There are two independent mechanisms controlling carousel content:
+    - carousel_layout (manual order) vs targettedViews membership.
+  - CMS GET endpoint serves one mechanism (targettedViews), while CMS PUT endpoint writes the other (carousel_layout).
+- How to solve:
+  - Pick ONE authoritative model and align:
+    - Option A (recommended): carousel_layout is authoritative for carousel membership + order.
+      - Make GET /cms/carousel return dataService.getCarouselArticles() in stored order.
+      - Ensure “add/remove carousel” operations update carousel_layout (and optionally also set targettedViews for analytics).
+    - Option B: remove carousel_layout entirely and store order in DB (explicit ordering column or join table).
+      - Then homepage and CMS both read from the same ordering store.
+  - Add regression tests: “save order persists” and “homepage equals CMS preview list”.
+
+[MED/HIGH] TargettedViews stored as JSON text + LIKE filtering (performance and correctness)
+- Where:
+  - server/services/data-service.js getArticles: `targettedViews LIKE '%"carousel"%'`
+- Symptoms:
+  - Queries get slower as DB grows (no index use).
+  - Potential false positives if target strings overlap (less likely due to quoting, but still brittle).
+- How to solve:
+  - Normalize to a join table (article_id, target) with indexes.
+  - Or use SQLite JSON1 (json_each) + indexing strategy if available.
+
+[HIGH] Hardcoded Master Admin fallback credentials
+- Where:
+  - server/routes/auth.js: defaults to username 'admin', password 'admin123' if env vars absent
+- Symptom:
+  - If deployed without env hardening, anyone can log in as admin.
+- Why it happens:
+  - Intended for dev convenience, but the fallback exists unconditionally.
+- How to solve:
+  - In production: require env vars and refuse to start if missing.
+  - Alternatively restrict fallback to NODE_ENV=development only.
+  - Add rate limiting and lockout policies for /api/auth/login.
+
+[HIGH] Weak default session secret
+- Where:
+  - server/index.js: `secret: process.env.SESSION_SECRET || 'uha-secret-key-change-in-prod'`
+- Symptom:
+  - Predictable session signing key if SESSION_SECRET isn’t set => session forgery risk.
+- How to solve:
+  - Require SESSION_SECRET in production and rotate secrets.
+  - Consider setting cookie `sameSite` explicitly and verifying HTTPS/proxy settings.
+
+[HIGH] RSS subscription URL/token committed to repo
+- Where:
+  - workers/dha-rss-worker.js (SETTINGS.defaultFeedUrl)
+  - tests also contain the same URL
+- Symptom:
+  - Secret leakage: anyone with repo access can use/abuse the RSS subscription.
+- How to solve:
+  - Move feed URL into environment variables or secret manager.
+  - Rotate/revoke existing token.
+  - Keep test fixtures sanitized (use sample RSS dump, not live secret URL).
+
+[HIGH] XSS risk: rendering raw HTML via `| safe` while ingesting external HTML
+- Where:
+  - templates/pages/article.njk and templates/widgets/article-content.njk: `{{ article.content | safe }}`
+  - workers/dha-rss-worker.js: stores `body: descriptionHtml` (raw RSS HTML) into DB
+- Symptom:
+  - Malicious HTML in RSS (or CMS content) can execute scripts in users’ browsers.
+  - CSP currently includes 'unsafe-inline' in scripts/styles, which increases blast radius.
+- How to solve:
+  - Sanitize HTML on ingestion (RSS worker + CMS save) using an allowlist sanitizer.
+  - At minimum strip script tags + inline event handlers + javascript: URLs.
+  - Tighten CSP to remove 'unsafe-inline' where possible (use nonces/hashes).
+
+[MED] CORS is wide open by default
+- Where:
+  - server/index.js: app.use(cors())
+- Symptom:
+  - Broad exposure of API endpoints; increases attack surface.
+- How to solve:
+  - Restrict origins to known domains and methods; consider disabling CORS for CMS/session endpoints.
+
+[MED] trust proxy is always enabled (can be dangerous if not behind a trusted proxy)
+- Where:
+  - server/services/config.js trustProxy: true
+  - server/index.js app.set('trust proxy', serverConfig.trustProxy)
+- Symptom:
+  - If directly exposed to the internet, clients can spoof X-Forwarded-* headers.
+  - This can affect protocol detection (req.secure), cookies, and security decisions.
+- How to solve:
+  - Set trust proxy to a strict value (e.g., 1 hop) or trusted IP ranges.
+  - Make it environment-configurable and default to false unless explicitly behind a proxy.
+
+[MED] Worker scheduler executes shell command strings with `shell: true`
+- Where:
+  - server/index.js startWorker(): spawn(command, { shell: true })
+- Symptom:
+  - If an attacker can influence env vars, this becomes command injection.
+- How to solve:
+  - Avoid shell mode; pass executable + args array; validate command inputs.
+
+[MED] Excessive synchronous logging and file writes in CMS routes
+- Where:
+  - server/routes/cms.js:
+    - Logs every CMS request (console.log)
+    - Layout save endpoints append to layout-changes.log using fs.appendFileSync
+- Symptom:
+  - Event loop blocking under usage, slow CMS actions, log bloat.
+- How to solve:
+  - Gate debug logging behind NODE_ENV/flag.
+  - Use async logging and structured logger with rotation.
+
+[MED] Sitemap/Robots and “pageUrl” ignore BASE_PATH
+- Where:
+  - server/services/sitemap.js uses config.getSiteUrl(req) only (no base path)
+  - server/routes/pages.js sets pageUrl = `${siteUrl}/haber/${slug}` (no base path)
+- Symptom:
+  - If deployed under a subpath (BASE_PATH), generated URLs are wrong.
+- How to solve:
+  - Use a single helper (e.g., config.getUrl(req, '/haber/...')) that includes basePath.
+  - Apply same logic to robots.txt and RSS self links.
+
+Dependency vulnerabilities
+- `npm audit --omit=dev`: found 0 vulnerabilities at scan time.
+
+------------------------------------------------------------
+Recommended next steps (order of impact)
+1) Fix slug update bug (force regeneration) + normalize slug lookup for /haber/:slug.
+2) Unify carousel/manşet data model: make CMS GET/PUT and homepage read/write the same source of truth.
+3) Remove hardcoded credentials + require SESSION_SECRET and admin creds in production.
+4) Move RSS feed URL/token to env + rotate token.
+5) Add HTML sanitization for article body, then tighten CSP.
+6) Address scaling: reverse slug index, atomic slug-cache writes or migrate slugs to SQLite, and normalize targettedViews.
+
+
