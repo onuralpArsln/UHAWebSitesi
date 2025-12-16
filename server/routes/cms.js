@@ -734,8 +734,8 @@ router.put('/articles/:id', async (req, res) => {
     // Enforce writer: Only admins can change the writer
     const isAdmin = req.session.isMaster || req.session.role === 'admin';
     if (!isAdmin) {
-      // For non-admins, preserve the existing writer
-      normalizedArticle.writer = existingArticle.writer || existingArticle.author || '';
+      // For non-admins, always use their own name (displayName or username)
+      normalizedArticle.writer = (req.session && (req.session.displayName || req.session.username)) || '';
     } else {
       // For admins, allow update or fallback to existing
       normalizedArticle.writer = articleData.writer ? articleData.writer.toString().trim() : (existingArticle.writer || existingArticle.author || '');

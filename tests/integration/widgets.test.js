@@ -152,10 +152,15 @@ function processWidgets(layout, dataService) {
 
             case 'category-feed':
                 const categoryName = widget.config.categoryName || widget.config.category;
+                const rawLimit = parseInt(widget.config.limit, 10);
+                const limit = Number.isFinite(rawLimit) && rawLimit > 0
+                    ? Math.min(rawLimit, 20)
+                    : 4;
+
                 if (categoryName) {
                     const categoryArticles = dataService.getArticles({
                         category: categoryName,
-                        limit: 4,
+                        limit,
                         sortBy: 'publishedAt',
                         sortOrder: 'desc',
                         targettedView: 'category-feed',

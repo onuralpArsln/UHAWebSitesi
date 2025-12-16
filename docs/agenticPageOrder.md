@@ -284,7 +284,7 @@ if (categoryName) {
   // Fetch articles for specific category
   const categoryArticles = dataService.getArticles({
     category: categoryName,
-    // ...
+    // limit comes from CMS layout config (clamped to 1-20, default 4)
   });
 }
 ```

@@ -100,7 +100,8 @@
         cmsTabs: initialState.cmsTabs || [],
         targetOptions: initialState.targetOptions || [],
         carouselLimit: initialState.carouselLimit || 5,
-        anaMansetLimit: initialState.anaMansetLimit || 25
+        anaMansetLimit: initialState.anaMansetLimit || 25,
+        currentUser: initialState.currentUser || null
       };
 
       this.mediaLoaded = Array.isArray(this.state.media) && this.state.media.length > 0;
@@ -576,6 +577,27 @@
           if (this.brandingForm) this.brandingForm.remove();
           if (this.settingsForm) this.settingsForm.remove();
         }
+
+        // Apply writer field restrictions based on user role
+        this.applyWriterFieldRestrictions();
+      }
+    }
+
+    applyWriterFieldRestrictions() {
+      const writerField = this.articleForm ? this.articleForm.querySelector('[name="writer"]') : null;
+      if (!writerField) return;
+
+      const isAdmin = this.isAdminUser();
+      const currentUser = this.state.currentUser;
+
+      if (!isAdmin && currentUser) {
+        // For non-admin users, set their name and make field read-only
+        const userWriterName = currentUser.displayName || currentUser.username || '';
+        writerField.value = userWriterName;
+        writerField.readOnly = true;
+      } else if (isAdmin) {
+        // For admin users, allow editing
+        writerField.readOnly = false;
       }
     }
 
@@ -1519,6 +1541,11 @@
       }
     }
 
+    isAdminUser() {
+      const user = this.state.currentUser;
+      return user && (user.isMaster || user.role === 'admin');
+    }
+
     openArticleEditor(article = null) {
       if (!this.editorSection || !this.articleForm) return;
 
@@ -1528,14 +1555,28 @@
       this.resetHeadlineImage();
       this.currentArticleId = null;
 
+      const writerField = this.articleForm.querySelector('[name="writer"]');
+      const isAdmin = this.isAdminUser();
+      const currentUser = this.state.currentUser;
+
       if (article) {
         this.currentArticleId = article.id;
         if (this.editorTitle) {
           this.editorTitle.textContent = 'Haberi Düzenle';
         }
         this.fillArticleForm(article);
-      } else if (this.editorTitle) {
-        this.editorTitle.textContent = 'Yeni Haber';
+      } else {
+        if (this.editorTitle) {
+          this.editorTitle.textContent = 'Yeni Haber';
+        }
+        // For new articles, set writer field for non-admin users
+        if (!isAdmin && currentUser && writerField) {
+          const userWriterName = currentUser.displayName || currentUser.username || '';
+          writerField.value = userWriterName;
+          writerField.readOnly = true;
+        } else if (isAdmin && writerField) {
+          writerField.readOnly = false;
+        }
       }
 
       const statusField = this.articleForm.querySelector('[name="status"]');
@@ -1598,6 +1639,20 @@
       checkboxes.forEach((checkbox) => {
         checkbox.checked = targets.has(checkbox.value);
       });
+
+      // Apply writer field restrictions for non-admin users
+      const writerField = this.articleForm.querySelector('[name="writer"]');
+      const isAdmin = this.isAdminUser();
+      const currentUser = this.state.currentUser;
+
+      if (!isAdmin && currentUser && writerField) {
+        // For non-admin users, enforce their name and make field read-only
+        const userWriterName = currentUser.displayName || currentUser.username || '';
+        writerField.value = userWriterName;
+        writerField.readOnly = true;
+      } else if (isAdmin && writerField) {
+        writerField.readOnly = false;
+      }
     }
 
     serializeArticleForm() {
@@ -1611,10 +1666,19 @@
       payload.targettedViews = targettedViews;
       payload.status = payload.status || 'visible';
       payload.pressAnnouncementId = payload.pressAnnouncementId || '';
-      payload.writer = payload.writer || '';
       payload.videoUrl = payload.videoUrl || '';
       payload.images = this.getArticleImagesPayload();
       payload.headlineImage = this.getHeadlineImagePayload();
+
+      // Enforce writer field for non-admin users
+      const isAdmin = this.isAdminUser();
+      const currentUser = this.state.currentUser;
+      if (!isAdmin && currentUser) {
+        // Override writer with user's name for non-admin users
+        payload.writer = currentUser.displayName || currentUser.username || '';
+      } else {
+        payload.writer = payload.writer || '';
+      }
 
       return payload;
     }

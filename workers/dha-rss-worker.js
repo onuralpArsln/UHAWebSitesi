@@ -31,7 +31,9 @@ const SETTINGS = {
   defaultFeedUrl: 'https://dhaabone.dha.com.tr/rss/1719/k9quL7DqdugGLn4kKrTMzmHbRWQN5JQZ4wfCwMuJiOE64o3-B7R_qu33sYG8kMYZHDqtewhItlDOPuc=',
   defaultLogFile: null,
   defaultDryRun: false,
-  maxVideoBytes: 50 * 1024 * 1024 // 50 MB
+  maxVideoBytes: 50 * 1024 * 1024, // 50 MB
+  // Skip inserting RSS items that do not provide any usable images
+  skipNoImages: false
 };
 
 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
@@ -526,6 +528,7 @@ async function run() {
     let skipped = 0;
     let duplicates = 0;
     let filtered = 0;
+    let noImageSkipped = 0;
 
     for (const item of limitedItems) {
       const banCheck = containsBannedContent(item);
@@ -533,6 +536,14 @@ async function run() {
         filtered += 1;
         const titlePreview = stripHtml(item.title || '').slice(0, 120) || 'untitled';
         log(`  ↳ Skipped (banned term "${banCheck.term}") in "${titlePreview}" (${item.newsId || 'no-id'})`);
+        continue;
+      }
+
+      const mediaProbe = extractMedia(item);
+      if (SETTINGS.skipNoImages && (!mediaProbe.images || mediaProbe.images.length === 0)) {
+        noImageSkipped += 1;
+        const titlePreview = stripHtml(item.title || '').slice(0, 120) || 'untitled';
+        log(`  ↳ Skipped (no images in feed) "${titlePreview}" (${item.newsId || 'no-id'})`);
         continue;
       }
 
@@ -556,6 +567,11 @@ async function run() {
       }
 
       payload = await buildArticlePayload(item, true);
+      if (SETTINGS.skipNoImages && (!payload.images || payload.images.length === 0)) {
+        noImageSkipped += 1;
+        log('  ↳ Skipped (no images after download)');
+        continue;
+      }
       const created = dataService.createArticle(payload);
       await urlSlugService.getSlugForArticle(created.id, created.header || payload.header);
       inserted += 1;
@@ -567,6 +583,9 @@ async function run() {
     log(`Dry-run skipped: ${skipped}`);
     log(`Duplicates skipped: ${duplicates}`);
     log(`Filtered (banned): ${filtered}`);
+    if (SETTINGS.skipNoImages) {
+      log(`Skipped (no images): ${noImageSkipped}`);
+    }
   } catch (error) {
     console.error('❌ Worker failed:', error.message);
     process.exitCode = 1;

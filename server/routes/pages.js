@@ -156,11 +156,15 @@ router.get('/', async (req, res) => {
           // Fetch articles for specific category
           // Support both new (categoryName) and old (category) config properties
           const categoryName = widget.config.categoryName || widget.config.category;
+          const rawLimit = parseInt(widget.config.limit, 10);
+          const limit = Number.isFinite(rawLimit) && rawLimit > 0
+            ? Math.min(rawLimit, 20) // align with CMS UI max
+            : 4; // back-compat default
 
           if (categoryName) {
             const categoryArticles = dataService.getArticles({
               category: categoryName,
-              limit: 4,
+              limit,
               sortBy: 'publishedAt',
               sortOrder: 'desc',
               targettedView: 'category-feed',

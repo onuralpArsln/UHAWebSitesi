@@ -4,7 +4,8 @@
  */
 const cmsTabs = [
     { id: 'dashboard', label: 'Dashboard', icon: 'home' },
-    { id: 'articles', label: 'Haberler', icon: 'file-text' },
+    { id: 'articles', label: 'Haber Listesi', icon: 'file-text' },
+    { id: 'new-article', label: 'Yeni Haber', icon: 'plus-circle' },
     { id: 'categories', label: 'Kategoriler', icon: 'list' },
     { id: 'media', label: 'Medya', icon: 'image' },
     { id: 'branding', label: 'Marka', icon: 'settings' },

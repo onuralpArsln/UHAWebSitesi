@@ -43,6 +43,11 @@ Optional flags:
 | `--limit <n>` | Process only the first `n` items |
 | `--dry-run` | Force dry-run mode even if `RSS_DEFAULT_DRYRUN` is false |
 
+### Image skipping toggle
+- The worker has a `skipNoImages` setting in `workers/dha-rss-worker.js` (default: false).
+- When enabled, items without usable images are skipped (dry-run logs the skip reason; live runs skip before/after download if no images remain).
+- If you use the scheduler, updating the setting in the file affects scheduled runs (no CLI flag).
+
 ### How duplicates are avoided
 - Each RSS item’s `newsId` (or link hash) is stored in `pressAnnouncementId`.
 - Before inserting, the worker looks up existing articles by this external ID; header/date matching remains a secondary guard.
