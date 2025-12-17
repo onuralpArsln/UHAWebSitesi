@@ -33,7 +33,7 @@ const SETTINGS = {
   defaultDryRun: false,
   maxVideoBytes: 50 * 1024 * 1024, // 50 MB
   // Skip inserting RSS items that do not provide any usable images
-  skipNoImages: false
+  skipNoImages: true
 };
 
 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
