@@ -58,10 +58,13 @@ function sanitizeParagraphText(htmlLike = '', options = {}) {
   // 2) Remove trailing "(DHA)" token ONLY (keep paragraph text, including punctuation)
   let next = stripTrailingDhaToken(text);
 
-  // 3) Remove byline prefixes like "Name SURNAME/ LOCATION, (DHA)- ..."
+  // 3) Remove byline prefixes like "Name SURNAME/ LOCATION, (DHA)- ..." or "Name/ LOCATION, DHA/ LOCATION"
+  // Supports both formats: (DHA) with parentheses and DHA/ without parentheses (optionally followed by location)
+  // Location after DHA/ is limited to avoid matching story text (max ~20 chars, typically 1-2 words)
+  // Handles "DHA/" and "DHA /" (with optional space before slash)
   // Keep the remainder of the paragraph.
   const bylinePrefixRegex =
-    /^\s*(?:Haber\s*[-–—]\s*Kamera:\s*)?[\p{L}.'’\-–—\s]{2,120}\s*\/\s*[\p{L}0-9()'’.,\-–—\s]{2,160}\s*,?\s*\(DHA\)\s*[-–—]?\s*/u;
+    /^\s*(?:Haber\s*[-–—]\s*Kamera:\s*)?[\p{L}.'’\-–—\s]{2,120}\s*\/\s*[\p{L}0-9()'’.,\-–—\s]{2,160}\s*,?\s*(?:\(DHA\)|DHA\s*\/\s*(?:[A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜ\s]{0,20}(?=\s))?)\s*[-–—]?\s*/u;
 
   if (bylinePrefixRegex.test(next)) {
     next = next.replace(bylinePrefixRegex, '').trim();

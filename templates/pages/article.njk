@@ -109,9 +109,10 @@
         {% if article.source %}
         <div class="article-info__item"><strong>Kaynak:</strong> {{ article.source }}</div>
         {% endif %}
-        {% if article.pressAnnouncementId %}
+        {# Basın İlan ID hidden from public view #}
+        {# {% if article.pressAnnouncementId %}
         <div class="article-info__item"><strong>Basın İlan ID:</strong> {{ article.pressAnnouncementId }}</div>
-        {% endif %}
+        {% endif %} #}
         {% if article.outlinks and article.outlinks.length > 0 %}
         <div class="article-info__item">
           <strong>Referanslar:</strong>

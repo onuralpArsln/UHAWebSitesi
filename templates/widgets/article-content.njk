@@ -5,10 +5,11 @@
 </div>
 {% endif %}
 
-{% if article and article.pressAnnouncementId %}
-<div class="article-info">
-  <div class="article-info__item"><strong>Basın İlan ID:</strong> {{ article.pressAnnouncementId }}</div>
-</div>
-{% endif %}
+{# Basın İlan ID hidden from public view #}
+{# {% if article and article.pressAnnouncementId %}
+  <div class="article-info">
+    <div class="article-info__item"><strong>Basın İlan ID:</strong> {{ article.pressAnnouncementId }}</div>
+  </div>
+{% endif %} #}
 {% endmacro %}
 
