@@ -463,6 +463,97 @@
   padding: 5px;
 }
 
+/*
+  Portal ticker override (match .com feel)
+  Keep markup the same, but make the ticker look like a restrained newsroom strip.
+  This block is intentionally later in the file so it overrides earlier decorative styles.
+*/
+.flash-news-widget {
+  animation: none;
+  background: var(--uha-surface, #fff);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border);
+  box-shadow: none;
+  padding: 0;
+}
+
+.flash-news__inner {
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+  border-radius: 0;
+  height: 44px;
+}
+
+.flash-news__label {
+  display: flex;
+  /* Match header navigation bar background + text colors (CMS-controlled) */
+  background: var(--uha-nav-bg, var(--color-nav-bg));
+  color: var(--uha-nav-text, var(--color-nav-text));
+  font-size: 0.875rem;
+  padding: 0 14px;
+  border-right: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.flash-news__label-text {
+  letter-spacing: 0.06em;
+}
+
+.flash-news__item {
+  height: 44px;
+  padding: 0 16px;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.flash-news__title {
+  color: var(--color-text-main);
+  font-size: 0.95rem;
+  font-weight: 600;
+  max-width: 520px;
+}
+
+.flash-news__time {
+  color: rgba(33, 37, 41, 0.75);
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.85rem;
+}
+
+.flash-news__actions {
+  height: 44px;
+  width: auto;
+  background: transparent;
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.flash-news__view-all {
+  color: var(--color-text-main);
+}
+
+.flash-news__view-all:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+@media (max-width: 992px) {
+  .flash-news__inner,
+  .flash-news__item,
+  .flash-news__actions {
+    height: 40px;
+  }
+
+  .flash-news__label {
+    display: flex; /* keep visible on mobile for newsroom feel */
+    font-size: 0.8125rem;
+    padding: 0 10px;
+  }
+
+  .flash-news__title {
+    font-size: 0.875rem;
+    max-width: 320px;
+  }
+}
+
 @keyframes flash-news-bg {
   0% {
     background-position: 0 50%
@@ -493,7 +584,9 @@
   display: flex;
   align-items: center;
   padding: 0 18px;
-  color: #ff4d4f;
+  /* Keep consistent with header navigation bar colors even if this block wins */
+  background: var(--uha-nav-bg, var(--color-nav-bg));
+  color: var(--uha-nav-text, var(--color-nav-text));
   font-size: 1.25rem;
   font-weight: 700;
   text-transform: uppercase;

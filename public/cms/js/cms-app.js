@@ -1907,6 +1907,13 @@
         this.returnToArticleList();
         this.loadArticles();
 
+        if (Array.isArray(savedArticle.anaMansetDroppedIds) && savedArticle.anaMansetDroppedIds.length > 0) {
+          this.showToast(
+            `Ana Manşet limiti aşıldı: ${savedArticle.anaMansetDroppedIds.length} haber otomatik çıkarıldı`,
+            'warning'
+          );
+        }
+
         // If article targets carousel, refresh the headline layout
         if (savedArticle.targettedViews && savedArticle.targettedViews.includes('carousel')) {
           this.loadHeadlineLayout();

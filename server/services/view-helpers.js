@@ -23,7 +23,8 @@ function buildMeta(overrides = {}, req = null) {
   if (meta.description && meta.description.length > 160) {
     meta.description = `${meta.description.substring(0, 157)}...`;
   } else if (meta.description && meta.description.length < 140) {
-    meta.description = `${meta.description} - ${defaults.title}`;
+    // Use the effective title (which may be overridden by CMS branding) instead of the config default
+    meta.description = `${meta.description} - ${meta.title}`;
   }
 
   return meta;
@@ -36,6 +37,7 @@ function buildNewsArticleSchema(article = {}, req = null) {
 
   const siteDefaults = config.getSiteDefaults();
   const baseUrl = req ? config.getSiteUrl(req) : 'http://localhost:3000';
+  const publisherName = article.publisherName || article.siteName || siteDefaults.name;
 
   const schema = {
     '@context': 'https://schema.org',
@@ -46,11 +48,11 @@ function buildNewsArticleSchema(article = {}, req = null) {
     dateModified: article.updatedAt || article.publishedAt,
     author: {
       '@type': 'Person',
-      name: article.author || siteDefaults.name
+      name: article.author || publisherName
     },
     publisher: {
       '@type': 'Organization',
-      name: siteDefaults.name,
+      name: publisherName,
       logo: {
         '@type': 'ImageObject',
         url: `${baseUrl}/static/images/logo.png`

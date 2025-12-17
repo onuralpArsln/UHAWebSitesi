@@ -279,9 +279,11 @@ router.get('/', async (req, res) => {
 
     // Branding data
     const branding = formatBranding(dataService.getBranding());
+    const brandSiteName = branding.siteName || config.getSiteDefaults().name;
 
     // Prepare page data
     const meta = buildMeta({
+      title: brandSiteName,
       image: `${config.getSiteUrl(req)}/static/images/og-home.jpg`
     }, req);
 
@@ -334,6 +336,7 @@ router.get('/haber/:slug', async (req, res) => {
 
     // Branding data
     const branding = formatBranding(dataService.getBranding());
+    const brandSiteName = branding.siteName || config.getSiteDefaults().name;
 
     // Prepare page URL for social sharing
     const siteUrl = config.getSiteUrl(req);
@@ -454,9 +457,8 @@ router.get('/haber/:slug', async (req, res) => {
     });
 
     // Prepare page data
-    const siteDefaults = config.getSiteDefaults();
     const meta = buildMeta({
-      title: `${article.title} - ${siteDefaults.name}`,
+      title: `${article.title} - ${brandSiteName}`,
       description: article.summary,
       url: pageUrl,
       image: article.images?.[0]?.highRes,
@@ -466,7 +468,8 @@ router.get('/haber/:slug', async (req, res) => {
     const articleSchema = buildNewsArticleSchema({
       ...article,
       slug,
-      images: optimizeImageData(article.images)
+      images: optimizeImageData(article.images),
+      publisherName: brandSiteName
     }, req);
 
     const pageData = {
@@ -595,12 +598,12 @@ router.get('/kategori/:categorySlug', async (req, res) => {
 
     // Branding data
     const branding = formatBranding(dataService.getBranding());
+    const brandSiteName = branding.siteName || config.getSiteDefaults().name;
 
     // Prepare page data
     const siteUrl = config.getSiteUrl(req);
-    const siteDefaults = config.getSiteDefaults();
     const meta = buildMeta({
-      title: `${category.name} Haberleri - ${siteDefaults.name}`,
+      title: `${category.name} Haberleri - ${brandSiteName}`,
       description: `${category.name} kategorisindeki son haberler ve güncel gelişmeler`,
       url: `${siteUrl}/kategori/${canonicalSlug}`,
       image: `${siteUrl}/static/images/category-${canonicalSlug}.jpg`
@@ -671,12 +674,12 @@ router.get('/arama', async (req, res) => {
 
     // Branding data
     const branding = formatBranding(dataService.getBranding());
+    const brandSiteName = branding.siteName || config.getSiteDefaults().name;
 
     // Prepare page data
     const siteUrl = config.getSiteUrl(req);
-    const siteDefaults = config.getSiteDefaults();
     const meta = buildMeta({
-      title: `"${query}" Arama Sonuçları - ${siteDefaults.name}`,
+      title: `"${query}" Arama Sonuçları - ${brandSiteName}`,
       description: `"${query}" için arama sonuçları`,
       url: `${siteUrl}/arama?q=${encodeURIComponent(query)}`
     }, req);
@@ -748,12 +751,14 @@ router.get('/rss.xml', async (req, res) => {
     const rssFeed = dataService.getRSSFeed();
     const siteUrl = config.getSiteUrl(req);
     const siteDefaults = config.getSiteDefaults();
+    const branding = formatBranding(dataService.getBranding());
+    const brandSiteName = branding.siteName || siteDefaults.name;
 
     // Convert to RSS XML format
     const rssXML = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>${siteDefaults.name}</title>
+    <title>${brandSiteName}</title>
     <description>${siteDefaults.description}</description>
     <link>${siteUrl}</link>
     <language>tr</language>
@@ -788,6 +793,8 @@ router.get('/rss.xml', async (req, res) => {
  */
 router.use((req, res) => {
   const siteDefaults = config.getSiteDefaults();
+  const branding = formatBranding(dataService.getBranding());
+  const brandSiteName = branding.siteName || siteDefaults.name;
   const BASE_PATH = config.getBasePath();
   res.status(404).send(`
     <!DOCTYPE html>
@@ -795,7 +802,7 @@ router.use((req, res) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Sayfa Bulunamadı - ${siteDefaults.name}</title>
+      <title>Sayfa Bulunamadı - ${brandSiteName}</title>
       <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
         h1 { color: #e53e3e; }

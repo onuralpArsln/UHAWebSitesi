@@ -131,6 +131,10 @@ class SitemapService {
   buildNewsSitemapXML(articles, req = null) {
     const baseURL = req ? config.getSiteUrl(req) : 'http://localhost:3000';
     const siteDefaults = config.getSiteDefaults();
+    const brandingRaw = (this.dataService && typeof this.dataService.getBranding === 'function')
+      ? this.dataService.getBranding()
+      : null;
+    const publisherName = (brandingRaw && brandingRaw.siteName) ? brandingRaw.siteName : siteDefaults.name;
     const slugMap = new Map(this.urlSlugService.getAllSlugs().map(s => [s.id, s.slug]));
     
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -149,7 +153,7 @@ class SitemapService {
     <lastmod>${lastmod.toISOString()}</lastmod>
     <news:news>
       <news:publication>
-        <news:name>${siteDefaults.name}</news:name>
+        <news:name>${this.escapeXML(publisherName)}</news:name>
         <news:language>tr</news:language>
       </news:publication>
       <news:publication_date>${publishedDate.toISOString()}</news:publication_date>

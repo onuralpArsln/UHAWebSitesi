@@ -2,6 +2,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
+  /*
+    UHA Visual Transform (CSS-only)
+    - Keep CMS-controlled values dynamic by referencing injected vars from templates/layouts/base.njk
+    - Match .com “portal” baseline via canvas/background, container width, typography
+  */
+
   /* Colors - Mapped to CMS Branding Variables */
   --color-bg-primary: #FFFFFF;
   --color-bg-secondary: var(--primary-color, #122d4a); /* Maps to CMS primary color */
@@ -15,18 +21,41 @@
   --color-nav-text: var(--nav-text-color, #ffffff);
   --color-nav-bg: var(--nav-background-color, #1a365d);
   
-  --color-text-main: #000000;
-  --color-text-secondary: #4a5568;
+  /*
+    Derived brand tokens (dynamic):
+    Use these in component CSS so CMS color changes automatically apply.
+  */
+  --uha-primary: var(--primary-color, #122d4a);
+  --uha-secondary: var(--secondary-color, #2d3748);
+  --uha-accent: var(--accent-color, #ca0002);
+  --uha-nav-bg: var(--nav-background-color, var(--uha-primary));
+  --uha-nav-text: var(--nav-text-color, #ffffff);
+
+  /*
+    Reference (.com) baseline:
+    - Canvas: #e9ecef
+    - Text: #212529
+  */
+  --uha-page-bg: #e9ecef;
+  --uha-surface: #ffffff;
+
+  --color-text-main: #212529;
+  --color-text-secondary: #495057;
   --color-text-inverse: #FFFFFF;
   
   --color-border: #e2e8f0;
   
   /* Typography */
-  --font-family-main: 'Inter', sans-serif;
+  /*
+    Gibson is used by the .com reference. If it isn't available on the client,
+    this gracefully falls back to Inter/system fonts.
+  */
+  --font-family-main: Gibson, 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
+  /* Reference base: 17px (17/16 = 1.0625rem) */
+  --font-size-base: 1.0625rem;
   --font-size-lg: 1.125rem;
   --font-size-xl: 1.25rem;
   --font-size-2xl: 1.5rem;
@@ -45,7 +74,8 @@
   --spacing-2xl: 3rem;
   
   /* Layout */
-  --container-width: 1200px;
+  /* Reference container: 1280px */
+  --container-width: 1280px;
   --header-height: 70px;
   --header-height-mobile: 60px;
   
@@ -63,7 +93,12 @@
   --container-max-width: var(--container-width);
   --font-family: var(--font-family-main);
   --text-color: var(--color-text-main);
-  --background-color: var(--color-bg-primary);
+  /*
+    main.css uses --background-color for body background.
+    We set it to the portal canvas color to match .com.
+    Use --uha-surface / --color-bg-primary for white surfaces.
+  */
+  --background-color: var(--uha-page-bg);
   
   /* Component Dimensions */
   --sidebar-width: 300px;
