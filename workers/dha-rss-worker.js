@@ -13,6 +13,7 @@ const fs = require('fs');
 const stream = require('stream');
 const sharp = require('sharp');
 const { createPosterFromVideo } = require('../server/services/video-poster');
+const { sanitizeDhaHtml } = require('./dha-sanitize');
 
 const DataService = require('../server/services/data-service');
 const urlSlugService = require('../server/services/url-slug');
@@ -386,7 +387,8 @@ function toIsoDate(pubDate) {
 
 async function buildArticlePayload(item, downloadAssets) {
   const descriptionHtml = item.description || '';
-  const descriptionText = stripHtml(descriptionHtml);
+  const sanitizedDescriptionHtml = sanitizeDhaHtml(descriptionHtml);
+  const descriptionText = stripHtml(sanitizedDescriptionHtml);
   const media = extractMedia(item);
 
   const images = await prepareImages(item, media.images, downloadAssets);
@@ -439,7 +441,7 @@ async function buildArticlePayload(item, downloadAssets) {
     summary: summarizeBody(descriptionText),
     category,
     tags,
-    body: descriptionHtml,
+    body: sanitizedDescriptionHtml,
     images: safeImages,
     headlineImage: safeImages[0] || null,
     videoUrl,
