@@ -65,6 +65,68 @@
                              max="30"
                              class="config-input-small"> saniye
                     </label>
+                    <label class="config-control">
+                      <span>Mobil yükseklik:</span>
+                      <input type="number" 
+                             data-config="heightMobile" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.heightMobile or 400 }}" 
+                             min="200" 
+                             max="800"
+                             class="config-input-small"> px
+                    </label>
+                    <label class="config-control">
+                      <span>Tablet yükseklik:</span>
+                      <input type="number" 
+                             data-config="heightTablet" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.heightTablet or 500 }}" 
+                             min="200" 
+                             max="800"
+                             class="config-input-small"> px
+                    </label>
+                    <label class="config-control">
+                      <span>Masaüstü yükseklik:</span>
+                      <input type="number" 
+                             data-config="heightDesktop" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.heightDesktop or 600 }}" 
+                             min="200" 
+                             max="800"
+                             class="config-input-small"> px
+                    </label>
+                  
+                  {% elif widget.type == 'ana-manset' %}
+                    <label class="config-control">
+                      <span>Mobil yükseklik:</span>
+                      <input type="number" 
+                             data-config="heightMobile" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.heightMobile or 400 }}" 
+                             min="200" 
+                             max="800"
+                             class="config-input-small"> px
+                    </label>
+                    <label class="config-control">
+                      <span>Tablet yükseklik:</span>
+                      <input type="number" 
+                             data-config="heightTablet" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.heightTablet or 500 }}" 
+                             min="200" 
+                             max="800"
+                             class="config-input-small"> px
+                    </label>
+                    <label class="config-control">
+                      <span>Masaüstü yükseklik:</span>
+                      <input type="number" 
+                             data-config="heightDesktop" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.heightDesktop or 600 }}" 
+                             min="200" 
+                             max="800"
+                             class="config-input-small"> px
+                    </label>
                   
                   {% elif widget.type == 'hero-title' %}
                     <label class="config-control">

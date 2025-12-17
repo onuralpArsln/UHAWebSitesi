@@ -1,9 +1,13 @@
 {% macro carousel(id, slides, config = {}) %}
+{% set heightMobile = config.heightMobile or 400 %}
+{% set heightTablet = config.heightTablet or 500 %}
+{% set heightDesktop = config.heightDesktop or 600 %}
 <div class="carousel-widget" 
      data-widget="carousel" 
      data-carousel-id="{{ id }}"
      data-autoplay="{{ config.autoPlay | default(true) }}"
-     data-delay="{{ config.autoPlayDelay | default(5000) }}">
+     data-delay="{{ config.autoPlayDelay | default(5000) }}"
+     style="--carousel-height-mobile: {{ heightMobile }}px; --carousel-height-tablet: {{ heightTablet }}px; --carousel-height-desktop: {{ heightDesktop }}px;">
   <div class="carousel-container">
     <div class="carousel-track">
       {% for slide in slides %}
@@ -23,7 +27,6 @@
           </div>
           <div class="slide-content">
             <h3>{{ slide.title }}</h3>
-            <p>{{ slide.summary }}</p>
             <div class="slide-meta">
               <span class="category">{{ slide.category }}</span>
               <span class="date">{{ slide.publishedAt | formatDate }}</span>

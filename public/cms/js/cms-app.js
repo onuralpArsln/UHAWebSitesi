@@ -3637,13 +3637,27 @@
           type: 'carousel',
           title: 'Manşet Slider',
           desc: 'Öne çıkan haberlerin kayan listesi.',
-          defaultConfig: { autoplay: true, interval: 5000 }
+          defaultConfig: { 
+            autoplay: true, 
+            interval: 5000,
+            heightMobile: 400,
+            heightTablet: 500,
+            heightDesktop: 600
+          }
         },
         {
           type: 'ana-manset',
           title: 'Ana Manşet Slider',
           desc: 'En fazla 25 haberlik ana manşet slider alanı.',
-          defaultConfig: { id: 'ana-manset', maxArticles: 25, autoPlay: true, autoPlayDelay: 5000 }
+          defaultConfig: { 
+            id: 'ana-manset', 
+            maxArticles: 25, 
+            autoPlay: true, 
+            autoPlayDelay: 5000,
+            heightMobile: 400,
+            heightTablet: 500,
+            heightDesktop: 600
+          }
         },
         {
           type: 'featured-news-grid',
@@ -4012,6 +4026,36 @@
                      step="500"
                      class="config-input-small">
             </label>
+            <label class="config-control">
+              <span>Mobil yükseklik:</span>
+              <input type="number" 
+                     data-config="heightMobile" 
+                     data-widget-index="${index}"
+                     value="${widget.config.heightMobile || 400}" 
+                     min="200" 
+                     max="800"
+                     class="config-input-small"> px
+            </label>
+            <label class="config-control">
+              <span>Tablet yükseklik:</span>
+              <input type="number" 
+                     data-config="heightTablet" 
+                     data-widget-index="${index}"
+                     value="${widget.config.heightTablet || 500}" 
+                     min="200" 
+                     max="800"
+                     class="config-input-small"> px
+            </label>
+            <label class="config-control">
+              <span>Masaüstü yükseklik:</span>
+              <input type="number" 
+                     data-config="heightDesktop" 
+                     data-widget-index="${index}"
+                     value="${widget.config.heightDesktop || 600}" 
+                     min="200" 
+                     max="800"
+                     class="config-input-small"> px
+            </label>
           </div>
         `;
       } else if (widget.type === 'hero-title') {
@@ -4130,6 +4174,39 @@
                    min="1" 
                    max="30"
                    class="config-input-small">
+          </label>
+        `;
+      } else if (widget.type === 'ana-manset') {
+        configHtml = `
+          <label class="config-control">
+            <span>Mobil yükseklik:</span>
+            <input type="number" 
+                   data-config="heightMobile" 
+                   data-widget-index="${index}"
+                   value="${widget.config.heightMobile || 400}" 
+                   min="200" 
+                   max="800"
+                   class="config-input-small"> px
+          </label>
+          <label class="config-control">
+            <span>Tablet yükseklik:</span>
+            <input type="number" 
+                   data-config="heightTablet" 
+                   data-widget-index="${index}"
+                   value="${widget.config.heightTablet || 500}" 
+                   min="200" 
+                   max="800"
+                   class="config-input-small"> px
+          </label>
+          <label class="config-control">
+            <span>Masaüstü yükseklik:</span>
+            <input type="number" 
+                   data-config="heightDesktop" 
+                   data-widget-index="${index}"
+                   value="${widget.config.heightDesktop || 600}" 
+                   min="200" 
+                   max="800"
+                   class="config-input-small"> px
           </label>
         `;
       } else if (widget.type === 'ad-placeholder') {

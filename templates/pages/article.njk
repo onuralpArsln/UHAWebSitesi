@@ -93,7 +93,7 @@
       {% set isLocalVideo = article.videoUrl and article.videoUrl.startsWith('/uploads/') %}
       {% if isLocalVideo %}
       <div class="article-view__video">
-        <video controls preload="metadata" style="width: 100%; height: auto; border-radius: 8px;">
+        <video controls preload="metadata">
           <source src="{{ article.videoUrl }}" type="video/mp4">
           Tarayıcınız video etiketini desteklemiyor.
         </video>

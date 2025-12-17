@@ -1,7 +1,7 @@
 /* Carousel Fixed Height Override */
 .carousel-widget {
   width: 98% !important;
-  height: 400px !important;
+  height: var(--carousel-height-mobile, 400px) !important;
   aspect-ratio: unset !important;
   min-height: unset !important;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -21,12 +21,12 @@
 
 @media (min-width: 768px) {
   .carousel-widget {
-    height: 500px !important;
+    height: var(--carousel-height-tablet, 500px) !important;
   }
 }
 
 @media (min-width: 1024px) {
   .carousel-widget {
-    height: 600px !important;
+    height: var(--carousel-height-desktop, 600px) !important;
   }
 }
