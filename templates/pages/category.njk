@@ -25,26 +25,29 @@
     <div class="articles-grid">
       {% for article in articles %}
       {% set image = article.headlineImage or (article.images and article.images[0]) %}
-      <article class="article-card">
-        {% if image %}
-        <div class="article-card__media">
-          <img
-            src="{{ image.lowRes or image.url }}"
-            alt="{{ image.alt }}"
-            loading="lazy"
-            data-high-res="{{ image.highRes or '' }}"
-          >
-        </div>
-        {% endif %}
-        <div class="article-card__body">
-          <div class="article-card__meta">
-            <span class="badge badge--category">{{ article.category }}</span>
-            <span class="badge badge--date">{{ article.publishedAt | formatDate }}</span>
+      {% set articleUrl = asset('haber/' ~ article.slug) %}
+      <a href="{{ articleUrl }}" aria-label="Read article: {{ article.title }}" class="article-card-link">
+        <article class="article-card">
+          {% if image %}
+          <div class="article-card__media">
+            <img
+              src="{{ image.lowRes or image.url }}"
+              alt="{{ image.alt }}"
+              loading="lazy"
+              data-high-res="{{ image.highRes or '' }}"
+            >
           </div>
-          <h4 class="article-card__title"><a href="{{ asset('haber/' ~ article.slug) }}">{{ article.title }}</a></h4>
-          <p class="article-card__summary">{{ article.summary }}</p>
-        </div>
-      </article>
+          {% endif %}
+          <div class="article-card__body">
+            <div class="article-card__meta">
+              <span class="badge badge--category">{{ article.category }}</span>
+              <span class="badge badge--date">{{ article.publishedAt | formatDate }}</span>
+            </div>
+            <h4 class="article-card__title">{{ article.title }}</h4>
+            <p class="article-card__summary">{{ article.summary }}</p>
+          </div>
+        </article>
+      </a>
       {% endfor %}
     </div>
     {% else %}

@@ -21,26 +21,29 @@
     <div class="search-results">
       {% for article in articles %}
       {% set image = article.headlineImage or (article.images and article.images[0]) %}
-      <article class="search-result">
-        {% if image %}
-        <div class="search-result__media">
-          <img
-            src="{{ image.lowRes or image.url }}"
-            alt="{{ image.alt }}"
-            data-high-res="{{ image.highRes or '' }}"
-            loading="lazy"
-          >
-        </div>
-        {% endif %}
-        <div class="search-result__content">
-          <div class="search-result__meta">
-            <span class="badge badge--category">{{ article.category }}</span>
-            <span class="badge badge--date">{{ article.publishedAt | formatDate }}</span>
+      {% set articleUrl = asset('haber/' ~ article.slug) %}
+      <a href="{{ articleUrl }}" aria-label="Read article: {{ article.title }}" class="search-result-link">
+        <article class="search-result">
+          {% if image %}
+          <div class="search-result__media">
+            <img
+              src="{{ image.lowRes or image.url }}"
+              alt="{{ image.alt }}"
+              data-high-res="{{ image.highRes or '' }}"
+              loading="lazy"
+            >
           </div>
-          <h2 class="search-result__title"><a href="{{ asset('haber/' ~ article.slug) }}">{{ article.title }}</a></h2>
-          <p class="search-result__summary">{{ article.summary }}</p>
-        </div>
-      </article>
+          {% endif %}
+          <div class="search-result__content">
+            <div class="search-result__meta">
+              <span class="badge badge--category">{{ article.category }}</span>
+              <span class="badge badge--date">{{ article.publishedAt | formatDate }}</span>
+            </div>
+            <h2 class="search-result__title">{{ article.title }}</h2>
+            <p class="search-result__summary">{{ article.summary }}</p>
+          </div>
+        </article>
+      </a>
       {% endfor %}
     </div>
   </section>

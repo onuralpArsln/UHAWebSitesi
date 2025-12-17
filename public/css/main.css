@@ -396,6 +396,22 @@ body {
   }
 }
 
+.article-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.article-card-link:hover {
+  text-decoration: none;
+}
+
+.article-card-link:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
 .article-card {
   background: #fff;
   border-radius: var(--radius-lg);
@@ -406,7 +422,7 @@ body {
   flex-direction: column;
 }
 
-.article-card:hover {
+.article-card-link:hover .article-card {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
@@ -424,7 +440,7 @@ body {
   transition: transform var(--transition-normal);
 }
 
-.article-card:hover .article-card__media img {
+.article-card-link:hover .article-card__media img {
   transform: scale(1.05);
 }
 
@@ -438,14 +454,11 @@ body {
 .article-card__title {
   font-size: var(--font-size-lg);
   line-height: 1.35;
-}
-
-.article-card__title a {
   color: var(--text-color);
-  text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
-.article-card__title a:hover {
+.article-card-link:hover .article-card__title {
   color: var(--primary-color);
 }
 
@@ -772,6 +785,22 @@ body {
   gap: var(--spacing-md);
 }
 
+.search-result-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.search-result-link:hover {
+  text-decoration: none;
+}
+
+.search-result-link:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
 .search-result {
   display: grid;
   gap: var(--spacing-md);
@@ -782,7 +811,7 @@ body {
   transition: box-shadow var(--transition-fast);
 }
 
-.search-result:hover {
+.search-result-link:hover .search-result {
   box-shadow: var(--shadow-md);
 }
 
@@ -810,14 +839,11 @@ body {
 .search-result__title {
   font-size: var(--font-size-lg);
   margin-bottom: var(--spacing-xs);
-}
-
-.search-result__title a {
   color: var(--text-color);
-  text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
-.search-result__title a:hover {
+.search-result-link:hover .search-result__title {
   color: var(--primary-color);
 }
 
