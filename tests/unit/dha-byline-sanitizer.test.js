@@ -36,6 +36,18 @@ describe('DHA RSS sanitizer', () => {
         "<p>Arama çalışmaları gece boyunca devam edecek.</p>"
     );
   });
+
+  test('removes case-sensitive exact words when configured (e.g. FOTOĞRAFLI)', () => {
+    const html = [
+      '<p>FOTOĞRAFLI</p>',
+      '<p>Metin içinde FOTOĞRAFLI kelimesi geçiyor.</p>',
+      '<p>fotograflı (lowercase) kalmalı.</p>'
+    ].join('');
+
+    expect(sanitizeDhaHtml(html, { removeWords: ['FOTOĞRAFLI'] })).toBe(
+      '<p>Metin içinde kelimesi geçiyor.</p><p>fotograflı (lowercase) kalmalı.</p>'
+    );
+  });
 });
 
 

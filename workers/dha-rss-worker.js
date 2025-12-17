@@ -28,6 +28,9 @@ const SETTINGS = {
   maxVideos: 1,
   fallbackCategory: 'Gündem',
   bannedTopics: ["Yurt Haber", "Ek fotoğraflar",'(2)'],
+  // Case-sensitive exact words to remove from RSS article body paragraphs.
+  // Example: DHA often includes a standalone "FOTOĞRAFLI" line.
+  removeWords: ['FOTOĞRAFLI'],
   defaultLimit: 20,
   defaultFeedUrl: 'https://dhaabone.dha.com.tr/rss/1719/k9quL7DqdugGLn4kKrTMzmHbRWQN5JQZ4wfCwMuJiOE64o3-B7R_qu33sYG8kMYZHDqtewhItlDOPuc=',
   defaultLogFile: null,
@@ -387,7 +390,7 @@ function toIsoDate(pubDate) {
 
 async function buildArticlePayload(item, downloadAssets) {
   const descriptionHtml = item.description || '';
-  const sanitizedDescriptionHtml = sanitizeDhaHtml(descriptionHtml);
+  const sanitizedDescriptionHtml = sanitizeDhaHtml(descriptionHtml, { removeWords: SETTINGS.removeWords });
   const descriptionText = stripHtml(sanitizedDescriptionHtml);
   const media = extractMedia(item);
 

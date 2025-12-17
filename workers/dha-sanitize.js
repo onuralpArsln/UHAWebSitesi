@@ -8,16 +8,21 @@
  * NOTE: Keep this conservative to avoid deleting real story text.
  */
 
-function sanitizeDhaHtml(html = '') {
+function sanitizeDhaHtml(html = '', options = {}) {
   const source = (html || '').toString();
   if (!source.trim()) return source;
+
+  const removeWords = Array.isArray(options.removeWords)
+    ? options.removeWords.filter((w) => typeof w === 'string' && w.length > 0)
+    : [];
 
   // Only operate on <p> blocks (DHA RSS uses <p> for content).
   const paragraphRegex = /<p\b[^>]*>[\s\S]*?<\/p>/gi;
   const paragraphs = source.match(paragraphRegex);
   if (!paragraphs) {
     // Fallback: still remove trailing "(DHA)" if it’s the whole string
-    return stripTrailingDhaToken(source);
+    const tokenStripped = stripTrailingDhaToken(source);
+    return removeWords.length ? removeExactWords(tokenStripped, removeWords) : tokenStripped;
   }
 
   const cleaned = paragraphs
@@ -26,7 +31,7 @@ function sanitizeDhaHtml(html = '') {
         .replace(/^<p\b[^>]*>/i, '')
         .replace(/<\/p>\s*$/i, '');
 
-      const cleanedText = sanitizeParagraphText(inner);
+      const cleanedText = sanitizeParagraphText(inner, { removeWords });
       if (!cleanedText) return '';
 
       return `<p>${cleanedText}</p>`;
@@ -36,10 +41,14 @@ function sanitizeDhaHtml(html = '') {
   return cleaned.join('');
 }
 
-function sanitizeParagraphText(htmlLike = '') {
+function sanitizeParagraphText(htmlLike = '', options = {}) {
   const raw = (htmlLike || '').toString();
   const text = stripInlineTags(raw).trim();
   if (!text) return '';
+
+  const removeWords = Array.isArray(options.removeWords)
+    ? options.removeWords.filter((w) => typeof w === 'string' && w.length > 0)
+    : [];
 
   // 1) Drop standalone "Haber-Kamera: ..." paragraphs (detect BEFORE trimming "(DHA)")
   if (isStandaloneCameraByline(text)) {
@@ -56,6 +65,11 @@ function sanitizeParagraphText(htmlLike = '') {
 
   if (bylinePrefixRegex.test(next)) {
     next = next.replace(bylinePrefixRegex, '').trim();
+  }
+
+  // 4) Remove exact case-sensitive words (e.g. FOTOĞRAFLI) without affecting other text.
+  if (removeWords.length) {
+    next = removeExactWords(next, removeWords).trim();
   }
 
   // If after stripping the byline we have nothing meaningful, drop paragraph.
@@ -85,11 +99,30 @@ function stripInlineTags(value = '') {
   return (value || '').toString().replace(/<[^>]*>/g, '');
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function removeExactWords(text = '', words = []) {
+  let out = (text || '').toString();
+  for (const word of words) {
+    if (!word) continue;
+    // Case-sensitive exact word removal.
+    // We cannot rely on \b for Turkish characters, so we use Unicode letter/number boundaries.
+    const w = escapeRegExp(word);
+    const re = new RegExp(`(^|[^\\p{L}0-9_])${w}($|[^\\p{L}0-9_])`, 'gu');
+    out = out.replace(re, (match, left, right) => `${left}${right}`);
+  }
+  // Normalize leftover whitespace introduced by removals.
+  return out.replace(/\s{2,}/g, ' ').replace(/\s+([,.;:!?])/g, '$1').trim();
+}
+
 module.exports = {
   sanitizeDhaHtml,
   // exported for unit tests
   sanitizeParagraphText,
-  stripTrailingDhaToken
+  stripTrailingDhaToken,
+  removeExactWords
 };
 
 
