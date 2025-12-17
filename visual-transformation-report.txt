@@ -1,127 +1,268 @@
-Visual Transformation Report (TXT) — Make uygurhaberajansi.com.tr look like uygurhaberajansi.com
-Scope compared: Homepage only (rendered HTML/CSS in browser)
+VISUAL TRANSFORMATION REPORT (LLM-READY, SINGLE FILE)
+Goal: Make uygurhaberajansi.com.tr visually resemble uygurhaberajansi.com (HOMEPAGE comparison).
+Important constraint: This report describes WHAT to change and WHERE in this repo; it does NOT change code.
 
-1) What .com is (reference visual system)
-- Theme/stack: TE Bilisim “Flow” theme (Bootstrap + app6.6.2.min.css) with many inline style blocks.
-- Typography: Gibson, sans-serif, 17px base, line-height ~25.5px.
-- Background: page background is light gray (#e9ecef), content sits on lighter/white surfaces.
-- Container: fixed 1280px max-width container.
-- Header: denser, multi-row “newsroom” header (logo + tagline, utilities/icons, strong nav presence).
-- Overall feel: tighter spacing, more “news portal” density; less “modern app card” styling.
+================================================================================
+0) HOW THIS INFORMATION WAS COLLECTED (METHODOLOGY)
+================================================================================
+This report was created by collecting “rendered-page facts” (not guesses) from both sites:
 
-2) What .com.tr is (this project’s current visual system)
-- This repo powers it: CSS requests match your repo public/css/*.css.
-- Templates: Nunjucks layout system:
-  - templates/pages/home.njk renders site-header, widget layout, and footer.
-  - templates/layouts/base.njk loads the CSS bundle and injects branding variables into :root.
-- Typography: Inter, sans-serif, 16px, line-height 24px.
-- Background: white page background.
-- Container: --container-width: 1200px (via public/css/modern-variables.css + public/css/modern-layout.css).
-- Components:
-  - Header: templates/widgets/site-header.njk + public/css/header.css
-  - News cards: templates/widgets/news-card.njk + public/css/news-card.css (rounded + shadow + hover lift)
-  - Flash ticker: templates/widgets/flashNews.njk + public/css/widgets.css (currently very decorative/animated)
-  - Layout widgets: templates/widgets/featured-news-grid.njk, three-column-category-feed.njk, sidebar-widget.njk, four-article-band.njk
+1) Load each homepage in a browser and record:
+   - The list of CSS files actually loaded (from network requests and <link rel="stylesheet"> tags).
+   - The computed CSS values of key primitives (body font-family, font-size, line-height, background-color).
+   - The computed width/max-width of the main container.
+   - A DOM “accessibility snapshot” to understand major structural blocks (header/nav/ticker/main sections).
 
-3) Key visual gaps (why it doesn’t look like .com)
+2) For the .com.tr site, map those findings to this repo by locating:
+   - The templates that generate the header/footer/homepage and widgets (templates/*.njk).
+   - The CSS modules that style those components (public/css/*.css).
 
-A) Typography gap (largest “brand feel” difference)
-- .com: Gibson + slightly larger, more editorial rhythm.
-- .com.tr: Inter + smaller base.
-- Transformation target: adopt Gibson (or Gibson-like) and move to a 17px editorial base.
+Data sources used:
+- Browser network log (to list real loaded CSS/JS/fonts)
+- Browser computed styles (getComputedStyle)
+- Repo file inspection (templates + CSS modules)
 
-B) Background + surface language
-- .com: gray page background + “panels” on top.
-- .com.tr: white background + shadows on cards.
-- Transformation target: gray page background and more border/panel separation (reduce reliance on shadows).
+================================================================================
+1) HARD FACTS OBSERVED ON THE REFERENCE SITE (.com)
+================================================================================
+Reference homepage URL: https://www.uygurhaberajansi.com/
 
-C) Layout width/density
-- .com: 1280 container, dense layout.
-- .com.tr: 1200 container, generous spacing and “card UI” behavior.
-- Transformation target: increase container width and tighten spacing rules.
+1.1 Loaded CSS stack (high confidence)
+- https://static.tebilisim.com/flow/vendor/te/fonts/gibson.css?v=6.6.2
+- https://static.tebilisim.com/flow/assets/vendor/bootstrap/css/bootstrap.min.css?v=6.6.2
+- https://static.tebilisim.com/flow/assets/css/app6.6.2.min.css
+- Additional small plugin CSS:
+  - /vendor/te/plugins/cookie-consent/css/cookie-consent.css
+  - /vendor/te/plugins/advert/css/advert-public.css
 
-D) Header structure
-- .com: multi-row header with utilities (WhatsApp/alerts/icons/search), tagline near logo, richer nav presentation.
-- .com.tr: simpler header + nav only.
-- Transformation target: restructure header into a newsroom-style multi-row block.
+1.2 Computed baseline styling (measured)
+- body font-family: "Gibson, sans-serif"
+- body font-size: "17px"
+- body line-height: "25.5px"
+- body text color: rgb(33, 37, 41)  (≈ #212529)
+- body background: rgb(233, 236, 239) (≈ #e9ecef)
+- container max-width: 1280px (observed as computed width/maxWidth "1280px" on .container)
 
-E) “Son Dakika” ticker style mismatch
-- .com: classic breaking-news strip (simple, urgent).
-- .com.tr: animated gradient, more “modern widget” aesthetic.
-- Transformation target: simplify ticker styling to match newsroom urgency.
+1.3 Structural cues seen on the page (high level)
+- A dense, multi-row news header (logo + tagline, icons/utilities, category nav).
+- A “portal” feel: more sections on a gray canvas with content sitting in panels.
 
-4) File-mapped transformation blueprint (what to change later, without changing now)
+================================================================================
+2) HARD FACTS OBSERVED ON THE PROJECT SITE (.com.tr)
+================================================================================
+Project homepage URL: https://www.uygurhaberajansi.com.tr/
 
-4.1 Global design tokens (do first)
-- Primary files
-  - public/css/modern-variables.css (design system variables)
-  - templates/layouts/base.njk (branding variables injected into :root)
-- Recommended token shifts toward .com
-  - Font: set --font-family-main to Gibson (or load Gibson and switch).
-  - Base sizing: align base to 17px and editorial line-height.
-  - Container: set --container-width to 1280px.
-  - Background: introduce --color-bg-page: #e9ecef (or similar) and use it for body background.
+2.1 Loaded CSS stack (these files are served by THIS REPO)
+- /css/modern-variables.css
+- /css/modern-layout.css
+- /css/layout-utilities.css
+- /css/header.css
+- /css/news-card.css
+- /css/footer.css
+- /css/main.css
+- /css/widgets.css
+- /css/carousel-fix.css
 
-4.2 Base layout + typography application
-- Primary file: public/css/modern-layout.css
-- Transformation goals
-  - Body background becomes gray (like .com)
-  - Ensure text rendering feels editorial (font smoothing + line-height + heading scale)
-  - Keep .container aligned with new 1280 width
+2.2 Computed baseline styling (measured)
+- body font-family: "Inter, sans-serif"
+- body font-size: "16px"
+- body line-height: "24px"
+- body text color: rgb(0, 0, 0) (≈ #000000)
+- body background: rgb(255, 255, 255) (≈ #ffffff)
 
-4.3 Header → newsroom header
-- Primary files
-  - templates/widgets/site-header.njk
-  - public/css/header.css
-- Transformation goals
-  - Add Top Utility Row: WhatsApp ihbar + WhatsApp channel + social icons + maybe date.
-  - Add Tagline next to logo (matches .com brand block).
-  - Add Search affordance in header.
-  - Make nav more “portal”: tighter height, smaller uppercase links, clearer active state; reduce the “modern underline animation” dominance.
+2.3 How .com.tr is built in this repo (source mapping)
+- Homepage template: templates/pages/home.njk
+  - Renders header + widget layout + footer.
+- Base layout (CSS includes + branding variables): templates/layouts/base.njk
+  - Injects branding variables into :root:
+    --primary-color, --secondary-color, --accent-color, --logo-text-color, --nav-text-color, --nav-background-color
+- Header template: templates/widgets/site-header.njk
+- Footer template: templates/widgets/footer.njk
+- News card template: templates/widgets/news-card.njk
+- Flash news ticker template: templates/widgets/flashNews.njk
 
-4.4 Flash news ticker → classic “SON DAKİKA”
-- Primary files
-  - templates/widgets/flashNews.njk (markup already good)
-  - public/css/widgets.css (currently very decorative)
-- Transformation goals
-  - Remove animated gradient background and heavy effects.
-  - Use a clean strip: red label + single-line items, newsroom-like spacing and typography.
-  - Keep accessibility (pause-on-hover, reduced motion support) but reduce visual “show”.
+2.4 Current design tokens (source)
+- Design tokens file: public/css/modern-variables.css
+  - --container-width: 1200px
+  - --font-family-main: 'Inter', sans-serif
 
-4.5 News cards → less SaaS-card, more portal-card
-- Primary files
-  - templates/widgets/news-card.njk
-  - public/css/news-card.css
-- Transformation goals
-  - Reduce rounded corners and shadows; prefer 1px border + subtle hover.
-  - Tighten padding and increase information density.
-  - Category badge styling closer to .com (stronger, more “news alert” vibe).
-  - Use compact variants more aggressively (news-card--compact already exists).
+================================================================================
+3) WHAT MAKES .com LOOK DIFFERENT (ACTIONABLE VISUAL DIFFERENCES)
+================================================================================
+These are the biggest “look mismatch” drivers, in order:
 
-4.6 Homepage layout composition (widget-based)
-- Primary file: templates/pages/home.njk (renders whatever layout provides)
-- Relevant widgets
+3.1 Typography (brand feel)
+- .com uses Gibson at 17px / ~25.5px line-height.
+- .com.tr uses Inter at 16px / 24px.
+Impact: Even if layout is identical, this font + size difference makes the site feel like a different product.
+
+3.2 Canvas & surfaces (background/panels)
+- .com: gray canvas (#e9ecef) + content/panels on top.
+- .com.tr: white canvas with shadowed cards.
+Impact: .com reads like a “news portal”; .com.tr reads like a “modern blog/app”.
+
+3.3 Container width (density)
+- .com: 1280px container.
+- .com.tr: 1200px container.
+Impact: affects perceived density and the ability to show more content per row.
+
+3.4 Header complexity (newsroom header)
+- .com header appears multi-row and utility-heavy (tagline/icons/utilities).
+- .com.tr header is clean/minimal.
+Impact: header is the most recognizable part; mismatch is immediately visible.
+
+3.5 Ticker styling (“Son Dakika”)
+- .com likely uses a simple, urgent breaking-news strip style.
+- .com.tr uses a very decorative animated gradient ticker (in widgets.css).
+Impact: decorative animation makes it feel less like the reference news portal.
+
+================================================================================
+4) TARGET VISUAL SYSTEM (TOKENS) TO MATCH .com
+================================================================================
+This section is designed for a low-capability LLM: “set these values, then adjust components”.
+
+4.1 Tokens to align (measured from .com, then apply to .com.tr)
+Target baseline tokens:
+- Font family: Gibson, sans-serif
+- Base font size: 17px
+- Base line-height: 1.5 (or match 25.5px at 17px)
+- Page background: #e9ecef
+- Container max-width: 1280px
+
+Where to implement in this repo:
+- public/css/modern-variables.css
+  - Set --font-family-main to Gibson
+  - Set --container-width to 1280px
+  - Optionally add --color-bg-page: #e9ecef and --color-text-main: #212529
+- public/css/modern-layout.css
+  - Apply body background to the new page background token
+  - Ensure body uses the new font tokens
+
+Notes for LLM:
+- Prefer changing tokens first, then visually re-tuning components; it reduces scattered edits.
+
+================================================================================
+5) COMPONENT-BY-COMPONENT TRANSFORMATION CHECKLIST (WITH FILE + SELECTOR MAP)
+================================================================================
+Each item lists: “WHAT .com feels like” -> “WHAT to change in .com.tr” -> “WHERE”.
+
+5.1 Header + Navigation (highest impact)
+Goal: make header feel like a dense news portal header (multi-row + utilities).
+
+Current source:
+- Template: templates/widgets/site-header.njk
+- CSS: public/css/header.css
+- Related layout CSS: public/css/modern-layout.css (container)
+
+Transform steps (implementation checklist):
+1) Add a “Top Utility Row” above the main header:
+   - contents: WhatsApp ihbar link + WhatsApp channel link + optional date + social icons + search icon.
+   - acceptance criteria:
+     - visible on desktop; optional collapse on mobile.
+     - height small (news-like), not “hero-like”.
+2) Add tagline next to logo (like “Türkiye'nin Güncel Haber Ajansı”).
+   - acceptance criteria:
+     - tagline visible on desktop near logo.
+     - does not wrap awkwardly; truncates or hides on small screens.
+3) Make nav more “portal”:
+   - tighter vertical padding, uppercase, slightly smaller font
+   - clear hover/active state (underline or background highlight)
+
+Selectors to expect to edit:
+- .site-header, .header-top, .header-main, .header-nav
+- .site-logo, .site-logo__text, (add .site-logo__tagline)
+- .site-nav-bar__link, .site-nav-bar__list
+
+5.2 Flash News (“SON DAKİKA” ticker)
+Goal: convert from decorative animated gradient to a classic urgent ticker.
+
+Current source:
+- Template: templates/widgets/flashNews.njk
+- CSS: public/css/widgets.css (flash-news-widget block)
+
+Transform steps:
+1) Remove animated gradient background and heavy glow effects.
+2) Use:
+   - left label box “SON DAKİKA” in a strong red
+   - dark or white strip background depending on the reference feel
+   - ticker items in a single line, truncated with ellipsis
+3) Keep reduced-motion behavior (already present) but default look should be simple.
+
+Selectors to edit:
+- .flash-news-widget, .flash-news__inner, .flash-news__label, .flash-news__item, .flash-news__time
+
+5.3 News Cards (default + compact)
+Goal: reduce “modern app card” feel; increase newsroom density.
+
+Current source:
+- Template: templates/widgets/news-card.njk
+- CSS: public/css/news-card.css
+
+Transform steps:
+1) Replace strong shadows + lift hover with:
+   - subtle border (1px) and minimal shadow (or none)
+   - hover: subtle border or background change, no big translateY
+2) Tighten padding and reduce corner radius.
+3) Category badge: make it more “news badge”:
+   - stronger red, less rounded pill, slightly more compact.
+
+Selectors to edit:
+- .news-card, .news-card:hover
+- .news-card__content, .news-card__title, .news-card__summary
+- .news-card__category-badge
+- .news-card--compact rules
+
+5.4 Homepage Composition (widget layout)
+Goal: match .com’s density and module order using your existing widget system.
+
+Current source:
+- templates/pages/home.njk (renders whatever “layout” config provides)
+- Widgets already available:
   - templates/widgets/featured-news-grid.njk
   - templates/widgets/three-column-category-feed.njk
   - templates/widgets/sidebar-widget.njk
-- Transformation goals
-  - Mirror .com density by arranging:
-    - top headline/carousel + breaking ticker
-    - main grid + category columns
-    - sidebar modules + ads
-  - This is mostly layout configuration, not a rewrite.
+  - templates/widgets/four-article-band.njk
 
-5) Recommended execution order (fastest path to “looks like .com”)
-- Phase 1 (global feel, fastest impact)
-  Set Gibson/17px, gray page background, container 1280, tighten spacing tokens.
-- Phase 2 (identity/recognition)
-  Header becomes multi-row newsroom header (utilities + tagline + search + nav).
-- Phase 3 (content density)
-  Card styling shifts from “modern app cards” to “news portal panels/lists”; simplify ticker styling.
-- Phase 4 (fine tuning)
-  Section borders, typography hierarchy, consistent badge styles, reduce motion/hover theatrics.
+Transform guidance:
+- Arrange the homepage to feel like a portal:
+  1) headline/carousel at top
+  2) flash news ticker directly under it
+  3) main grid + category columns + sidebar blocks
+  4) ads interleaved
 
-6) Notes/constraints from findings
-- Your current architecture is already suitable: widgetized templates + modular CSS means this transformation is mostly CSS tokens + a few template enhancements.
-- .com relies on a full theme stack; you can either emulate the look with your clean modular CSS (recommended) or adopt more of the TE theme approach (closer match, more coupling).
+Note:
+- This is mostly “layout config / widget ordering”, not new engineering.
+
+================================================================================
+6) TWO IMPLEMENTATION APPROACHES (CHOOSE ONE; BOTH VALID)
+================================================================================
+Approach A (closest parity with .com):
+- Reuse/adopt more of the same Flow/Bootstrap/TE styling philosophy.
+- Pros: closest look
+- Cons: more coupling to external theme conventions
+
+Approach B (recommended maintainability):
+- Keep your modular CSS (public/css/*.css), but change tokens + component styling to emulate .com.
+- Pros: clean codebase, easier iteration, fewer hidden side-effects
+- Cons: may not be 100% pixel-identical without additional iteration
+
+================================================================================
+7) PHASED PRIORITY PLAN (FOR A LOW-CAPABILITY LLM)
+================================================================================
+Phase 1 (global feel; biggest ROI)
+1) Switch base font to Gibson and base size to 17px.
+2) Set page background to #e9ecef.
+3) Set container width to 1280px.
+
+Phase 2 (most visible identity)
+4) Upgrade header into multi-row newsroom header (utility row + tagline + search/social).
+
+Phase 3 (content styling + density)
+5) Restyle flash ticker to be simple/urgent.
+6) Restyle news cards to be panel/border-based, less shadow/lift.
+
+Phase 4 (polish)
+7) Tune spacing and section borders to increase density and match the reference rhythm.
+
+END OF REPORT
 
