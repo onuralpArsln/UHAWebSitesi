@@ -270,6 +270,9 @@ router.get('/', async (req, res) => {
         // Other widget types don't need data fetching
         case 'hero-title':
         case 'ad-placeholder':
+        case 'banner-gorsel':
+          // Banner görsel widget uses imageUrl from config, no data fetching needed
+          break;
         default:
           break;
       }

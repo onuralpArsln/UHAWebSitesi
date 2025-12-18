@@ -1,0 +1,15 @@
+{% macro bannerGorsel(imageUrl, config) %}
+{% if imageUrl %}
+<section class="banner-gorsel-section">
+  <div class="container">
+    <div class="banner-gorsel-widget">
+      <img src="{{ imageUrl }}" 
+           alt="{{ config.alt or 'Banner görsel' }}"
+           style="max-width: {{ config.maxWidth or 1280 }}px; max-height: {{ config.maxHeight or 600 }}px;"
+           loading="lazy">
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endmacro %}
+

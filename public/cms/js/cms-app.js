@@ -113,6 +113,9 @@
       this.headlineImage = null;
       this.mediaSelectModal = null;
       this.mediaSelectModalEscapeHandler = null;
+      this.bannerGorselModal = null;
+      this.bannerGorselModalEscapeHandler = null;
+      this.bannerGorselModalWidgetIndex = null;
       this.cacheDom();
       this.bindEvents();
       this.initializeArticleMediaManager();
@@ -3054,6 +3057,238 @@
       this.mediaSelectModal = null;
     }
 
+    async openBannerGorselMediaSelect(widgetIndex) {
+      try {
+        await this.ensureMediaLoaded();
+
+        const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
+        const currentFolder = this.state.mediaCurrentFolder || '';
+        const searchTerm = this.state.mediaSearchTerm || '';
+
+        let mediaItems = Array.isArray(this.state.media)
+          ? this.state.media.filter((item) =>
+            imageExtensions.includes((item.extension || '').toLowerCase())
+          )
+          : [];
+
+        if (!mediaItems.length) {
+          const params = new URLSearchParams();
+          if (currentFolder) {
+            params.set('folder', currentFolder);
+          }
+          if (searchTerm) {
+            params.set('search', searchTerm);
+          }
+
+          const result = await this.fetchJson(
+            `/cms/media${params.toString() ? `?${params.toString()}` : ''}`
+          );
+          const fetchedMedia = result.media || [];
+
+          if (fetchedMedia.length) {
+            this.state.media = fetchedMedia;
+            this.state.mediaFolders = result.folders || this.state.mediaFolders;
+            this.state.mediaTree = result.tree || this.state.mediaTree;
+            this.state.mediaBreadcrumbs =
+              result.breadcrumbs || this.state.mediaBreadcrumbs;
+            if (result.currentFolder !== undefined) {
+              this.state.mediaCurrentFolder = result.currentFolder;
+            }
+
+            mediaItems = fetchedMedia.filter((item) =>
+              imageExtensions.includes((item.extension || '').toLowerCase())
+            );
+          }
+        }
+
+        if (!mediaItems.length) {
+          this.showError('Seçilebilecek görsel bulunamadı. Önce bir görsel yükleyin.');
+          return;
+        }
+
+        const folderLabel = currentFolder ? currentFolder : 'Tüm Dosyalar';
+        this.buildBannerGorselMediaSelectModal(mediaItems, folderLabel, searchTerm, widgetIndex);
+      } catch (error) {
+        console.error('Banner görsel media select modal error:', error);
+        this.showError('Medya kütüphanesi yüklenirken hata oluştu.');
+      }
+    }
+
+    buildBannerGorselMediaSelectModal(mediaItems, folderLabel = '', searchTerm = '', widgetIndex) {
+      this.closeBannerGorselMediaSelectModal();
+
+      const overlay = document.createElement('div');
+      overlay.className = 'article-media-modal';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+
+      const folderText = folderLabel ? folderLabel : 'Tüm Dosyalar';
+      const searchText = searchTerm ? ` • Arama: ${this.escapeHtml(searchTerm)}` : '';
+
+      overlay.innerHTML = `
+        <div class="article-media-modal__backdrop" data-action="close-banner-gorsel-modal"></div>
+        <div class="article-media-modal__dialog">
+          <header class="article-media-modal__header">
+            <div class="article-media-modal__title">
+              <h3>Banner Görsel Seç</h3>
+              <p class="article-media-modal__meta">
+                Klasör: ${this.escapeHtml(folderText)}${searchText}
+              </p>
+            </div>
+            <button type="button" class="article-media-modal__close" data-action="close-banner-gorsel-modal" aria-label="Kapat">×</button>
+          </header>
+          <div class="article-media-modal__grid" data-banner-gorsel-modal-grid></div>
+        </div>
+      `;
+
+      const grid = overlay.querySelector('[data-banner-gorsel-modal-grid]');
+
+      mediaItems.forEach((item) => {
+        const card = document.createElement('article');
+        card.className = 'article-media-modal__item';
+        card.dataset.action = 'banner-gorsel-select-item';
+        card.dataset.mediaUrl = item.url;
+        card.dataset.mediaFilename = item.filename || '';
+        card.innerHTML = `
+          <div class="article-media-modal__preview">
+            <img src="${item.url}" alt="${this.escapeHtml(item.filename || '')}">
+          </div>
+          <div class="article-media-modal__body">
+            <h4 title="${this.escapeHtml(item.filename || '')}">${this.escapeHtml(item.filename || '')}</h4>
+            <p>${this.escapeHtml(this.formatFileSize(item.size))}</p>
+            <button type="button"
+              class="cms-btn cms-btn-secondary"
+              data-action="banner-gorsel-select-item"
+              data-media-url="${item.url}"
+              data-media-filename="${this.escapeHtml(item.filename || '')}">
+              Seç
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      overlay.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-action]');
+        if (!button) return;
+        const { action } = button.dataset;
+        if (action === 'close-banner-gorsel-modal') {
+          this.closeBannerGorselMediaSelectModal();
+        } else if (action === 'banner-gorsel-select-item') {
+          const imageUrl = button.dataset.mediaUrl;
+          if (imageUrl) {
+            this.handleBannerGorselMediaSelect(widgetIndex, imageUrl);
+            this.closeBannerGorselMediaSelectModal();
+          }
+        }
+      });
+
+      this.bannerGorselModalEscapeHandler = (event) => {
+        if (event.key === 'Escape') {
+          this.closeBannerGorselMediaSelectModal();
+        }
+      };
+
+      document.addEventListener('keydown', this.bannerGorselModalEscapeHandler);
+      document.body.appendChild(overlay);
+      this.bannerGorselModal = overlay;
+      this.bannerGorselModalWidgetIndex = widgetIndex;
+    }
+
+    closeBannerGorselMediaSelectModal() {
+      if (!this.bannerGorselModal) return;
+      if (this.bannerGorselModalEscapeHandler) {
+        document.removeEventListener('keydown', this.bannerGorselModalEscapeHandler);
+        this.bannerGorselModalEscapeHandler = null;
+      }
+      this.bannerGorselModal.remove();
+      this.bannerGorselModal = null;
+      this.bannerGorselModalWidgetIndex = null;
+    }
+
+    handleBannerGorselMediaSelect(widgetIndex, imageUrl) {
+      if (!this.state.homepageLayout[widgetIndex]) return;
+
+      // Update widget config
+      if (!this.state.homepageLayout[widgetIndex].config) {
+        this.state.homepageLayout[widgetIndex].config = {};
+      }
+      this.state.homepageLayout[widgetIndex].config.imageUrl = imageUrl;
+
+      // Update preview in layout table
+      this.updateBannerGorselPreview(widgetIndex, imageUrl);
+
+      console.log(`Updated banner-gorsel widget ${widgetIndex} with image: ${imageUrl}`);
+    }
+
+    removeBannerGorselImage(widgetIndex) {
+      if (!this.state.homepageLayout[widgetIndex]) return;
+
+      // Remove image from config
+      if (this.state.homepageLayout[widgetIndex].config) {
+        this.state.homepageLayout[widgetIndex].config.imageUrl = '';
+      }
+
+      // Update preview in layout table
+      this.updateBannerGorselPreview(widgetIndex, '');
+
+      console.log(`Removed image from banner-gorsel widget ${widgetIndex}`);
+    }
+
+    updateBannerGorselPreview(widgetIndex, imageUrl) {
+      const row = this.layoutTable.querySelector(`tr[data-index="${widgetIndex}"]`);
+      if (!row) return;
+
+      const previewContainer = row.querySelector(`[data-banner-gorsel-preview="${widgetIndex}"]`);
+      const selectButton = row.querySelector('[data-action="banner-gorsel-select-media"]');
+
+      if (imageUrl) {
+        // Show preview
+        if (!previewContainer) {
+          const configControls = row.querySelector('.widget-config-controls');
+          if (configControls) {
+            const previewDiv = document.createElement('div');
+            previewDiv.className = 'banner-gorsel-preview';
+            previewDiv.setAttribute('data-banner-gorsel-preview', widgetIndex);
+            previewDiv.innerHTML = `
+              <img src="${imageUrl}" alt="Önizleme" style="max-width: 100px; max-height: 60px; object-fit: contain;">
+              <button type="button" 
+                      class="btn-icon btn-delete btn-icon-small"
+                      data-action="banner-gorsel-remove"
+                      data-widget-index="${widgetIndex}"
+                      title="Görseli Kaldır">×</button>
+            `;
+            const firstControl = configControls.querySelector('.config-control');
+            if (firstControl) {
+              firstControl.parentNode.insertBefore(previewDiv, firstControl.nextSibling);
+            } else {
+              configControls.appendChild(previewDiv);
+            }
+          }
+        } else {
+          const img = previewContainer.querySelector('img');
+          if (img) {
+            img.src = imageUrl;
+          }
+        }
+
+        // Update button text
+        if (selectButton) {
+          selectButton.textContent = 'Görseli Değiştir';
+        }
+      } else {
+        // Remove preview
+        if (previewContainer) {
+          previewContainer.remove();
+        }
+
+        // Update button text
+        if (selectButton) {
+          selectButton.textContent = 'Görsel Seç';
+        }
+      }
+    }
+
     async handleMediaUpload(event) {
       const input = event.currentTarget;
       const files = Array.from(input.files || []);
@@ -3702,6 +3937,17 @@
           title: 'Reklam Alanı',
           desc: 'Reklam yerleşimi için boş alan.',
           defaultConfig: { size: 'standard' }
+        },
+        {
+          type: 'banner-gorsel',
+          title: 'Banner Görsel',
+          desc: 'Tek bir görsel gösterir (PNG, JPG, GIF vb.)',
+          defaultConfig: { 
+            imageUrl: '',
+            alt: '',
+            maxWidth: 1280,
+            maxHeight: 600
+          }
         }
       ];
 
@@ -3821,6 +4067,23 @@
           if (configKey !== undefined && widgetIndex !== undefined) {
             this.updateWidgetConfig(widgetIndex, configKey, target);
           }
+        }
+      });
+
+      // Handle banner-gorsel media selection
+      this.layoutTable.addEventListener('click', (e) => {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+        const widgetIndex = parseInt(target.dataset.widgetIndex);
+
+        if (action === 'banner-gorsel-select-media' && widgetIndex !== undefined) {
+          e.preventDefault();
+          this.openBannerGorselMediaSelect(widgetIndex);
+        } else if (action === 'banner-gorsel-remove' && widgetIndex !== undefined) {
+          e.preventDefault();
+          this.removeBannerGorselImage(widgetIndex);
         }
       });
     }

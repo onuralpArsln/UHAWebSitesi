@@ -1149,3 +1149,61 @@
     padding: var(--spacing-sm);
   }
 }
+
+/* Banner Görsel Widget */
+.banner-gorsel-section {
+  margin: var(--spacing-xl) 0;
+}
+
+.banner-gorsel-widget {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.banner-gorsel-widget img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .banner-gorsel-section {
+    margin: var(--spacing-2xl) 0;
+  }
+}
+
+/* CMS Banner Görsel Preview */
+.banner-gorsel-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-sm) 0;
+  padding: var(--spacing-sm);
+  background: var(--color-bg-light);
+  border-radius: var(--radius-sm);
+}
+
+.banner-gorsel-preview img {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.btn-icon-small {
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.config-btn-small {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}

@@ -41,7 +41,8 @@
                   'category-feed': 'Kategori Akışı',
                   'three-column-category-feed': '3 Kolon Kategori Akışı',
                   'flash-news': 'Son Dakika Bandı',
-                  'ad-placeholder': 'Reklam Alanı'
+                  'ad-placeholder': 'Reklam Alanı',
+                  'banner-gorsel': 'Banner Görsel'
                 } %}
                 <span class="cms-badge cms-badge--primary">{{ widgetTitles[widget.type] or widget.type }}</span>
               </td>
@@ -314,6 +315,58 @@
                         <option value="large" {% if widget.config.size == 'large' %}selected{% endif %}>Büyük</option>
                         <option value="banner" {% if widget.config.size == 'banner' %}selected{% endif %}>Banner</option>
                       </select>
+                    </label>
+                  
+                  {% elif widget.type == 'banner-gorsel' %}
+                    <div class="config-control">
+                      <label>
+                        <span>Görsel:</span>
+                        <button type="button" 
+                                class="cms-btn cms-btn-secondary config-btn-small"
+                                data-action="banner-gorsel-select-media"
+                                data-widget-index="{{ loop.index0 }}">
+                          {% if widget.config.imageUrl %}Görseli Değiştir{% else %}Görsel Seç{% endif %}
+                        </button>
+                      </label>
+                      {% if widget.config.imageUrl %}
+                      <div class="banner-gorsel-preview" data-banner-gorsel-preview="{{ loop.index0 }}">
+                        <img src="{{ widget.config.imageUrl }}" alt="Önizleme" style="max-width: 100px; max-height: 60px; object-fit: contain;">
+                        <button type="button" 
+                                class="btn-icon btn-delete btn-icon-small"
+                                data-action="banner-gorsel-remove"
+                                data-widget-index="{{ loop.index0 }}"
+                                title="Görseli Kaldır">×</button>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <label class="config-control">
+                      <span>Alt metin:</span>
+                      <input type="text" 
+                             data-config="alt" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.alt or '' }}" 
+                             placeholder="Görsel açıklaması"
+                             class="config-input">
+                    </label>
+                    <label class="config-control">
+                      <span>Maksimum genişlik:</span>
+                      <input type="number" 
+                             data-config="maxWidth" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.maxWidth or 1280 }}" 
+                             min="100" 
+                             max="2000"
+                             class="config-input-small"> px
+                    </label>
+                    <label class="config-control">
+                      <span>Maksimum yükseklik:</span>
+                      <input type="number" 
+                             data-config="maxHeight" 
+                             data-widget-index="{{ loop.index0 }}"
+                             value="{{ widget.config.maxHeight or 600 }}" 
+                             min="100" 
+                             max="2000"
+                             class="config-input-small"> px
                     </label>
                   
                   {% else %}

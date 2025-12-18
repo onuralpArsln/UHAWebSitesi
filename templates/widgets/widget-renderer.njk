@@ -6,6 +6,7 @@
 {% import "widgets/ad-placeholder.njk" as adPlaceholderWidget %}
 {% import "widgets/flashNews.njk" as flashNewsWidget %}
 {% import "widgets/four-article-band.njk" as fourArticleBandWidget %}
+{% import "widgets/banner-gorsel.njk" as bannerGorselWidget %}
 
 {# Widget Renderer Macro - Dynamically renders widgets based on type #}
 {% macro render(widget) %}
@@ -62,6 +63,9 @@
   
   {% elif widget.type == 'four-article-band' %}
     {{ fourArticleBandWidget.fourArticleBand(widget.data.articles, widget.config.title) }}
+  
+  {% elif widget.type == 'banner-gorsel' %}
+    {{ bannerGorselWidget.bannerGorsel(widget.config.imageUrl, widget.config) }}
   
   {% endif %}
 {% endmacro %}
