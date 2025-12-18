@@ -65,16 +65,48 @@ Tips:
 - Widget types include `article-hero-image`, `article-content`, `related-articles`, `comment-section`, etc. Inputs live in `article-layout.njk`.
 - If you add a new article widget, update this config UI, `availableArticleWidgets` in `cms-app.js`, and `templates/widgets/article-widget-renderer.njk` (if present) or direct usage in `pages/article.njk`.
 
-## 9. Carousel Manager
-- **UI**: buttons/sections within the CMS dashboard (carousel table).
-- **Client JS**: `cms-app.js` carousel helpers (`loadCarouselArticles`, `addArticleToCarousel`, etc.).
-- **API Routes**:
-  - `GET /cms/carousel` – fetch manual carousel config + articles.
-  - `PUT /cms/carousel` – save ordering/config.
-  - `POST /cms/carousel/add` – add article id (auto-enforces max).
-- **Database**: handled via `dataService.getCarouselLayout()`, `updateCarouselLayout()`, and `getCarouselArticles()`.
+## 9. Carousel Manager (Manşet Düzeni)
 
-Manual source widgets (`carousel` with `config.source === 'manual'`) pull from this layout; featured/automatic carousels still rely on `targettedViews`.
+The Carousel Manager consists of two sections:
+- **Manşet Slider** (Carousel) – main hero carousel
+- **Ana Manşet** – secondary headline carousel
+
+### UI Components
+- **Template**: `templates/cms/components/headline-layout.njk`
+- **Client JS**: `cms-app.js` carousel helpers (`loadHeadlineLayout`, `loadAnaMansetLayout`, `saveHeadlineLayout`, `saveAnaMansetLayout`, etc.)
+- **Modals**: Article selection modals for adding articles to carousels
+
+### Adding Articles to Carousels
+
+Each carousel section has a **"Manşete Ekle"** (Add to Carousel) button next to the "Değişiklikleri Kaydet" button:
+
+1. Click **"Manşete Ekle"** to open the article selection modal
+2. The modal displays all available articles (excluding those already in the carousel and hidden articles)
+3. Use the search input to filter articles by title, category, or summary
+4. Click on an article to add it to the carousel
+5. The modal closes and the carousel table refreshes automatically
+
+**Features**:
+- Duplicate prevention: Articles already in the carousel are automatically filtered out
+- Real-time search: Filter articles as you type
+- Visual feedback: Article cards show thumbnails, titles, categories, dates, and status
+- Modal controls: Close button, backdrop click, or ESC key to dismiss
+
+### API Routes
+- `GET /cms/carousel` – fetch manual carousel config + articles
+- `PUT /cms/carousel` – save ordering/config
+- `POST /cms/carousel/add` – add article id (auto-enforces max)
+- `GET /cms/ana-manset` – fetch ana manşet config + articles
+- `PUT /cms/ana-manset` – save ana manşet ordering/config
+- `POST /cms/ana-manset/add` – add article id to ana manşet
+
+### Database
+Handled via `dataService.getCarouselLayout()`, `updateCarouselLayout()`, `getCarouselArticles()`, `getHeadlineListArticles()`, and `addArticleToHeadlineList()`.
+
+### Data Flow
+1. Manual source widgets (`carousel` with `config.source === 'manual'`) pull from `carousel_layout` table
+2. Featured/automatic carousels rely on `targettedViews` (articles tagged with `targettedView: 'carousel'` or `targettedView: 'ana-manset'`)
+3. The CMS "Manşet Düzeni" tab shows articles from the manual layout tables, which editors can reorder via drag-and-drop
 
 ## Related Docs
 - `add-widget.md` – build the widget you wish to expose.

@@ -30,6 +30,7 @@ Use this file when you must add a frontend widget (Nunjucks macro + styles + opt
    color: var(--nav-text-color);
    ```
 4. Keep selectors prefixed with a unique class (e.g., `.widget-latest-promo`) to avoid clashes.
+5. **Important - Spacing**: Widgets on the homepage rely on `.site-main`'s `gap: var(--spacing-xl)` for vertical spacing. Do NOT add extra margin to widget sections unless absolutely necessary. Other widgets (like `featured-news-grid`, `category-feed`) don't add section margins—they use the parent gap.
 
 ## 3. Optional JavaScript
 1. Only create JS if the widget needs interaction.

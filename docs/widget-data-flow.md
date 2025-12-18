@@ -13,6 +13,7 @@ This doc follows a single widget from stored data → rendered HTML. Use it when
    - `carousel` → `dataService.getArticles()` or `getCarouselArticles()`.
    - `category-feed` → `getArticles({ category })`.
    - `flash-news` → latest articles sorted by `publishedAt`.
+   - `banner-gorsel` → No data fetching needed (image URL already in config).
 3. Routes enrich the widget object:
    ```javascript
    const widgetData = { ...widget, data: { articles: [...] } };

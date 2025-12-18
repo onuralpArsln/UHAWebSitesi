@@ -549,6 +549,13 @@ CREATE TABLE IF NOT EXISTS branding (
 {{ flashNews('homepage-flash', flashNewsItems) }}
 ```
 
+### Using Banner Görsel
+```nunjucks
+{% from "widgets/banner-gorsel.njk" import bannerGorsel %}
+
+{{ bannerGorsel('/uploads/media/image.jpg', { alt: 'Banner description', maxWidth: 1280, maxHeight: 600 }) }}
+```
+
 ---
 
 ## 🔍 Key Files Reference
@@ -564,6 +571,7 @@ CREATE TABLE IF NOT EXISTS branding (
 | [news-card.njk](file:///e:/Projeler/UHAWebSitesi/templates/widgets/news-card.njk) | Article card | Homepage, categories |
 | [carousel.njk](file:///e:/Projeler/UHAWebSitesi/templates/widgets/carousel.njk) | Hero carousel | Homepage |
 | [flashNews.njk](file:///e:/Projeler/UHAWebSitesi/templates/widgets/flashNews.njk) | Breaking news ticker | Homepage |
+| [banner-gorsel.njk](file:///e:/Projeler/UHAWebSitesi/templates/widgets/banner-gorsel.njk) | Single image banner | Homepage |
 
 ### CSS Files
 | File | Purpose |

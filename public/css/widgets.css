@@ -1152,7 +1152,7 @@
 
 /* Banner Görsel Widget */
 .banner-gorsel-section {
-  margin: var(--spacing-xl) 0;
+  /* No margin - relies on .site-main gap for spacing like other widgets */
 }
 
 .banner-gorsel-widget {
@@ -1169,12 +1169,6 @@
   object-fit: contain;
   display: block;
   margin: 0 auto;
-}
-
-@media (min-width: 768px) {
-  .banner-gorsel-section {
-    margin: var(--spacing-2xl) 0;
-  }
 }
 
 /* CMS Banner Görsel Preview */

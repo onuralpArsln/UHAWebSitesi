@@ -247,8 +247,9 @@ Editör paneline erişmek için `http://localhost:3000/cms` adresini ziyaret edi
 - ✅ **Performans** - LCP < 2s, FID < 100ms, CLS < 0.1, Lighthouse > 90
 - ✅ **AdSense Hazır** - Akıllı yenileme tetikleri, lazy loading, mobil optimizasyon
 - ✅ **Progressive Loading** - Düşük çözünürlüklü WebP → yüksek çözünürlüklü asenkron yükleme
-- ✅ **Widget Sistemi** - Carousel, reklamlar, ilgili haberler, yorumlar
+- ✅ **Widget Sistemi** - Carousel, reklamlar, ilgili haberler, yorumlar, banner görsel
 - ✅ **Akıllı Carousel** - İlk görseli anında gönderir, kalan 24 görseli ihtiyaç halinde lazy load eder
+- ✅ **Banner Görsel Widget** - Tek görsel gösterimi, responsive boyutlandırma, aspect ratio koruması, CMS medya kütüphanesi entegrasyonu
 - ✅ **Marka Yönetimi** - Logo ve ana renkler CMS panelinden saniyeler içinde değiştirilebilir
 
 ### Makale Özellikleri

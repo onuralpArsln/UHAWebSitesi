@@ -590,3 +590,26 @@ test:
   - Test after restart: verify mock data persists
   - Test migration logging: verify console messages
 warning: Runs if database is empty, might surprise new deployments.
+
+feature: Banner Görsel Widget
+source: templates/widgets/banner-gorsel.njk, public/cms/js/cms-app.js, public/css/widgets.css
+test: 
+  - Manual: Add widget via CMS layout manager, select image from media library
+  - Test widget appears in "Bileşen Ekle" modal: verify "Banner Görsel" option present
+  - Test media picker: opens media library, filters images only (PNG, JPG, GIF, WEBP, SVG)
+  - Test image selection: verify image URL stored in widget config
+  - Test image preview: verify thumbnail shows in layout table
+  - Test image removal: verify remove button clears image
+  - Test config inputs: alt text, maxWidth, maxHeight
+  - Test homepage rendering: visit http://localhost:3000/, verify image displays
+  - Test responsive sizing: verify respects container width (1280px desktop, full width minus padding on mobile)
+  - Test aspect ratio: verify preserved for various image sizes
+  - Test max constraints: verify maxWidth/maxHeight limits work
+  - Test small images: verify no upscaling, displays at native size
+  - Test spacing: verify matches other widgets (uses .site-main gap, no extra margin)
+  - Test drag-and-drop: verify widget can be reordered
+  - Test config persistence: verify saves and persists correctly
+  - Test empty image: verify widget doesn't render if imageUrl is empty
+  - Test widget in renderer: verify widget-renderer.njk handles banner-gorsel type
+  - Test route handling: verify pages.js doesn't fetch data (image URL in config)
+warning: Widget relies on .site-main gap for spacing, no additional margin applied.

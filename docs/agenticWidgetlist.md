@@ -23,6 +23,26 @@ Displays a detailed card for a single news article. It includes the article's im
 
 ---
 
+## 2.5. Banner Görsel
+**File:** `templates/widgets/banner-gorsel.njk`  
+**Macro:** `bannerGorsel(imageUrl, config)`
+
+Displays a single image (PNG, JPG, GIF, etc.) selected from the CMS media library. The widget respects container width limits, maintains aspect ratio, and scales down for smaller images.
+
+**Config Options:**
+- `imageUrl`: Path to the image file (from media library)
+- `alt`: Alt text for the image (optional)
+- `maxWidth`: Maximum width in pixels (default: 1280px)
+- `maxHeight`: Maximum height in pixels (default: 600px)
+
+**Features:**
+- Responsive sizing (respects container width: 1280px desktop, full width minus padding on mobile/tablet)
+- Aspect ratio preservation
+- No upscaling (small images display at native size)
+- CMS media library integration for image selection
+
+---
+
 ## 3. Carousel
 **File:** `templates/widgets/carousel.njk`  
 **Macro:** `carousel(id, slides)`
@@ -157,5 +177,6 @@ Dynamically renders widgets based on their type configuration. Used for the dyna
 - `featured-news-grid`: Renders a grid of featured news
 - `category-feed`: Renders a category-specific news feed
 - `ad-placeholder`: Renders an advertisement placeholder
+- `banner-gorsel`: Renders a single image with responsive sizing
 
 

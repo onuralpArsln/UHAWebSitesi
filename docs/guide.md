@@ -36,6 +36,9 @@ This document captures how UHA CMS collects targeting metadata during article cr
 3. **CMS preview endpoint**  
    `GET /cms/carousel` now bypasses the manual table and returns `populatedArticles` built from `targettedView: 'carousel'`, while `PUT /cms/carousel` still writes the manual ordering. Editors therefore see dynamic data when viewing the Manşet tab.
 
+4. **Adding articles via modal**  
+   The "Manşete Ekle" button in the CMS opens a modal that lists all available articles (excluding those already in the carousel and hidden articles). Editors can search and click to add articles to either the Manşet Slider or Ana Manşet carousels. The modal filters duplicates automatically and refreshes the carousel table after adding.
+
 4. **Other widgets**  
    `featured-news-grid`, `category-feed`, and `flash-news` reuse the same pattern (switch-case calls `getArticles` with the widget’s type or config), so any new targeted view can be wired in through the same logic.
 

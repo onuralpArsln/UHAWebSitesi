@@ -220,6 +220,7 @@ The Sayfa Düzeni tab includes inline configuration controls for each widget typ
 | `category-feed` | categorySlug (select)<br>limit (number) | string<br>integer | Also stores categoryName for display |
 | `flash-news` | limit (number) | integer | Min: 1, Max: 30 |
 | `ad-placeholder` | size (select) | string | Options: standard, large, banner |
+| `banner-gorsel` | imageUrl (media picker)<br>alt (text)<br>maxWidth (number)<br>maxHeight (number) | string<br>string<br>integer<br>integer | Media library integration, image preview with remove button |
 
 #### Configuration Update Flow
 

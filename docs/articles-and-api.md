@@ -52,8 +52,10 @@ File: `server/routes/cms.js`
 | `DELETE /cms/articles/:id` | Delete article | Removes DB row |
 | `PUT /cms/articles/:id/targets` | Add/remove `targettedViews` entries | Updates layout placement (carousel, flash-news, etc.) |
 | `PUT /cms/articles/:id/status` | Toggle `visible/hidden` | Editors can hide without deleting |
-| `POST /cms/carousel/add` | Include article in manual carousel | Respects carousel limit |
+| `POST /cms/carousel/add` | Include article in manual carousel | Respects carousel limit; adds to beginning of list |
 | `PUT /cms/carousel` | Update manual carousel config/order | Uses `dataService.updateCarouselLayout()` |
+| `POST /cms/ana-manset/add` | Include article in ana manşet | Respects ana manşet limit (25); adds to beginning |
+| `PUT /cms/ana-manset` | Update ana manşet config/order | Uses `dataService.updateHeadlineList()` |
 
 Public APIs (`server/routes/api.js`) expose read-only endpoints such as:
 - `GET /api/articles` – paginated list.
