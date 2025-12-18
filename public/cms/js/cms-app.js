@@ -5545,10 +5545,15 @@
         if (!response.ok) throw new Error('Failed to load carousel data');
 
         const data = await response.json();
-        const articles = data.populatedArticles || [];
+        const allArticles = data.populatedArticles || [];
         if (data && data.maxArticles) {
           this.setCarouselLimit(data.maxArticles);
         }
+        
+        // Safety slice: limit to maxArticles + 2 for display
+        const limit = data.maxArticles || 5;
+        const displayLimit = limit + 2;
+        const articles = allArticles.slice(0, displayLimit);
 
         if (!this.headlineTable) return;
 

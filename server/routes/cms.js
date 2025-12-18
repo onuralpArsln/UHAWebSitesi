@@ -393,17 +393,21 @@ router.get('/', (req, res) => {
     let carouselArticlesResult = { articles: [] };
     const manualCarouselArticles = dataServiceInstance.getCarouselArticles();
 
+    // Get carousel limit early to calculate display limit
+    const carouselLimit = getCarouselLimit();
+    const displayLimit = carouselLimit + 2; // Show limit + 2 articles in table
+
     if (manualCarouselArticles && manualCarouselArticles.length > 0) {
-      carouselArticlesResult.articles = manualCarouselArticles;
+      carouselArticlesResult.articles = manualCarouselArticles.slice(0, displayLimit);
     } else {
       // Fallback to featured articles if manual list is empty
       const featuredArticles = dataServiceInstance.getArticles({
-        limit: 100,
+        limit: 50,
         sortBy: 'publishedAt',
         sortOrder: 'desc',
         targettedView: 'carousel'
       });
-      carouselArticlesResult.articles = featuredArticles.articles || [];
+      carouselArticlesResult.articles = (featuredArticles.articles || []).slice(0, displayLimit);
     }
 
     // Fetch Ana Manşet articles (manual ordered list; fallback to targettedView if list is empty)
@@ -466,7 +470,6 @@ router.get('/', (req, res) => {
 
     const cmsTabs = config.getCmsTabs(); // Get cmsTabs here
 
-    const carouselLimit = getCarouselLimit();
     const anaMansetLimit = ANA_MANSET_LIMIT;
 
     const initialState = {
@@ -1180,11 +1183,16 @@ router.get('/carousel', (req, res) => {
     });
 
     const limit = getCarouselLimit();
+    const displayLimit = limit + 2; // Show limit + 2 articles in table
+    
+    // Slice articles to display limit before returning
+    const allArticles = articlesResult.articles || [];
+    const displayArticles = allArticles.slice(0, displayLimit);
 
     res.json({
       articles: [], // Legacy field, kept empty or could be populated if needed for backward compat
-      populatedArticles: articlesResult.articles || [], // The actual data source
-      maxArticles: limit,
+      populatedArticles: displayArticles, // Limited to limit + 2
+      maxArticles: limit, // Actual limit (not display limit)
       updatedAt: new Date().toISOString()
     });
   } catch (error) {
@@ -1270,10 +1278,43 @@ router.put('/carousel', (req, res) => {
 
     const limit = getCarouselLimit();
 
+    // Get current layout to identify dropped articles
+    const currentLayout = dataService.getCarouselLayout();
+    const currentArticleIds = new Set(
+      (currentLayout.articles || []).map(a => a.articleId).filter(Boolean)
+    );
+
     let finalArticles = articles;
     if (articles.length > limit) {
       finalArticles = articles.slice(0, limit);
     }
+
+    // Extract new article IDs
+    const newArticleIds = new Set(
+      finalArticles.map(a => a.articleId).filter(Boolean)
+    );
+
+    // Find dropped articles (in current but not in new)
+    const droppedIds = Array.from(currentArticleIds).filter(
+      id => !newArticleIds.has(id)
+    );
+
+    // Remove 'carousel' targettedView from dropped articles
+    droppedIds.forEach((droppedId) => {
+      try {
+        const droppedArticle = dataService.getArticleById(droppedId);
+        if (!droppedArticle) return;
+        const currentTargets = Array.isArray(droppedArticle.targettedViews) 
+          ? droppedArticle.targettedViews 
+          : [];
+        if (!currentTargets.includes('carousel')) return;
+        const next = currentTargets.filter((t) => t !== 'carousel');
+        dataService.updateArticle(droppedId, { targettedViews: next });
+      } catch (e) {
+        // Best effort; do not fail whole request
+        console.error('Failed to remove targettedView from dropped article:', droppedId, e.message);
+      }
+    });
 
     const updated = dataService.updateCarouselLayout(finalArticles);
     res.json({
