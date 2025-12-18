@@ -90,7 +90,10 @@
   </div>
 
   <div class="cms-actions-footer">
-    <button class="cms-btn cms-btn--primary" data-action="save-carousel-layout">
+    <button class="cms-btn cms-btn-secondary" data-action="add-carousel-article">
+      <i class="icon-add"></i> Manşete Ekle
+    </button>
+    <button class="cms-btn cms-btn-primary" data-action="save-carousel-layout">
       <i class="icon-save"></i> Değişiklikleri Kaydet
     </button>
   </div>
@@ -186,9 +189,64 @@
   </div>
 
   <div class="cms-actions-footer">
-    <button class="cms-btn cms-btn--primary" data-action="save-ana-manset-layout">
+    <button class="cms-btn cms-btn-secondary" data-action="add-ana-manset-article">
+      <i class="icon-add"></i> Manşete Ekle
+    </button>
+    <button class="cms-btn cms-btn-primary" data-action="save-ana-manset-layout">
       <i class="icon-save"></i> Değişiklikleri Kaydet
     </button>
+  </div>
+
+  <!-- Carousel Article Selection Modal -->
+  <div class="cms-modal-overlay" data-modal="add-carousel-article" hidden>
+    <div class="cms-modal" style="max-width: 800px;">
+      <div class="cms-modal__header">
+        <h3 class="cms-modal__title">Manşet Slider'a Haber Ekle</h3>
+        <button class="cms-modal__close" data-action="close-modal" aria-label="Kapat">×</button>
+      </div>
+      <div class="cms-modal__body">
+        <div style="margin-bottom: 1.5rem;">
+          <input 
+            type="text" 
+            class="cms-input" 
+            placeholder="Haber ara (başlık, kategori...)" 
+            data-article-search="carousel"
+            style="width: 100%;"
+          >
+        </div>
+        <div data-article-list="carousel" style="max-height: 500px; overflow-y: auto;">
+          <div class="cms-empty-state">
+            <p>Yükleniyor...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ana Manşet Article Selection Modal -->
+  <div class="cms-modal-overlay" data-modal="add-ana-manset-article" hidden>
+    <div class="cms-modal" style="max-width: 800px;">
+      <div class="cms-modal__header">
+        <h3 class="cms-modal__title">Ana Manşet'e Haber Ekle</h3>
+        <button class="cms-modal__close" data-action="close-modal" aria-label="Kapat">×</button>
+      </div>
+      <div class="cms-modal__body">
+        <div style="margin-bottom: 1.5rem;">
+          <input 
+            type="text" 
+            class="cms-input" 
+            placeholder="Haber ara (başlık, kategori...)" 
+            data-article-search="ana-manset"
+            style="width: 100%;"
+          >
+        </div>
+        <div data-article-list="ana-manset" style="max-height: 500px; overflow-y: auto;">
+          <div class="cms-empty-state">
+            <p>Yükleniyor...</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 

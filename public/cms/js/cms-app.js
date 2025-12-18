@@ -5370,11 +5370,13 @@
       this.saveHeadlineBtn = document.querySelector('[data-action="save-carousel-layout"]');
       this.headlineCountBadge = document.querySelector('[data-cms="carousel-count"]');
       this.headlineLimitBadge = document.querySelector('[data-cms="carousel-limit"]');
+      const addCarouselBtn = document.querySelector('[data-action="add-carousel-article"]');
 
       if (!this.headlineTable) return;
 
       // Event Listeners
       this.saveHeadlineBtn?.addEventListener('click', () => this.saveHeadlineLayout());
+      addCarouselBtn?.addEventListener('click', () => this.openArticleSelectionModal('carousel'));
 
       // Table Actions (Remove)
       this.headlineTable.addEventListener('click', (e) => {
@@ -5399,10 +5401,12 @@
       this.saveAnaMansetBtn = document.querySelector('[data-action="save-ana-manset-layout"]');
       this.anaMansetCountBadge = document.querySelector('[data-cms="ana-manset-count"]');
       this.anaMansetLimitBadge = document.querySelector('[data-cms="ana-manset-limit"]');
+      const addAnaMansetBtn = document.querySelector('[data-action="add-ana-manset-article"]');
 
       if (!this.anaMansetTable) return;
 
       this.saveAnaMansetBtn?.addEventListener('click', () => this.saveAnaMansetLayout());
+      addAnaMansetBtn?.addEventListener('click', () => this.openArticleSelectionModal('ana-manset'));
 
       // Table Actions (Remove)
       this.anaMansetTable.addEventListener('click', (e) => {
@@ -5923,6 +5927,245 @@
       this.draggedHeadlineRow?.classList.remove('cms-dragging');
       this.draggedHeadlineRow = null;
       this.updateHeadlineOrder();
+    }
+
+    async openArticleSelectionModal(type) {
+      // type is either 'carousel' or 'ana-manset'
+      const modal = document.querySelector(`[data-modal="add-${type}-article"]`);
+      if (!modal) return;
+
+      // Get current articles in the carousel/manşet to filter them out
+      let existingArticleIds = new Set();
+      try {
+        if (type === 'carousel') {
+          const response = await fetch('/cms/carousel');
+          if (response.ok) {
+            const data = await response.json();
+            const articles = data.populatedArticles || [];
+            existingArticleIds = new Set(articles.map(a => a.id));
+          }
+        } else if (type === 'ana-manset') {
+          const response = await fetch('/cms/ana-manset');
+          if (response.ok) {
+            const data = await response.json();
+            const articles = data.populatedArticles || [];
+            existingArticleIds = new Set(articles.map(a => a.id));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch existing articles:', error);
+      }
+
+      // Fetch all articles
+      try {
+        const response = await fetch(`/cms/articles?t=${Date.now()}`);
+        if (!response.ok) throw new Error('Failed to fetch articles');
+        const data = await response.json();
+        const allArticles = data.articles || [];
+
+        // Filter articles: exclude existing ones and hidden ones
+        const availableArticles = allArticles.filter(article => {
+          return !existingArticleIds.has(article.id) && article.status === 'visible';
+        });
+
+        // Store filtered articles for search functionality
+        modal.dataset.filteredArticles = JSON.stringify(availableArticles);
+
+        // Render articles
+        this.renderArticleSelectionList(modal, availableArticles, type);
+
+        // Setup search handler
+        this.setupArticleSearchHandler(modal, type);
+
+        // Setup close handlers
+        this.setupModalCloseHandlers(modal);
+
+        // Show modal
+        modal.hidden = false;
+        modal.classList.add('is-active');
+        document.body.style.overflow = 'hidden';
+
+        // Focus search input
+        const searchInput = modal.querySelector(`[data-article-search="${type}"]`);
+        if (searchInput) {
+          setTimeout(() => searchInput.focus(), 100);
+        }
+      } catch (error) {
+        console.error('Failed to open article selection modal:', error);
+        this.showError('Haberler yüklenirken bir hata oluştu.');
+      }
+    }
+
+    renderArticleSelectionList(modal, articles, type) {
+      const listContainer = modal.querySelector(`[data-article-list="${type}"]`);
+      if (!listContainer) return;
+
+      if (!articles || articles.length === 0) {
+        listContainer.innerHTML = `
+          <div class="cms-empty-state">
+            <p>Eklenecek haber bulunamadı. Tüm haberler zaten ${type === 'carousel' ? 'manşet slider\'ında' : 'ana manşette'} mevcut.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const articlesHtml = articles.map(article => {
+        const title = this.escapeHtml(article.header || article.title || 'Başlık Yok');
+        const category = this.escapeHtml(article.category || 'Genel');
+        const statusClass = article.status === 'visible' ? 'visible' : 'hidden';
+        const statusLabel = article.status === 'visible' ? 'Yayında' : 'Taslak';
+        const formattedDate = this.formatDate(article.creationDate || article.publishedAt, '-');
+        
+        // Get thumbnail image
+        let imageUrl = null;
+        if (article.headlineImage && article.headlineImage.url) {
+          imageUrl = article.headlineImage.url;
+        } else if (article.images && article.images[0] && article.images[0].url) {
+          imageUrl = article.images[0].url;
+        }
+        const imageMarkup = imageUrl
+          ? `<img src="${this.escapeHtml(imageUrl)}" alt="${title}" class="article-selection-item__thumb">`
+          : '';
+
+        return `
+          <div class="article-selection-item" data-article-id="${this.escapeHtml(String(article.id))}" data-article-title="${this.escapeHtml(title)}" data-article-category="${this.escapeHtml(category)}">
+            ${imageMarkup}
+            <div class="article-selection-item__content">
+              <div class="article-selection-item__title">${title}</div>
+              <div class="article-selection-item__meta">
+                <span class="article-selection-item__category">${category}</span>
+                <span class="article-selection-item__status ${statusClass}">${statusLabel}</span>
+                <span>${formattedDate}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      listContainer.innerHTML = `<div class="article-selection-list">${articlesHtml}</div>`;
+
+      // Add click handlers to article items
+      const articleItems = listContainer.querySelectorAll('.article-selection-item');
+      articleItems.forEach(item => {
+        item.addEventListener('click', () => {
+          const articleId = item.dataset.articleId;
+          this.addArticleToCarousel(type, articleId);
+        });
+      });
+    }
+
+    setupArticleSearchHandler(modal, type) {
+      const searchInput = modal.querySelector(`[data-article-search="${type}"]`);
+      if (!searchInput) return;
+
+      // Remove existing handler if any
+      searchInput.removeEventListener('input', searchInput._searchHandler);
+      
+      searchInput._searchHandler = (e) => {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        const filteredArticlesJson = modal.dataset.filteredArticles;
+        if (!filteredArticlesJson) return;
+
+        const allArticles = JSON.parse(filteredArticlesJson);
+        const filteredArticles = searchTerm
+          ? allArticles.filter(article => {
+              const title = (article.header || article.title || '').toLowerCase();
+              const category = (article.category || '').toLowerCase();
+              const summary = (article.summary || '').toLowerCase();
+              return title.includes(searchTerm) || 
+                     category.includes(searchTerm) || 
+                     summary.includes(searchTerm);
+            })
+          : allArticles;
+
+        this.renderArticleSelectionList(modal, filteredArticles, type);
+      };
+
+      searchInput.addEventListener('input', searchInput._searchHandler);
+    }
+
+    setupModalCloseHandlers(modal) {
+      // Close button
+      const closeBtn = modal.querySelector('[data-action="close-modal"]');
+      if (closeBtn) {
+        closeBtn.onclick = () => this.closeArticleSelectionModal(modal);
+      }
+
+      // Backdrop click
+      modal.onclick = (e) => {
+        if (e.target === modal) {
+          this.closeArticleSelectionModal(modal);
+        }
+      };
+
+      // ESC key
+      if (modal._escHandler) {
+        document.removeEventListener('keydown', modal._escHandler);
+      }
+      modal._escHandler = (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('is-active')) {
+          this.closeArticleSelectionModal(modal);
+        }
+      };
+      document.addEventListener('keydown', modal._escHandler);
+    }
+
+    closeArticleSelectionModal(modal) {
+      if (!modal) return;
+      modal.hidden = true;
+      modal.classList.remove('is-active');
+      document.body.style.overflow = '';
+
+      // Cleanup
+      if (modal._escHandler) {
+        document.removeEventListener('keydown', modal._escHandler);
+        modal._escHandler = null;
+      }
+
+      // Clear search input
+      const searchInput = modal.querySelector('input[data-article-search]');
+      if (searchInput) {
+        searchInput.value = '';
+      }
+    }
+
+    async addArticleToCarousel(type, articleId) {
+      if (!articleId) return;
+
+      const endpoint = type === 'carousel' ? '/cms/carousel/add' : '/cms/ana-manset/add';
+      const modal = document.querySelector(`[data-modal="add-${type}-article"]`);
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ articleId })
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || 'Haber eklenirken bir hata oluştu');
+        }
+
+        const result = await response.json();
+        
+        // Close modal
+        this.closeArticleSelectionModal(modal);
+
+        // Reload the respective layout table
+        if (type === 'carousel') {
+          await this.loadHeadlineLayout();
+          this.showSuccess('Haber manşet slider\'ına eklendi.');
+        } else if (type === 'ana-manset') {
+          await this.loadAnaMansetLayout();
+          this.showSuccess('Haber ana manşete eklendi.');
+        }
+      } catch (error) {
+        console.error('Add article to carousel error:', error);
+        this.showError(error.message || 'Haber eklenirken bir hata oluştu');
+      }
     }
 
     async logout() {
